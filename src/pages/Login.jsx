@@ -10,8 +10,6 @@ const Login = () => {
   const { user, login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  console.log("Hello");
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
