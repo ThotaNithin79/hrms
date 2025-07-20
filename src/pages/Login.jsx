@@ -81,7 +81,7 @@ const Login = () => {
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
           />
           <h2 className="text-2xl font-extrabold text-gray-800">
-            Welcome to V
+            Welcome to V-Sync
           </h2>
           <p className="text-sm text-gray-500">Please login to continue</p>
         </motion.div>
