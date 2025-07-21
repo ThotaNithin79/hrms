@@ -3,6 +3,80 @@ import { AttendanceContext } from "./AttendanceContext";
 
 export const AttendanceProvider = ({ children }) => {
   // Generate attendance data for the entire month of July 2025
+  // Import leave requests for consistency
+  const leaveRequests = [
+    {
+      id: 1,
+      employeeId: "EMP101",
+      from: "2025-07-10",
+      to: "2025-07-15",
+      status: "Approved",
+    },
+    {
+      id: 2,
+      employeeId: "EMP102",
+      from: "2025-07-12",
+      to: "2025-07-14",
+      status: "Pending",
+    },
+    {
+      id: 3,
+      employeeId: "EMP103",
+      from: "2025-07-20",
+      to: "2025-07-22",
+      status: "Rejected",
+    },
+    {
+      id: 4,
+      employeeId: "EMP104",
+      from: "2025-07-18",
+      to: "2025-07-20",
+      status: "Approved",
+    },
+    {
+      id: 5,
+      employeeId: "EMP105",
+      from: "2025-07-25",
+      to: "2025-07-28",
+      status: "Pending",
+    },
+    {
+      id: 6,
+      employeeId: "EMP106",
+      from: "2025-07-15",
+      to: "2025-07-16",
+      status: "Approved",
+    },
+    {
+      id: 7,
+      employeeId: "EMP107",
+      from: "2025-07-22",
+      to: "2025-07-24",
+      status: "Approved",
+    },
+    {
+      id: 8,
+      employeeId: "EMP108",
+      from: "2025-07-17",
+      to: "2025-07-18",
+      status: "Rejected",
+    },
+    {
+      id: 9,
+      employeeId: "EMP109",
+      from: "2025-07-21",
+      to: "2025-07-23",
+      status: "Pending",
+    },
+    {
+      id: 10,
+      employeeId: "EMP110",
+      from: "2025-07-14",
+      to: "2025-07-15",
+      status: "Approved",
+    },
+  ];
+
   const generateMonthlyAttendanceData = () => {
     const data = [];
     const employees = [
@@ -23,27 +97,59 @@ export const AttendanceProvider = ({ children }) => {
     // Generate data for each day in July 2025 (31 days)
     for (let day = 1; day <= 31; day++) {
       const date = `2025-07-${day.toString().padStart(2, '0')}`;
-      
+
       employees.forEach((emp) => {
         // Skip weekends (Saturdays and Sundays)
         const dayOfWeek = new Date(date).getDay();
         if (dayOfWeek === 0 || dayOfWeek === 6) return;
 
+        // Check if this day is covered by an approved or pending leave request
+        const leaveForDay = leaveRequests.find(lr =>
+          lr.employeeId === emp.id &&
+          (lr.status === "Approved" || lr.status === "Pending") &&
+          date >= lr.from && date <= lr.to
+        );
+
         let status;
-        // Generate realistic attendance patterns
-        const random = Math.random();
-        if (random < 0.8) {
-          status = "Present";
-        } else if (random < 0.9) {
-          status = "Absent";
-        } else {
+        if (leaveForDay) {
           status = "Leave";
+        } else {
+          // Generate realistic attendance patterns for non-leave days
+          const random = Math.random();
+          if (random < 0.8) {
+            status = "Present";
+          } else {
+            status = "Absent";
+          }
         }
 
-        // Add some specific patterns for variety
-        if (emp.id === "EMP106" && day >= 10 && day <= 12) status = "Leave"; // Sara on leave
-        if (emp.id === "EMP103" && day === 5) status = "Absent"; // Michael absent on 5th
-        if (emp.id === "EMP104" && day >= 20 && day <= 22) status = "Leave"; // Priya on leave
+        // Generate punch-in, punch-out, work hours, worked hours, idle time for Present
+        let punchIn = null;
+        let punchOut = null;
+        let workHours = null;
+        let workedHours = null;
+        let idleTime = null;
+
+        if (status === "Present") {
+          // Random punch-in between 8:00 and 10:00
+          const punchInHour = 8 + Math.floor(Math.random() * 3); // 8, 9, or 10
+          const punchInMin = Math.floor(Math.random() * 60);
+          punchIn = `${punchInHour.toString().padStart(2, "0")}:${punchInMin.toString().padStart(2, "0")}`;
+
+          // Random punch-out between 17:00 and 19:00
+          const punchOutHour = 17 + Math.floor(Math.random() * 3); // 17, 18, or 19
+          const punchOutMin = Math.floor(Math.random() * 60);
+          punchOut = `${punchOutHour.toString().padStart(2, "0")}:${punchOutMin.toString().padStart(2, "0")}`;
+
+          // Calculate worked hours
+          const punchInDate = new Date(`${date}T${punchIn}:00`);
+          const punchOutDate = new Date(`${date}T${punchOut}:00`);
+          workedHours = Math.max(0, ((punchOutDate - punchInDate) / (1000 * 60 * 60)));
+          // Round to nearest 0.25 hour
+          workedHours = Math.round(workedHours * 4) / 4;
+          workHours = 8;
+          idleTime = Math.max(0, workHours - workedHours);
+        }
 
         data.push({
           id: recordId++,
@@ -51,6 +157,11 @@ export const AttendanceProvider = ({ children }) => {
           name: emp.name,
           date: date,
           status: status,
+          punchIn,
+          punchOut,
+          workHours,
+          workedHours,
+          idleTime,
         });
       });
     }

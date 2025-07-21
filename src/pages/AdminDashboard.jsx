@@ -1,6 +1,6 @@
 import React, { useState, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { FaUsers, FaCalendarAlt, FaClipboardList, FaBuilding, FaChevronLeft, FaChevronRight, FaSyncAlt } from "react-icons/fa";
 import AttendanceChart from "../components/AttendanceChart";
 import DepartmentPieChart from "../components/DepartmentPieChart";
 import { EmployeeContext } from "../context/EmployeeContext";
@@ -92,65 +92,71 @@ const AdminDashboard = () => {
   const pendingCount = leaveRequests.filter((req) => req.status === "Pending").length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-      {/* Stat Cards */}
-      <div
-        className="bg-white p-4 rounded-xl shadow cursor-pointer hover:bg-gray-100 transition"
-        onClick={() => navigate("/employees")}
-      >
-        <h3 className="text-gray-600">Total Employees</h3>
-        <p className="text-2xl font-bold text-gray-800">{employees.length}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Stat Cards */}
+        <div
+          className="bg-white p-6 rounded-2xl shadow-lg cursor-pointer hover:bg-blue-50 transition flex flex-col items-center gap-2"
+          onClick={() => navigate("/employees")}
+        >
+          <FaUsers className="text-3xl text-blue-600 mb-1" />
+          <h3 className="text-gray-600 font-semibold">Total Employees</h3>
+          <p className="text-3xl font-extrabold text-gray-800">{employees.length}</p>
+        </div>
 
-      <div
-        className="bg-white p-4 rounded-xl shadow cursor-pointer hover:bg-gray-100 transition"
-        onClick={() => navigate("/admin/on-leave-today")}
-      >
-        <h3 className="text-gray-600">On Leave Today</h3>
-        <p className="text-2xl font-bold text-gray-800">{onLeaveToday}</p>
-      </div>
+        <div
+          className="bg-white p-6 rounded-2xl shadow-lg cursor-pointer hover:bg-blue-50 transition flex flex-col items-center gap-2"
+          onClick={() => navigate("/admin/on-leave-today")}
+        >
+          <FaCalendarAlt className="text-3xl text-yellow-500 mb-1" />
+          <h3 className="text-gray-600 font-semibold">On Leave Today</h3>
+          <p className="text-3xl font-extrabold text-gray-800">{onLeaveToday}</p>
+        </div>
 
-      <div
-        onClick={() =>
-          navigate("/leave-management", { state: { defaultStatus: "Pending" } })
-        }
-        className="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition"
-      >
-        <h3 className="text-gray-600">Pending Leaves</h3>
-        <p className="text-2xl font-bold text-gray-800">{pendingCount}</p>
-      </div>
+        <div
+          onClick={() =>
+            navigate("/leave-management", { state: { defaultStatus: "Pending" } })
+          }
+          className="bg-white p-6 rounded-2xl shadow-lg cursor-pointer hover:bg-blue-50 transition flex flex-col items-center gap-2"
+        >
+          <FaClipboardList className="text-3xl text-purple-600 mb-1" />
+          <h3 className="text-gray-600 font-semibold">Pending Leaves</h3>
+          <p className="text-3xl font-extrabold text-gray-800">{pendingCount}</p>
+        </div>
 
-      <div className="bg-white p-4 rounded-xl shadow">
-        <h3 className="text-gray-600">Departments</h3>
-        <p className="text-2xl font-bold text-gray-800">{departmentSet.size}</p>
+        <div className="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center gap-2">
+          <FaBuilding className="text-3xl text-green-600 mb-1" />
+          <h3 className="text-gray-600 font-semibold">Departments</h3>
+          <p className="text-3xl font-extrabold text-gray-800">{departmentSet.size}</p>
+        </div>
       </div>
 
       {/* Week Navigation */}
-      <div className="col-span-1 md:col-span-2 xl:col-span-4 bg-white p-4 rounded-xl shadow">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Weekly Attendance View</h3>
-          <div className="flex items-center gap-4">
+      <div className="mt-8 bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-blue-700">Weekly Attendance View</h3>
+          <div className="flex items-center gap-2">
             <button
               onClick={goToPreviousWeek}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-1 font-semibold shadow"
             >
-              ← Previous Week
+              <FaChevronLeft /> Previous
             </button>
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-base font-medium text-gray-700 px-2">
               {formatWeekRange(weekDates.start, weekDates.end)}
             </span>
             <button
               onClick={goToNextWeek}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-1 font-semibold shadow"
             >
-              Next Week →
+              Next <FaChevronRight />
             </button>
             {currentWeek !== 0 && (
               <button
                 onClick={goToCurrentWeek}
-                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center gap-1 font-semibold shadow"
               >
-                Current Week
+                <FaSyncAlt /> Current
               </button>
             )}
           </div>
@@ -158,41 +164,41 @@ const AdminDashboard = () => {
       </div>
 
       {/* Filter by Department */}
-      <div className="col-span-1 md:col-span-2 xl:col-span-4">
-        <div className="bg-white p-4 rounded-xl shadow">
-          <label className="block text-sm font-medium text-gray-600 mb-2">
-            Filter by Department
-          </label>
-          <select
-            value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-            className="border px-4 py-2 rounded w-full max-w-xs"
-          >
-            <option value="All">All</option>
-            {[...departmentSet].map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="mt-6 bg-white p-6 rounded-2xl shadow-lg">
+        <label className="block text-sm font-semibold text-blue-700 mb-2">
+          Filter by Department
+        </label>
+        <select
+          value={selectedDept}
+          onChange={(e) => setSelectedDept(e.target.value)}
+          className="border px-4 py-2 rounded-lg w-full max-w-xs font-semibold text-gray-700"
+        >
+          <option value="All">All</option>
+          {[...departmentSet].map((dept) => (
+            <option key={dept} value={dept}>
+              {dept}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Charts */}
-      <div className="col-span-1 md:col-span-2 xl:col-span-3 bg-white p-4 rounded-xl shadow mt-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-gray-700 font-semibold">Attendance Overview</h3>
-          <span className="text-sm text-gray-500">
-            {selectedDept !== "All" ? `${selectedDept} Department` : "All Departments"} | 
-            {filteredAttendance.length} records
-          </span>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mt-8">
+        <div className="col-span-1 xl:col-span-3 bg-white p-6 rounded-2xl shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-blue-700 font-bold">Attendance Overview</h3>
+            <span className="text-sm text-gray-500">
+              {selectedDept !== "All" ? `${selectedDept} Department` : "All Departments"} | 
+              {filteredAttendance.length} records
+            </span>
+          </div>
+          <AttendanceChart data={filteredAttendance} />
         </div>
-        <AttendanceChart data={filteredAttendance} />
-      </div>
 
-      <div className="col-span-1 xl:col-span-1 bg-white p-4 rounded-xl shadow mt-6">
-        <h3 className="text-gray-700 font-semibold mb-2">Department Stats</h3>
-        <DepartmentPieChart data={employees} />
+        <div className="col-span-1 bg-white p-6 rounded-2xl shadow-lg">
+          <h3 className="text-blue-700 font-bold mb-2">Department Stats</h3>
+          <DepartmentPieChart data={employees} />
+        </div>
       </div>
     </div>
   );
