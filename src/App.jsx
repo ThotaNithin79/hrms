@@ -23,6 +23,7 @@ import EmployeeLeaveSummary from "./pages/EmployeeLeaveSummary";
 import AdminNotifications from "./pages/AdminNotifications"; // create this page
 import EmployeesOnLeaveToday from "./pages/EmployeesOnLeaveToday";
 import ForgotPassword from "./pages/ForgotPassword"; // New forgot password page
+import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
@@ -51,6 +52,7 @@ function App() {
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/attendance/add" element={<AddAttendance />} />
         <Route path="/attendance/edit/:id" element={<EditAttendance />} />
+        <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />
         <Route path="/admin/notifications" element={<AdminNotifications />} />

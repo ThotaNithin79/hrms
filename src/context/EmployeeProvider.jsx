@@ -12,6 +12,30 @@ export const EmployeeProvider = ({ children }) => {
       address: "Hyderabad",
       joiningDate: "2023-05-10",
       emergency: "Jane Doe - 9999999999",
+      bankDetails: {
+        accountNumber: "1234567890",
+        bankName: "State Bank of India",
+        ifsc: "SBIN0001234",
+        branch: "Hyderabad Main"
+      },
+      personalDetails: {
+        dob: "1990-01-15",
+        gender: "Male",
+        maritalStatus: "Married",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "ABC Corp",
+          role: "HR Executive",
+          years: 2
+        },
+        {
+          company: "XYZ Ltd",
+          role: "HR Manager",
+          years: 3
+        }
+      ]
     },
     {
       employeeId: "EMP102",
@@ -22,6 +46,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Bangalore",
       joiningDate: "2022-11-15",
       emergency: "Robert Johnson - 8888888888",
+      bankDetails: {
+        accountNumber: "2345678901",
+        bankName: "HDFC Bank",
+        ifsc: "HDFC0005678",
+        branch: "Bangalore MG Road"
+      },
+      personalDetails: {
+        dob: "1988-05-22",
+        gender: "Female",
+        maritalStatus: "Single",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "FinTech Solutions",
+          role: "Accountant",
+          years: 4
+        }
+      ]
     },
     {
       employeeId: "EMP103",
@@ -32,6 +75,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Chennai",
       joiningDate: "2023-01-20",
       emergency: "Laura Smith - 7777777777",
+      bankDetails: {
+        accountNumber: "3456789012",
+        bankName: "ICICI Bank",
+        ifsc: "ICIC0003456",
+        branch: "Chennai Anna Nagar"
+      },
+      personalDetails: {
+        dob: "1992-09-10",
+        gender: "Male",
+        maritalStatus: "Single",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "TechSoft",
+          role: "Software Engineer",
+          years: 5
+        }
+      ]
     },
     {
       employeeId: "EMP104",
@@ -42,6 +104,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Delhi",
       joiningDate: "2023-04-01",
       emergency: "Ravi Sharma - 6666666666",
+      bankDetails: {
+        accountNumber: "4567890123",
+        bankName: "Axis Bank",
+        ifsc: "UTIB0004567",
+        branch: "Delhi Connaught Place"
+      },
+      personalDetails: {
+        dob: "1991-12-05",
+        gender: "Female",
+        maritalStatus: "Married",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "MarketMinds",
+          role: "Marketing Lead",
+          years: 6
+        }
+      ]
     },
     {
       employeeId: "EMP105",
@@ -52,6 +133,30 @@ export const EmployeeProvider = ({ children }) => {
       address: "Pune",
       joiningDate: "2022-09-25",
       emergency: "Sneha Kumar - 5555555555",
+      bankDetails: {
+        accountNumber: "5678901234",
+        bankName: "Bank of Baroda",
+        ifsc: "BARB0PUNEXX",
+        branch: "Pune Camp"
+      },
+      personalDetails: {
+        dob: "1987-03-18",
+        gender: "Male",
+        maritalStatus: "Married",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "SalesPro",
+          role: "Sales Executive",
+          years: 3
+        },
+        {
+          company: "RetailMart",
+          role: "Sales Manager",
+          years: 2
+        }
+      ]
     },
     {
       employeeId: "EMP106",
@@ -62,6 +167,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Kolkata",
       joiningDate: "2023-06-18",
       emergency: "Tom Lee - 4444444444",
+      bankDetails: {
+        accountNumber: "6789012345",
+        bankName: "Punjab National Bank",
+        ifsc: "PUNB0123456",
+        branch: "Kolkata Park Street"
+      },
+      personalDetails: {
+        dob: "1993-07-22",
+        gender: "Female",
+        maritalStatus: "Single",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "HR Solutions",
+          role: "HR Assistant",
+          years: 2
+        }
+      ]
     },
     {
       employeeId: "EMP107",
@@ -72,6 +196,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Ahmedabad",
       joiningDate: "2023-03-05",
       emergency: "Neha Mehta - 3333333333",
+      bankDetails: {
+        accountNumber: "7890123456",
+        bankName: "Kotak Mahindra Bank",
+        ifsc: "KKBK0007890",
+        branch: "Ahmedabad CG Road"
+      },
+      personalDetails: {
+        dob: "1994-11-30",
+        gender: "Male",
+        maritalStatus: "Single",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "CodeWorks",
+          role: "Developer",
+          years: 4
+        }
+      ]
     },
     {
       employeeId: "EMP108",
@@ -82,6 +225,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Kochi",
       joiningDate: "2022-12-12",
       emergency: "Deepak Nair - 2222222222",
+      bankDetails: {
+        accountNumber: "8901234567",
+        bankName: "Canara Bank",
+        ifsc: "CNRB0008901",
+        branch: "Kochi Ernakulam"
+      },
+      personalDetails: {
+        dob: "1990-05-05",
+        gender: "Female",
+        maritalStatus: "Married",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "FinanceHub",
+          role: "Finance Analyst",
+          years: 5
+        }
+      ]
     },
     {
       employeeId: "EMP109",
@@ -92,6 +254,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Mumbai",
       joiningDate: "2023-02-10",
       emergency: "Emma Wilson - 1111111111",
+      bankDetails: {
+        accountNumber: "9012345678",
+        bankName: "Union Bank of India",
+        ifsc: "UBIN0901234",
+        branch: "Mumbai Andheri"
+      },
+      personalDetails: {
+        dob: "1985-08-14",
+        gender: "Male",
+        maritalStatus: "Married",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "AdminPlus",
+          role: "Admin Officer",
+          years: 6
+        }
+      ]
     },
     {
       employeeId: "EMP110",
@@ -102,6 +283,25 @@ export const EmployeeProvider = ({ children }) => {
       address: "Jaipur",
       joiningDate: "2023-07-01",
       emergency: "Anand Raj - 9999988888",
+      bankDetails: {
+        accountNumber: "1234098765",
+        bankName: "IndusInd Bank",
+        ifsc: "INDB0123409",
+        branch: "Jaipur Malviya Nagar"
+      },
+      personalDetails: {
+        dob: "1996-02-28",
+        gender: "Female",
+        maritalStatus: "Single",
+        nationality: "Indian"
+      },
+      experienceDetails: [
+        {
+          company: "OpsGlobal",
+          role: "Operations Executive",
+          years: 2
+        }
+      ]
     },
   ]);
 

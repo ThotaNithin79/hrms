@@ -21,33 +21,49 @@ const COLORS = {
 const AdminLeaveSummary = () => {
   const { leaveRequests } = useContext(LeaveRequestContext);
   const [filter, setFilter] = useState("All");
+  const [selectedMonth, setSelectedMonth] = useState("All");
   const [loading, setLoading] = useState(false);
   const [isPdfMode, setIsPdfMode] = useState(false);
   const componentRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Filter data
-  const filteredRequests =
-    filter === "All"
-      ? leaveRequests
-      : leaveRequests.filter((req) => req.status === filter);
+  // Helper: get month string from date
+  const getMonthString = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
 
-  const statusCounts = leaveRequests?.reduce(
+  // Get all months present in leaveRequests
+  const allMonths = Array.from(
+    new Set(
+      (leaveRequests || [])
+        .map((req) => getMonthString(req.from))
+        .filter((m) => m)
+    )
+  );
+
+  // Filter by status and month
+  const filteredRequests = (leaveRequests || []).filter((req) => {
+    const statusMatch = filter === "All" ? true : req.status === filter;
+    const monthMatch = selectedMonth === "All" ? true : getMonthString(req.from) === selectedMonth;
+    return statusMatch && monthMatch;
+  });
+
+  // Status counts for filtered data
+  const statusCounts = filteredRequests.reduce(
     (acc, curr) => {
       const status = curr?.status || 'Unknown';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     },
     { Approved: 0, Rejected: 0, Pending: 0 }
-  ) || { Approved: 0, Rejected: 0, Pending: 0 };
+  );
 
-  // Filter out zero values for better chart display
+  // Chart data for filtered data
   const chartData = Object.entries(statusCounts)
-    .filter(([status, value]) => value > 0) // Only include statuses with actual data
-    .map(([status, value]) => ({
-      name: status,
-      value,
-    }));
+    .filter(([, value]) => value > 0)
+    .map(([status, value]) => ({ name: status, value }));
 
   // Draw canvas chart when in PDF mode - Enhanced size for PDF export
   useEffect(() => {
@@ -65,7 +81,7 @@ const AdminLeaveSummary = () => {
       let currentAngle = -Math.PI / 2; // Start from top
       const total = chartData.reduce((sum, item) => sum + item.value, 0);
       
-      chartData.forEach((item, index) => {
+      chartData.forEach((item) => {
         const sliceAngle = (item.value / total) * 2 * Math.PI;
         
         // Draw slice
@@ -379,48 +395,70 @@ const AdminLeaveSummary = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Leave Summary</h2>
 
-      {/* Filter buttons */}
-      <div className="flex gap-4 mb-6">
-        {["All", "Pending", "Approved", "Rejected"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded ${
-              filter === status ? "bg-blue-600 text-white" : "bg-gray-200"
-            }`}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 mb-6 items-center">
+        {/* Status filter */}
+        <div className="flex gap-2">
+          {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded transition-all duration-150 shadow-sm font-medium ${
+                filter === status ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+        {/* Month filter */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="monthFilter" className="font-medium text-gray-700">Month:</label>
+          <select
+            id="monthFilter"
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            className="px-3 py-2 rounded border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {status}
-          </button>
-        ))}
+            <option value="All">All</option>
+            {allMonths.map(month => {
+              const [year] = month.split('-');
+              const monthName = new Date(`${month}-01`).toLocaleString('default', { month: 'long' });
+              return (
+                <option key={month} value={month}>{monthName} {year}</option>
+              );
+            })}
+          </select>
+        </div>
       </div>
 
       {/* Chart + Table */}
-      <div ref={componentRef} className="bg-white p-6">
+      <div ref={componentRef} className="bg-white p-6 rounded-xl shadow-lg">
         {/* Summary Statistics */}
         <div className="bg-gray-50 rounded-xl p-4 mb-6">
           <h3 className="text-lg font-semibold mb-3 text-center">Leave Summary Statistics</h3>
           <div className="grid grid-cols-4 gap-4 text-center">
             <div className="bg-white p-5 rounded shadow min-h-[100px] flex flex-col justify-center items-center">
               <div className="text-4xl font-bold text-blue-600 leading-none mb-3 w-full text-center" style={{ lineHeight: '1' }}>
-                {leaveRequests?.length || 0}
+                {filteredRequests.length}
               </div>
               <div className="text-sm text-gray-600 leading-tight">Total Requests</div>
             </div>
             <div className="bg-white p-5 rounded shadow min-h-[100px] flex flex-col justify-center items-center">
               <div className="text-4xl font-bold text-green-600 leading-none mb-3 w-full text-center" style={{ lineHeight: '1' }}>
-                {statusCounts?.Approved || 0}
+                {statusCounts.Approved || 0}
               </div>
               <div className="text-sm text-gray-600 leading-tight">Approved</div>
             </div>
             <div className="bg-white p-5 rounded shadow min-h-[100px] flex flex-col justify-center items-center">
               <div className="text-4xl font-bold text-red-600 leading-none mb-3 w-full text-center" style={{ lineHeight: '1' }}>
-                {statusCounts?.Rejected || 0}
+                {statusCounts.Rejected || 0}
               </div>
               <div className="text-sm text-gray-600 leading-tight">Rejected</div>
             </div>
             <div className="bg-white p-5 rounded shadow min-h-[100px] flex flex-col justify-center items-center">
               <div className="text-4xl font-bold text-yellow-600 leading-none mb-3 w-full text-center" style={{ lineHeight: '1' }}>
-                {statusCounts?.Pending || 0}
+                {statusCounts.Pending || 0}
               </div>
               <div className="text-sm text-gray-600 leading-tight">Pending</div>
             </div>
@@ -476,7 +514,7 @@ const AdminLeaveSummary = () => {
 
         {/* Table */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Leave Requests ({filter})</h3>
+          <h3 className="text-lg font-semibold mb-4">Leave Requests ({filter}{selectedMonth !== 'All' ? `, ${(() => {const [year] = selectedMonth.split('-');return `${new Date(`${selectedMonth}-01`).toLocaleString('default', { month: 'long' })} ${year}`;})()}` : ''})</h3>
           <table className="min-w-full text-sm bg-white rounded shadow">
             <thead className="bg-gray-100">
               <tr>
@@ -490,14 +528,14 @@ const AdminLeaveSummary = () => {
             </thead>
             <tbody>
               {filteredRequests.map((req) => (
-                <tr key={req.id} className="border-t">
+                <tr key={req.id} className="border-t hover:bg-blue-50 transition-all duration-100">
                   <td className="p-3 border">{req.id}</td>
                   <td className="p-3 border">{req.employeeId || 'EMP-XXX'}</td>
                   <td className="p-3 border">{req.name}</td>
                   <td className="p-3 border">{req.from}</td>
                   <td className="p-3 border">{req.to}</td>
                   <td className="p-3 border">
-                    <span className={`px-2 py-1 rounded text-xs ${
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
                       req.status === 'Approved' ? 'bg-green-100 text-green-800' :
                       req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                       'bg-yellow-100 text-yellow-800'
@@ -516,20 +554,20 @@ const AdminLeaveSummary = () => {
       <div className="flex justify-end mt-4 gap-4">
         <button
           onClick={exportCSV}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow-md font-semibold"
         >
           Export CSV
         </button>
         <button
           onClick={exportSimplePDF}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 shadow-md font-semibold"
         >
           Export PDF (Simple)
         </button>
         <button
           onClick={exportPDF}
           disabled={loading}
-          className={`px-4 py-2 rounded text-white ${
+          className={`px-4 py-2 rounded text-white font-semibold shadow-md ${
             loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >

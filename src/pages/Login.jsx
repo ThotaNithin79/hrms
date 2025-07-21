@@ -54,7 +54,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-200 via-blue-100 to-blue-400 px-4 relative overflow-hidden">
+      {/* Animated background circles */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-10 left-10 w-40 h-40 bg-blue-300 rounded-full opacity-30 animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-56 h-56 bg-blue-500 rounded-full opacity-20 animate-ping" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-blue-400 rounded-full opacity-20 animate-pulse" />
+      </div>
       <motion.div
         initial="hidden"
         animate="visible"
@@ -66,7 +72,7 @@ const Login = () => {
             },
           },
         }}
-        className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md"
+        className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10"
       >
         <motion.div
           variants={fadeIn}
@@ -75,25 +81,24 @@ const Login = () => {
           <motion.img
             src={logo}
             alt="Company Logo"
-            className="h-16 w-16 mb-2"
+            className="h-16 w-16 mb-2 drop-shadow-lg"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
           />
-          <h2 className="text-2xl font-extrabold text-gray-800">
-            Welcome to V-Sync
-          </h2>
+          <h2 className="text-3xl font-extrabold text-blue-700 mb-1 drop-shadow">Welcome to V-Sync</h2>
           <p className="text-sm text-gray-500">Please login to continue</p>
         </motion.div>
 
         {error && (
-          <motion.p
+          <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-red-500 text-sm mb-3 text-center"
+            className="mb-3 flex items-center justify-center gap-2 text-red-600 text-sm font-semibold bg-red-100 rounded-lg py-2 px-3 shadow"
           >
+            <FaLock className="text-red-500" />
             {error}
-          </motion.p>
+          </motion.div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,13 +111,13 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder=" "
-              className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none peer"
+              className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none peer bg-gray-50"
             />
             <label className="absolute left-10 top-2 text-sm text-gray-500 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400">
               Email
             </label>
           </motion.div>
-          
+          {/* Password */}
           <motion.div className="relative" variants={fadeIn} custom={2}>
             <FaLock className="absolute left-3 top-4 text-gray-400" />
             <input
@@ -121,7 +126,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder=" "
-              className="w-full pl-10 pr-10 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none peer"
+              className="w-full pl-10 pr-10 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none peer bg-gray-50"
             />
             <label className="absolute left-10 top-2 text-sm text-gray-500 transition-all duration-200 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400">
               Password
@@ -143,18 +148,19 @@ const Login = () => {
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-blue-600 hover:underline"
+              className="text-blue-600 hover:underline font-semibold"
             >
               Forgot Password?
             </button>
           </motion.div>
+          {/* ...existing code... (no social login buttons) */}
           {/* Submit Button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             variants={fadeIn}
-            custom={4}
+            custom={5}
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow"
           >
             Login
           </motion.button>
