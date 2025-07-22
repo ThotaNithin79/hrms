@@ -28,6 +28,11 @@ const navLinks = [
     label: "Leave Summary",
     icon: <FaChartPie />,
   },
+  {
+    to: "/admin/notices",
+    label: "Admin Notices",
+    icon: <FaClipboardList />,
+  },
 ];
 
 const Sidebar = () => {

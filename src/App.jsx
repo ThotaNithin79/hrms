@@ -24,6 +24,8 @@ import AdminNotifications from "./pages/AdminNotifications"; // create this page
 import EmployeesOnLeaveToday from "./pages/EmployeesOnLeaveToday";
 import ForgotPassword from "./pages/ForgotPassword"; // New forgot password page
 import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
+import AdminNotices from "./pages/AdminNotices.jsx"; // Add this import
+import { NoticeProvider } from "./context/NoticeProvider"; // Add NoticeProvider import
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
@@ -57,6 +59,11 @@ function App() {
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />
         <Route path="/admin/notifications" element={<AdminNotifications />} />
         <Route path="/admin/on-leave-today" element={<EmployeesOnLeaveToday />} />
+        <Route path="/admin/notices" element={
+          <NoticeProvider>
+            <AdminNotices />
+          </NoticeProvider>
+        } /> {/* Notices feature route */}
       </Route>
 
       {/* Employee protected routes */}
