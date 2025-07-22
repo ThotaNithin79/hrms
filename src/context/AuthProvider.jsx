@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("hrmsUser", JSON.stringify(userData)); // ✅ Save to localStorage
       setUser(userData);
       return "admin";
-    } else if (email === "employee@hrms.com" && password === "emp123") {
+    } else if (email === "john@example.com" && password === "emp123") {
       const userData = { role: "employee", email };
       localStorage.setItem("hrmsUser", JSON.stringify(userData));
       setUser(userData);

@@ -151,38 +151,88 @@ const LeaveManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredRequests.map((req, idx) => (
-              <tr
-                key={req.id}
-                className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
-              >
-                <td className="p-4 font-mono font-semibold">{req.id}</td>
-                <td className="p-4">{req.employeeId}</td>
-                <td className="p-4">{req.name}</td>
-                <td className="p-4">{req.from}</td>
-                <td className="p-4">{req.to}</td>
-                <td className="p-4">{req.reason}</td>
-                <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
-                <td className="p-4 flex gap-2">
-                  <button
-                    onClick={() => updateStatus(req.id, "Approved")}
-                    disabled={req.status !== "Pending"}
-                    className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
-                    title="Approve"
-                  >
-                    <FaCheck /> Approve
-                  </button>
-                  <button
-                    onClick={() => updateStatus(req.id, "Rejected")}
-                    disabled={req.status !== "Pending"}
-                    className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
-                    title="Reject"
-                  >
-                    <FaTimes /> Reject
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {(() => {
+              // Track highlighted sandwich leave to avoid duplicate rows
+              let sandwichLeaveHighlighted = false;
+              return filteredRequests
+                .filter((req, idx, arr) => {
+                  // Remove duplicate sandwich leave rows for EMP101
+                  if (req.employeeId === "EMP101") {
+                    // Sandwich leave detection
+                    const fromDate = new Date(req.from);
+                    const toDate = new Date(req.to);
+                    if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
+                      const day1 = fromDate.getDay();
+                      const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
+                      const day3 = toDate.getDay();
+                      if (day1 === 6 && day2 === 0 && day3 === 1) {
+                        if (sandwichLeaveHighlighted) return false;
+                        sandwichLeaveHighlighted = true;
+                      }
+                    }
+                  }
+                  return true;
+                })
+                .map((req, idx) => {
+                  // Sandwich leave detection: leave on Saturday and Monday with Sunday in between
+                  const isSandwichLeave = (() => {
+                    const fromDate = new Date(req.from);
+                    const toDate = new Date(req.to);
+                    if (req.employeeId === "EMP101" && !sandwichLeaveHighlighted) {
+                      // Only highlight the first sandwich leave row
+                      if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
+                        const day1 = fromDate.getDay();
+                        const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
+                        const day3 = toDate.getDay();
+                        if (day1 === 6 && day2 === 0 && day3 === 1) {
+                          sandwichLeaveHighlighted = true;
+                          return true;
+                        }
+                      }
+                    }
+                    return false;
+                  })();
+                  return (
+                    <tr
+                      key={req.id}
+                      className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
+                    >
+                      <td className="p-4 font-mono font-semibold">{req.id}</td>
+                      <td className="p-4">{req.employeeId}</td>
+                      <td className="p-4">{req.name}</td>
+                      <td className="p-4">{req.from}</td>
+                      <td className="p-4">{req.to}</td>
+                      <td className="p-4 flex items-center gap-2">
+                        {req.reason}
+                        {isSandwichLeave && (
+                          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold ml-2" title="Sandwich Leave">
+                            Sandwich Leave
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
+                      <td className="p-4 flex gap-2">
+                        <button
+                          onClick={() => updateStatus(req.id, "Approved")}
+                          disabled={req.status !== "Pending"}
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
+                          title="Approve"
+                        >
+                          <FaCheck /> Approve
+                        </button>
+                        <button
+                          onClick={() => updateStatus(req.id, "Rejected")}
+                          disabled={req.status !== "Pending"}
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
+                          title="Reject"
+                        >
+                          <FaTimes /> Reject
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                });
+            })()}
             {filteredRequests.length === 0 && (
               <tr>
                 <td colSpan="8" className="p-4 text-center text-gray-500">
