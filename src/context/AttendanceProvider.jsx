@@ -75,6 +75,14 @@ export const AttendanceProvider = ({ children }) => {
       to: "2025-07-15",
       status: "Approved",
     },
+    // Sandwich leave test case for EMP101
+    {
+      id: 11,
+      employeeId: "EMP101",
+      from: "2025-07-12",
+      to: "2025-07-14",
+      status: "Approved",
+    },
   ];
 
   const generateMonthlyAttendanceData = () => {
@@ -97,50 +105,51 @@ export const AttendanceProvider = ({ children }) => {
     // Generate data for each day in July 2025 (31 days)
     for (let day = 1; day <= 31; day++) {
       const date = `2025-07-${day.toString().padStart(2, '0')}`;
-
       employees.forEach((emp) => {
-        // Skip weekends (Saturdays and Sundays)
-        const dayOfWeek = new Date(date).getDay();
-        if (dayOfWeek === 0 || dayOfWeek === 6) return;
-
-        // Check if this day is covered by an approved or pending leave request
-        const leaveForDay = leaveRequests.find(lr =>
-          lr.employeeId === emp.id &&
-          (lr.status === "Approved" || lr.status === "Pending") &&
-          date >= lr.from && date <= lr.to
-        );
-
         let status;
-        if (leaveForDay) {
+        // For EMP101, set leave on 2025-07-12 (Sat), 2025-07-13 (Sun), 2025-07-14 (Mon)
+        if (
+          emp.id === "EMP101" &&
+          ["2025-07-12", "2025-07-13", "2025-07-14"].includes(date)
+        ) {
           status = "Leave";
         } else {
-          // Generate realistic attendance patterns for non-leave days
-          const random = Math.random();
-          if (random < 0.8) {
-            status = "Present";
+          // Only skip Sundays (dayOfWeek === 0)
+          const dayOfWeek = new Date(date).getDay();
+          if (dayOfWeek === 0) return;
+          // Check if this day is covered by an approved or pending leave request
+          const leaveForDay = leaveRequests.find(lr =>
+            lr.employeeId === emp.id &&
+            (lr.status === "Approved" || lr.status === "Pending") &&
+            date >= lr.from && date <= lr.to
+          );
+          if (leaveForDay) {
+            status = "Leave";
           } else {
-            status = "Absent";
+            // Generate realistic attendance patterns for non-leave days
+            const random = Math.random();
+            if (random < 0.8) {
+              status = "Present";
+            } else {
+              status = "Absent";
+            }
           }
         }
-
         // Generate punch-in, punch-out, work hours, worked hours, idle time for Present
         let punchIn = null;
         let punchOut = null;
         let workHours = null;
         let workedHours = null;
         let idleTime = null;
-
         if (status === "Present") {
           // Random punch-in between 8:00 and 10:00
           const punchInHour = 8 + Math.floor(Math.random() * 3); // 8, 9, or 10
           const punchInMin = Math.floor(Math.random() * 60);
           punchIn = `${punchInHour.toString().padStart(2, "0")}:${punchInMin.toString().padStart(2, "0")}`;
-
           // Random punch-out between 17:00 and 19:00
           const punchOutHour = 17 + Math.floor(Math.random() * 3); // 17, 18, or 19
           const punchOutMin = Math.floor(Math.random() * 60);
           punchOut = `${punchOutHour.toString().padStart(2, "0")}:${punchOutMin.toString().padStart(2, "0")}`;
-
           // Calculate worked hours
           const punchInDate = new Date(`${date}T${punchIn}:00`);
           const punchOutDate = new Date(`${date}T${punchOut}:00`);
@@ -150,7 +159,6 @@ export const AttendanceProvider = ({ children }) => {
           workHours = 8;
           idleTime = Math.max(0, workHours - workedHours);
         }
-
         data.push({
           id: recordId++,
           employeeId: emp.id,

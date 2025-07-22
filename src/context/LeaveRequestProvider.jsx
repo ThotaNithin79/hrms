@@ -13,6 +13,17 @@ export const LeaveRequestProvider = ({ children }) => {
       date: "2025-07-08",
       status: "Approved",
     },
+    // Sandwich leave request for EMP101
+    {
+      id: 11,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from: "2025-07-12",
+      to: "2025-07-14",
+      reason: "Sandwich Leave",
+      date: "2025-07-11",
+      status: "Approved",
+    },
     {
       id: 2,
       employeeId: "EMP102",
