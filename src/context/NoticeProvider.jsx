@@ -16,14 +16,14 @@ export const NoticeProvider = ({ children }) => {
 
   const addNotice = (title, message, author = "Admin") => {
     setNotices([
+      ...notices,
       {
         id: Date.now(),
         title,
         message,
         date: new Date().toISOString().slice(0, 10),
         author,
-      },
-      ...notices,
+      }
     ]);
   };
 
