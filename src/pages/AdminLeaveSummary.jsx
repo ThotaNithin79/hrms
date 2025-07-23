@@ -19,35 +19,35 @@ const COLORS = {
 };
 
 const AdminLeaveSummary = () => {
-  const { leaveRequests } = useContext(LeaveRequestContext);
+  const {
+    leaveRequests,
+    getMonthString,
+    getMonthlyLeaveSummaryForAll,
+    allMonths,
+  } = useContext(LeaveRequestContext);
   const [filter, setFilter] = useState("All");
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [loading, setLoading] = useState(false);
   const [isPdfMode, setIsPdfMode] = useState(false);
   const componentRef = useRef(null);
+  const chartContainerRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Helper: get month string from date
-  const getMonthString = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  // Get leave summary for selected month
+  const monthStr = selectedMonth === "All" ? null : selectedMonth;
+  const leaveSummary = monthStr ? getMonthlyLeaveSummaryForAll(monthStr) : {
+    total: leaveRequests.length,
+    statusCounts: leaveRequests.reduce((acc, curr) => {
+      const status = curr?.status || 'Unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, { Approved: 0, Rejected: 0, Pending: 0 }),
+    requests: leaveRequests,
   };
 
-  // Get all months present in leaveRequests
-  const allMonths = Array.from(
-    new Set(
-      (leaveRequests || [])
-        .map((req) => getMonthString(req.from))
-        .filter((m) => m)
-    )
-  );
-
-  // Filter by status and month
-  const filteredRequests = (leaveRequests || []).filter((req) => {
-    const statusMatch = filter === "All" ? true : req.status === filter;
-    const monthMatch = selectedMonth === "All" ? true : getMonthString(req.from) === selectedMonth;
-    return statusMatch && monthMatch;
+  // Filter by status
+  const filteredRequests = (leaveSummary.requests || []).filter((req) => {
+    return filter === "All" ? true : req.status === filter;
   });
 
   // Status counts for filtered data
@@ -64,6 +64,165 @@ const AdminLeaveSummary = () => {
   const chartData = Object.entries(statusCounts)
     .filter(([, value]) => value > 0)
     .map(([status, value]) => ({ name: status, value }));
+
+  // ...existing code for rendering, export, etc...
+  // Export CSV
+  const exportCSV = () => {
+    const headers = ["ID", "Employee ID", "Name", "From", "To", "Status"];
+    const rows = filteredRequests.map((req) => [
+      req.id,
+      req.employeeId || "EMP-XXX",
+      req.name,
+      req.from,
+      req.to,
+      req.status,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "leave_summary.csv");
+  };
+
+  // Simple PDF export (without chart)
+  const exportSimplePDF = () => {
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      let yPosition = 20;
+
+      pdf.setFontSize(24);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Leave Summary Report', pdfWidth / 2, yPosition, { align: 'center' });
+      yPosition += 15;
+
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'normal');
+      const currentDate = new Date().toLocaleDateString();
+      pdf.text(`Generated on: ${currentDate}`, pdfWidth / 2, yPosition, { align: 'center' });
+      yPosition += 8;
+      pdf.text(`Filter Applied: ${filter}`, pdfWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Summary Statistics', 20, yPosition);
+      yPosition += 15;
+
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Total Requests: ${filteredRequests.length || 0}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Approved: ${statusCounts?.Approved || 0}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Rejected: ${statusCounts?.Rejected || 0}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Pending: ${statusCounts?.Pending || 0}`, 20, yPosition);
+      yPosition += 20;
+
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(`Leave Requests (${filter})`, 20, yPosition);
+      yPosition += 15;
+
+      pdf.setFontSize(10);
+      const headers = ['ID', 'Employee ID', 'Name', 'From', 'To', 'Status'];
+      const colWidths = [15, 25, 40, 25, 25, 20];
+      let xPosition = 20;
+
+      pdf.setFont(undefined, 'bold');
+      headers.forEach((header, index) => {
+        pdf.text(header, xPosition, yPosition);
+        xPosition += colWidths[index];
+      });
+      yPosition += 10;
+
+      pdf.setFont(undefined, 'normal');
+      filteredRequests.forEach((req) => {
+        if (yPosition > 260) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        xPosition = 20;
+        const rowData = [
+          req.id.toString(),
+          req.employeeId || 'EMP-XXX',
+          req.name,
+          req.from,
+          req.to,
+          req.status
+        ];
+        rowData.forEach((data, index) => {
+          pdf.text(data, xPosition, yPosition);
+          xPosition += colWidths[index];
+        });
+        yPosition += 8;
+      });
+
+      pdf.save(`leave_summary_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch {
+      alert('PDF export failed. Please try again.');
+    }
+  };
+
+  // Advanced PDF export with chart
+  const exportPDF = async () => {
+    setLoading(true);
+    setIsPdfMode(true);
+    try {
+      // Wait for chart to render in PDF mode (canvas)
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      const chartSection = chartContainerRef.current;
+      if (!chartSection) throw new Error('Chart section not found');
+      // Use html2canvas to capture only the chart container (canvas chart)
+      let capturedCanvas;
+      try {
+        capturedCanvas = await html2canvas(chartSection, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#fff',
+          logging: false,
+          letterRendering: true,
+        });
+      } catch {
+        setLoading(false);
+        setIsPdfMode(false);
+        return exportSimplePDF();
+      }
+      if (!capturedCanvas || capturedCanvas.width === 0 || capturedCanvas.height === 0) {
+        setLoading(false);
+        setIsPdfMode(false);
+        return exportSimplePDF();
+      }
+      const imgData = capturedCanvas.toDataURL('image/png', 0.95);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20;
+      const imgHeight = (capturedCanvas.height * imgWidth) / capturedCanvas.width;
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Leave Summary Report', pdfWidth / 2, 15, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      pdf.text(`Generated on: ${currentDate}`, pdfWidth / 2, 25, { align: 'center' });
+      pdf.text(`Filter Applied: ${filter}`, pdfWidth / 2, 30, { align: 'center' });
+      pdf.setFontSize(9);
+      pdf.text(`Total: ${filteredRequests.length || 0} | Approved: ${statusCounts?.Approved || 0} | Rejected: ${statusCounts?.Rejected || 0} | Pending: ${statusCounts?.Pending || 0}`, pdfWidth / 2, 35, { align: 'center' });
+      // Add the captured chart image
+      const startY = 45;
+      pdf.addImage(imgData, 'PNG', 10, startY, imgWidth, Math.min(imgHeight, pdfHeight - 60));
+      pdf.save(`leave_summary_with_chart_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch {
+      alert('PDF export failed. Please try again.');
+    } finally {
+      setLoading(false);
+      setIsPdfMode(false);
+    }
+  };
+
+  // ...existing code for rendering, export, etc...
 
   // Draw canvas chart when in PDF mode - Enhanced size for PDF export
   useEffect(() => {
@@ -94,302 +253,33 @@ const AdminLeaveSummary = () => {
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 4;  // Thicker stroke for PDF
         ctx.stroke();
-        
         // Draw label - Larger fonts for PDF
         const labelAngle = currentAngle + sliceAngle / 2;
         const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
         const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
-        
         ctx.fillStyle = '#000';
         ctx.font = 'bold 18px Arial';  // Larger font for names
         ctx.textAlign = 'center';
         ctx.fillText(`${item.name}`, labelX, labelY - 8);
         ctx.font = 'bold 16px Arial';  // Larger font for percentages
         ctx.fillText(`${item.value} (${((item.value / total) * 100).toFixed(0)}%)`, labelX, labelY + 12);
-        
         currentAngle += sliceAngle;
       });
-      
       // Draw legend - Larger for PDF
       let legendY = 340;
       chartData.forEach((item) => {
         // Color box - larger
         ctx.fillStyle = COLORS[item.name] || '#ccc';
         ctx.fillRect(120, legendY - 15, 25, 25);  // Bigger color boxes
-        
         // Text - larger font
         ctx.fillStyle = '#000';
         ctx.font = 'bold 20px Arial';  // Much larger legend text
         ctx.textAlign = 'left';
         ctx.fillText(`${item.name}: ${item.value}`, 160, legendY + 5);
-        
         legendY += 35;  // More spacing between legend items
       });
     }
   }, [isPdfMode, chartData]);
-
-  // Debug logging
-  console.log('Leave Summary - Total:', leaveRequests?.length, 'Approved:', statusCounts?.Approved, 'Rejected:', statusCounts?.Rejected, 'Pending:', statusCounts?.Pending);
-
-  // Export CSV
-  const exportCSV = () => {
-    const headers = ["ID", "Employee ID", "Name", "From", "To", "Status"];
-    const rows = filteredRequests.map((req) => [
-      req.id,
-      req.employeeId || "EMP-XXX",
-      req.name,
-      req.from,
-      req.to,
-      req.status,
-    ]);
-    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "leave_summary.csv");
-  };
-
-  // Simple PDF export (without chart) - Enhanced text sizes for PDF
-  const exportSimplePDF = () => {
-    try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      let yPosition = 20;
-
-      // Title - Larger for PDF
-      pdf.setFontSize(24);  // Increased from 18
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Leave Summary Report', pdfWidth / 2, yPosition, { align: 'center' });
-      yPosition += 15;
-
-      // Date and filter info - Larger for PDF
-      pdf.setFontSize(14);  // Increased from 10
-      pdf.setFont(undefined, 'normal');
-      const currentDate = new Date().toLocaleDateString();
-      pdf.text(`Generated on: ${currentDate}`, pdfWidth / 2, yPosition, { align: 'center' });
-      yPosition += 8;
-      pdf.text(`Filter Applied: ${filter}`, pdfWidth / 2, yPosition, { align: 'center' });
-      yPosition += 20;
-
-      // Summary Statistics - Larger for PDF
-      pdf.setFontSize(18);  // Increased from 14
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Summary Statistics', 20, yPosition);
-      yPosition += 15;
-
-      pdf.setFontSize(14);  // Increased from 10
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`Total Requests: ${leaveRequests?.length || 0}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Approved: ${statusCounts?.Approved || 0}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Rejected: ${statusCounts?.Rejected || 0}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Pending: ${statusCounts?.Pending || 0}`, 20, yPosition);
-      yPosition += 20;
-
-      // Table Header - Larger for PDF
-      pdf.setFontSize(18);  // Increased from 14
-      pdf.setFont(undefined, 'bold');
-      pdf.text(`Leave Requests (${filter})`, 20, yPosition);
-      yPosition += 15;
-
-      // Table data - Larger for PDF
-      pdf.setFontSize(10);  // Increased from 8
-      const headers = ['ID', 'Employee ID', 'Name', 'From', 'To', 'Status'];
-      const colWidths = [15, 25, 40, 25, 25, 20];
-      let xPosition = 20;
-
-      // Draw headers
-      pdf.setFont(undefined, 'bold');
-      headers.forEach((header, index) => {
-        pdf.text(header, xPosition, yPosition);
-        xPosition += colWidths[index];
-      });
-      yPosition += 10;  // Increased spacing
-
-      // Draw data rows
-      pdf.setFont(undefined, 'normal');
-      filteredRequests.forEach((req) => {
-        if (yPosition > 260) { // Adjusted for larger text
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        xPosition = 20;
-        const rowData = [
-          req.id.toString(),
-          req.employeeId || 'EMP-XXX',
-          req.name,
-          req.from,
-          req.to,
-          req.status
-        ];
-
-        rowData.forEach((data, index) => {
-          pdf.text(data, xPosition, yPosition);
-          xPosition += colWidths[index];
-        });
-        yPosition += 8;  // Increased row spacing
-      });
-
-      pdf.save(`leave_summary_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (error) {
-      console.error('Simple PDF export failed:', error);
-      alert('PDF export failed. Please try again.');
-    }
-  };
-
-  // Advanced PDF export with chart - Now with better error handling for color issues
-  const exportPDF = async () => {
-    setLoading(true);
-    setIsPdfMode(true);
-
-    try {
-      // Wait for the chart to render in static mode
-      console.log('Setting PDF mode and waiting for canvas render...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const element = componentRef.current;
-      if (!element) {
-        throw new Error('Component reference not found');
-      }
-      
-      // Check if canvas is ready
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        console.log('Canvas not found, falling back to simple PDF...');
-        setLoading(false);
-        setIsPdfMode(false);
-        return exportSimplePDF();
-      }
-      
-      console.log('Starting PDF generation with canvas...');
-      
-      // Try the enhanced capture with better error handling
-      let capturedCanvas;
-      try {
-        capturedCanvas = await html2canvas(element, {
-          scale: 1.2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          letterRendering: true,
-          width: element.scrollWidth,
-          height: element.scrollHeight,
-          onclone: (clonedDoc) => {
-            console.log('Cloning document for capture...');
-            
-            // Ensure canvas is visible
-            const canvases = clonedDoc.querySelectorAll('canvas');
-            canvases.forEach(canvas => {
-              canvas.style.display = 'block';
-              canvas.style.visibility = 'visible';
-              canvas.style.opacity = '1';
-            });
-            
-            // Add safe color overrides to prevent oklch issues
-            const style = clonedDoc.createElement('style');
-            style.textContent = `
-              * { 
-                color: inherit !important; 
-                background-color: inherit !important; 
-              }
-              .bg-white { background-color: #ffffff !important; }
-              .bg-gray-50 { background-color: #f9fafb !important; }
-              .bg-gray-100 { background-color: #f3f4f6 !important; }
-              .text-blue-600 { color: #2563eb !important; }
-              .text-green-600 { color: #16a34a !important; }
-              .text-red-600 { color: #dc2626 !important; }
-              .text-yellow-600 { color: #ca8a04 !important; }
-              .text-gray-600 { color: #4b5563 !important; }
-              .border { border-color: #e5e7eb !important; }
-            `;
-            clonedDoc.head.appendChild(style);
-          }
-        });
-      } catch (canvasError) {
-        console.error('html2canvas failed, falling back to simple PDF:', canvasError);
-        setLoading(false);
-        setIsPdfMode(false);
-        return exportSimplePDF();
-      }
-
-      console.log('Canvas captured successfully, dimensions:', capturedCanvas.width, 'x', capturedCanvas.height);
-      
-      if (!capturedCanvas || capturedCanvas.width === 0 || capturedCanvas.height === 0) {
-        console.log('Invalid canvas, falling back to simple PDF');
-        setLoading(false);
-        setIsPdfMode(false);
-        return exportSimplePDF();
-      }
-
-      const imgData = capturedCanvas.toDataURL('image/png', 0.9);
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Calculate image dimensions to fit PDF
-      const imgWidth = pdfWidth - 20;
-      const imgHeight = (capturedCanvas.height * imgWidth) / capturedCanvas.width;
-      
-      // Add title
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Leave Summary Report', pdfWidth / 2, 15, { align: 'center' });
-      
-      // Add current date
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      pdf.text(`Generated on: ${currentDate}`, pdfWidth / 2, 25, { align: 'center' });
-      
-      // Add filter information
-      pdf.text(`Filter Applied: ${filter}`, pdfWidth / 2, 30, { align: 'center' });
-      
-      // Add summary stats
-      pdf.setFontSize(9);
-      pdf.text(`Total: ${leaveRequests?.length || 0} | Approved: ${statusCounts?.Approved || 0} | Rejected: ${statusCounts?.Rejected || 0} | Pending: ${statusCounts?.Pending || 0}`, pdfWidth / 2, 35, { align: 'center' });
-      
-      // Add the captured image
-      const startY = 45;
-      pdf.addImage(imgData, 'PNG', 10, startY, imgWidth, Math.min(imgHeight, pdfHeight - 60));
-      
-      // Save the PDF
-      pdf.save(`leave_summary_with_chart_${new Date().toISOString().split('T')[0]}.pdf`);
-      console.log('PDF saved successfully');
-      
-    } catch (error) {
-      console.error('PDF export failed:', error);
-      
-      // Provide user-friendly error message
-      let errorMessage = 'Failed to generate PDF with chart.\n\n';
-      if (error.message.includes('oklch') || error.message.includes('color')) {
-        errorMessage += 'Color parsing issue detected. This is due to modern CSS color formats.\n';
-      } else if (error.message.includes('Canvas')) {
-        errorMessage += 'Canvas rendering issue detected.\n';
-      } else {
-        errorMessage += `Error: ${error.message}\n`;
-      }
-      errorMessage += '\nTrying "Export PDF (Simple)" instead, which should work reliably.';
-      
-      alert(errorMessage);
-      
-      // Auto-fallback to simple PDF
-      setTimeout(() => {
-        exportSimplePDF();
-      }, 1000);
-      
-    } finally {
-      setLoading(false);
-      setIsPdfMode(false);
-    }
-  };
 
   return (
     <div className="p-6">
@@ -465,89 +355,91 @@ const AdminLeaveSummary = () => {
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">Leave Status Distribution</h3>
-          {chartData.length > 0 ? (
-            isPdfMode ? (
-              // Canvas-based pie chart for PDF - Larger size for PDF export
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-                <canvas 
-                  ref={canvasRef}
-                  width={600} 
-                  height={450}
-                  style={{ border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    innerRadius={0}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                    labelLine={false}
-                  >
-                    {chartData.map((entry) => (
-                      <Cell key={entry.name} fill={COLORS[entry.name] || "#ccc"} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value, name) => [`${value} requests`, name]} />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: '20px' }}
-                    formatter={(value, entry) => `${value}: ${entry.payload.value}`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No leave requests data available</p>
+      {/* Chart */}
+      <div ref={chartContainerRef} className="bg-white rounded-xl shadow p-6 mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-center">Leave Status Distribution</h3>
+        {chartData.length > 0 ? (
+          isPdfMode ? (
+            // Canvas-based pie chart for PDF - Larger size for PDF export
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+              <canvas 
+                ref={canvasRef}
+                width={600} 
+                height={450}
+                style={{ border: '1px solid #e5e7eb', borderRadius: '8px' }}
+              />
             </div>
-          )}
-        </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  innerRadius={0}
+                  label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                  labelLine={false}
+                >
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={COLORS[entry.name] || "#ccc"} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [`${value} requests`, name]} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  formatter={(value, entry) => `${value}: ${entry.payload.value}`}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No leave requests data available</p>
+          </div>
+        )}
+      </div>
 
-        {/* Table */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Leave Requests ({filter}{selectedMonth !== 'All' ? `, ${(() => {const [year] = selectedMonth.split('-');return `${new Date(`${selectedMonth}-01`).toLocaleString('default', { month: 'long' })} ${year}`;})()}` : ''})</h3>
-          <table className="min-w-full text-sm bg-white rounded shadow">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left border">ID</th>
-                <th className="p-3 text-left border">Employee ID</th>
-                <th className="p-3 text-left border">Name</th>
-                <th className="p-3 text-left border">From</th>
-                <th className="p-3 text-left border">To</th>
-                <th className="p-3 text-left border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.map((req) => (
-                <tr key={req.id} className="border-t hover:bg-blue-50 transition-all duration-100">
-                  <td className="p-3 border">{req.id}</td>
-                  <td className="p-3 border">{req.employeeId || 'EMP-XXX'}</td>
-                  <td className="p-3 border">{req.name}</td>
-                  <td className="p-3 border">{req.from}</td>
-                  <td className="p-3 border">{req.to}</td>
-                  <td className="p-3 border">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      req.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                      req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {req.status}
-                    </span>
-                  </td>
+        {/* Table (hide during PDF export) */}
+        {!isPdfMode && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Leave Requests ({filter}{selectedMonth !== 'All' ? `, ${(() => {const [year] = selectedMonth.split('-');return `${new Date(`${selectedMonth}-01`).toLocaleString('default', { month: 'long' })} ${year}`;})()}` : ''})</h3>
+            <table className="min-w-full text-sm bg-white rounded shadow">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left border">ID</th>
+                  <th className="p-3 text-left border">Employee ID</th>
+                  <th className="p-3 text-left border">Name</th>
+                  <th className="p-3 text-left border">From</th>
+                  <th className="p-3 text-left border">To</th>
+                  <th className="p-3 text-left border">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredRequests.map((req) => (
+                  <tr key={req.id} className="border-t hover:bg-blue-50 transition-all duration-100">
+                    <td className="p-3 border">{req.id}</td>
+                    <td className="p-3 border">{req.employeeId || 'EMP-XXX'}</td>
+                    <td className="p-3 border">{req.name}</td>
+                    <td className="p-3 border">{req.from}</td>
+                    <td className="p-3 border">{req.to}</td>
+                    <td className="p-3 border">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        req.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                        req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Export buttons */}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaCalendarAlt, FaClock, FaClipboardList, FaBullhorn, FaUser, FaKey, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 
 const tabs = [
@@ -49,6 +49,7 @@ const tabs = [
 
 const SidebarEmployee = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(window.innerWidth >= 768);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -62,15 +63,20 @@ const SidebarEmployee = () => {
       }
     };
     window.addEventListener("resize", handleResize);
-    // Initial check
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleLogout = () => {
-    // Add logout logic here (clear session, redirect, etc.)
     navigate("/", { replace: true });
   };
+
+  // Active tab highlight
+  const getActiveTab = () => {
+    const current = location.pathname;
+    return tabs.find((tab) => current.startsWith(tab.path));
+  };
+  const activeTab = getActiveTab();
 
   return (
     <>
@@ -85,12 +91,12 @@ const SidebarEmployee = () => {
       </button>
       {/* Sidebar */}
       <div
-        className={`fixed md:static top-0 left-0 h-full ${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-blue-900 to-blue-700 text-white shadow-lg flex flex-col p-2 md:p-6 z-40 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        className={`fixed md:static top-0 left-0 h-full ${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-blue-900 to-blue-700 text-white shadow-xl flex flex-col p-2 md:p-6 z-40 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
         style={{ minHeight: '100vh', transition: 'all 0.3s' }}
       >
         {/* Collapse/Expand toggle button (always visible) */}
         <button
-          className="absolute top-4 right-4 text-white text-xl bg-blue-700 rounded-full p-2 shadow focus:outline-none"
+          className="absolute top-4 right-4 text-white text-xl bg-blue-700 rounded-full p-2 shadow focus:outline-none hover:bg-blue-800"
           onClick={() => setCollapsed((v) => !v)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -115,8 +121,23 @@ const SidebarEmployee = () => {
             <li
               key={tab.label}
               onClick={() => { setOpen(false); navigate(tab.path); }}
-              className={`flex items-center gap-2 px-2 py-3 rounded-lg cursor-pointer hover:bg-blue-600 transition group ${collapsed ? 'justify-center' : ''}`}
+              className={`relative flex items-center gap-2 px-2 py-3 rounded-lg cursor-pointer transition group ${collapsed ? 'justify-center' : ''} ${activeTab && activeTab.label === tab.label ? 'bg-blue-600 font-bold shadow-lg' : 'hover:bg-blue-600'}`}
               title={tab.description}
+              onMouseEnter={e => {
+                if (collapsed) {
+                  const tooltip = document.createElement('div');
+                  tooltip.className = 'absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-black text-white text-xs rounded shadow z-50';
+                  tooltip.innerText = tab.label;
+                  e.currentTarget.appendChild(tooltip);
+                  e.currentTarget._tooltip = tooltip;
+                }
+              }}
+              onMouseLeave={e => {
+                if (collapsed && e.currentTarget._tooltip) {
+                  e.currentTarget.removeChild(e.currentTarget._tooltip);
+                  e.currentTarget._tooltip = null;
+                }
+              }}
             >
               {tab.icon}
               {!collapsed && <span className="font-semibold group-hover:underline">{tab.label}</span>}

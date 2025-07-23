@@ -9,7 +9,8 @@ const EditAttendance = () => {
   const { attendanceRecords, editAttendance } = useContext(AttendanceContext);
   const { employees } = useContext(EmployeeContext);
 
-  const recordToEdit = attendanceRecords.find((rec) => rec.id === parseInt(id));
+  // Support string IDs (e.g., 'EMP101-2025-07-27') and numeric IDs
+  const recordToEdit = attendanceRecords.find((rec) => String(rec.id) === String(id));
 
   const [formData, setFormData] = useState({
     employeeId: "",

@@ -1,14 +1,17 @@
 import React, { useContext, useState } from "react";
 import { LeaveRequestContext } from "../context/LeaveRequestContext";
+import { EmployeeContext } from "../context/EmployeeContext";
 import { useLocation } from "react-router-dom";
-import { FaCheck, FaTimes } from "react-icons/fa";
+import { FaCheck, FaTimes, FaFilter } from "react-icons/fa";
 
 const LeaveManagement = () => {
   const { leaveRequests, setLeaveRequests } = useContext(LeaveRequestContext);
+  const { employees } = useContext(EmployeeContext);
   const location = useLocation(); 
   const initialStatus = location.state?.defaultStatus || "All";
   const [filterStatus, setFilterStatus] = useState(initialStatus);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDept, setFilterDept] = useState("All");
   const [snackbar, setSnackbar] = useState("");
   const [currentWeek, setCurrentWeek] = useState(0); // 0 = current week
 
@@ -54,20 +57,21 @@ const LeaveManagement = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
-  // Filter leave requests by week, status, and search
+  // Get all departments from employees
+  const allDepartments = Array.from(new Set(employees.map(emp => emp.department))).sort();
+
+  // Filter leave requests by week, status, search, and department
   const filteredRequests = leaveRequests.filter((req) => {
-    const matchesStatus =
-      filterStatus === "All" ? true : req.status === filterStatus;
-    const matchesSearch =
-      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
+    const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
+    // Get department for this employee
+    const emp = employees.find(e => e.employeeId === req.employeeId);
+    const matchesDept = filterDept === "All" ? true : emp?.department === filterDept;
     // Check if leave falls within the week
     const fromDate = req.from;
     const toDate = req.to;
-    const inWeek =
-      (fromDate >= weekDates.start && fromDate <= weekDates.end) ||
-      (toDate >= weekDates.start && toDate <= weekDates.end);
-    return matchesStatus && matchesSearch && inWeek;
+    const inWeek = (fromDate >= weekDates.start && fromDate <= weekDates.end) || (toDate >= weekDates.start && toDate <= weekDates.end);
+    return matchesStatus && matchesSearch && matchesDept && inWeek;
   });
 
   const formatWeekRange = (start, end) => {
@@ -86,8 +90,8 @@ const LeaveManagement = () => {
     <div className="p-6">
       <h2 className="text-xl font-semibold mb-4">Leave Requests</h2>
 
-      {/* Week Navigation */}
-      <div className="mb-4 flex flex-col md:flex-row gap-4 items-center">
+      {/* Filters & Week Navigation */}
+      <div className="mb-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex gap-2 items-center">
           <button
             onClick={() => setCurrentWeek(currentWeek - 1)}
@@ -113,7 +117,18 @@ const LeaveManagement = () => {
             </button>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <FaFilter className="text-blue-600" />
+          <select
+            value={filterDept}
+            onChange={e => setFilterDept(e.target.value)}
+            className="border px-4 py-2 rounded font-semibold bg-white shadow"
+          >
+            <option value="All">All Departments</option>
+            {allDepartments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
           {["All", "Pending", "Approved", "Rejected"].map((status) => (
             <button
               key={status}
@@ -125,22 +140,33 @@ const LeaveManagement = () => {
               {status}
             </button>
           ))}
+          <input
+            type="text"
+            placeholder="Search by Name or Employee ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border px-4 py-2 rounded w-full max-w-sm"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Search by Name or Employee ID"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border px-4 py-2 rounded w-full max-w-sm"
-        />
       </div>
 
-      {/* Table */}
+      {/* Table & Summary */}
       <div className="overflow-x-auto">
+        <div className="mb-4 flex flex-wrap gap-4 items-center justify-between">
+          <div className="bg-gray-50 rounded-xl p-3 shadow flex gap-8 items-center">
+            <span className="font-semibold text-blue-700">Showing:</span>
+            <span className="text-sm text-gray-700">{filteredRequests.length} requests</span>
+            <span className="text-sm text-green-700">Approved: {filteredRequests.filter(r => r.status === "Approved").length}</span>
+            <span className="text-sm text-yellow-700">Pending: {filteredRequests.filter(r => r.status === "Pending").length}</span>
+            <span className="text-sm text-red-700">Rejected: {filteredRequests.filter(r => r.status === "Rejected").length}</span>
+            {filterDept !== "All" && (
+              <span className="text-sm text-purple-700">Department: {filterDept}</span>
+            )}
+          </div>
+        </div>
         <table className="min-w-full bg-white rounded-xl shadow">
           <thead>
             <tr className="bg-gray-100 text-left">
-              <th className="p-4">ID</th>
               <th className="p-4">Employee ID</th>
               <th className="p-4">Name</th>
               <th className="p-4">From</th>
@@ -152,90 +178,66 @@ const LeaveManagement = () => {
           </thead>
           <tbody>
             {(() => {
-              // Track highlighted sandwich leave to avoid duplicate rows
-              let sandwichLeaveHighlighted = false;
-              return filteredRequests
-                .filter((req, idx, arr) => {
-                  // Remove duplicate sandwich leave rows for EMP101
-                  if (req.employeeId === "EMP101") {
-                    // Sandwich leave detection
-                    const fromDate = new Date(req.from);
-                    const toDate = new Date(req.to);
-                    if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
-                      const day1 = fromDate.getDay();
-                      const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
-                      const day3 = toDate.getDay();
-                      if (day1 === 6 && day2 === 0 && day3 === 1) {
-                        if (sandwichLeaveHighlighted) return false;
-                        sandwichLeaveHighlighted = true;
-                      }
+              let sandwichLeaveRowId = null;
+              filteredRequests.forEach((req) => {
+                if (req.employeeId === "EMP101") {
+                  const fromDate = new Date(req.from);
+                  const toDate = new Date(req.to);
+                  if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
+                    const day1 = fromDate.getDay();
+                    const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
+                    const day3 = toDate.getDay();
+                    if (day1 === 6 && day2 === 0 && day3 === 1) {
+                      if (!sandwichLeaveRowId) sandwichLeaveRowId = req.id;
                     }
                   }
-                  return true;
-                })
-                .map((req, idx) => {
-                  // Sandwich leave detection: leave on Saturday and Monday with Sunday in between
-                  const isSandwichLeave = (() => {
-                    const fromDate = new Date(req.from);
-                    const toDate = new Date(req.to);
-                    if (req.employeeId === "EMP101" && !sandwichLeaveHighlighted) {
-                      // Only highlight the first sandwich leave row
-                      if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
-                        const day1 = fromDate.getDay();
-                        const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
-                        const day3 = toDate.getDay();
-                        if (day1 === 6 && day2 === 0 && day3 === 1) {
-                          sandwichLeaveHighlighted = true;
-                          return true;
-                        }
-                      }
-                    }
-                    return false;
-                  })();
-                  return (
-                    <tr
-                      key={req.id}
-                      className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
-                    >
-                      <td className="p-4 font-mono font-semibold">{req.id}</td>
-                      <td className="p-4">{req.employeeId}</td>
-                      <td className="p-4">{req.name}</td>
-                      <td className="p-4">{req.from}</td>
-                      <td className="p-4">{req.to}</td>
-                      <td className="p-4 flex items-center gap-2">
-                        {req.reason}
-                        {isSandwichLeave && (
-                          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold ml-2" title="Sandwich Leave">
-                            Sandwich Leave
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
-                      <td className="p-4 flex gap-2">
-                        <button
-                          onClick={() => updateStatus(req.id, "Approved")}
-                          disabled={req.status !== "Pending"}
-                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
-                          title="Approve"
-                        >
-                          <FaCheck /> Approve
-                        </button>
-                        <button
-                          onClick={() => updateStatus(req.id, "Rejected")}
-                          disabled={req.status !== "Pending"}
-                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
-                          title="Reject"
-                        >
-                          <FaTimes /> Reject
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                });
+                }
+              });
+              return filteredRequests.map((req, idx) => {
+                const isSandwichLeave = req.id === sandwichLeaveRowId;
+                return (
+                  <tr
+                    key={req.id}
+                    className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
+                  >
+                    <td className="p-4">{req.employeeId}</td>
+                    <td className="p-4">{req.name}</td>
+                    <td className="p-4">{req.from}</td>
+                    <td className="p-4">{req.to}</td>
+                    <td className="p-4 flex items-center gap-2">
+                      {req.reason}
+                      {isSandwichLeave && (
+                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold ml-2" title="Sandwich Leave">
+                          Sandwich Leave
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
+                    <td className="p-4 flex gap-2">
+                      <button
+                        onClick={() => updateStatus(req.id, "Approved")}
+                        disabled={req.status !== "Pending"}
+                        className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
+                        title="Approve"
+                      >
+                        <FaCheck /> Approve
+                      </button>
+                      <button
+                        onClick={() => updateStatus(req.id, "Rejected")}
+                        disabled={req.status !== "Pending"}
+                        className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
+                        title="Reject"
+                      >
+                        <FaTimes /> Reject
+                      </button>
+                    </td>
+                  </tr>
+                );
+              });
             })()}
             {filteredRequests.length === 0 && (
               <tr>
-                <td colSpan="8" className="p-4 text-center text-gray-500">
+                <td colSpan="7" className="p-4 text-center text-gray-500">
                   No leave requests found.
                 </td>
               </tr>

@@ -2,12 +2,11 @@ import React, { useState, useContext } from "react";
 import { NoticeContext } from "../context/NoticeContext";
 
 const AdminNotices = () => {
-  const {
-    notices,
-    addNotice,
-    deleteNotice,
-    editNotice,
-  } = useContext(NoticeContext);
+  const noticeContext = useContext(NoticeContext);
+  const notices = noticeContext && Array.isArray(noticeContext.notices) ? noticeContext.notices : [];
+  const addNotice = noticeContext && noticeContext.addNotice;
+  const deleteNotice = noticeContext && noticeContext.deleteNotice;
+  const editNotice = noticeContext && noticeContext.editNotice;
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [posting, setPosting] = useState(false);

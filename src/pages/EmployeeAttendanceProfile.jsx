@@ -18,7 +18,9 @@ const EmployeeAttendanceProfile = () => {
   // Helper: get day of week (0=Sun, 6=Sat)
   const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
-  const { employeeId } = useParams();
+  // Always treat employeeId as string for consistency
+  const { employeeId: routeEmployeeId } = useParams();
+  const employeeId = String(routeEmployeeId);
   const navigate = useNavigate();
   const { attendanceRecords } = useContext(AttendanceContext);
   const { leaveRequests } = useContext(LeaveRequestContext) || { leaveRequests: [] };
@@ -29,24 +31,22 @@ const EmployeeAttendanceProfile = () => {
     return today.toISOString().slice(0, 7); // 'YYYY-MM'
   });
 
-  // Get all months available for this employee
+  // Get all months available for this employee (from attendanceRecords only)
   const availableMonths = Array.from(
     new Set(
       attendanceRecords
-        .filter((rec) => String(rec.employeeId) === String(employeeId))
+        .filter((rec) => String(rec.employeeId) === employeeId)
         .map((rec) => rec.date.slice(0, 7))
     )
   ).sort((a, b) => b.localeCompare(a));
 
   // Filter records for selected month, sorted by latest first
   const records = attendanceRecords
-    .filter((rec) => String(rec.employeeId) === String(employeeId) && rec.date.startsWith(selectedMonth))
+    .filter((rec) => String(rec.employeeId) === employeeId && rec.date.startsWith(selectedMonth))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   // Example public holidays (should come from context or API in real app)
   const publicHolidays = [
-    // Format: 'YYYY-MM-DD'
-    // Add actual holidays for your organization here
     `${selectedMonth}-13`, // Add Sunday for sandwich leave test
     `${selectedMonth}-15`, // Example: 15th of month
     `${selectedMonth}-26`, // Example: 26th of month
@@ -56,13 +56,7 @@ const EmployeeAttendanceProfile = () => {
   const [showSandwichModal, setShowSandwichModal] = React.useState(false);
   const [sandwichLeaveDates, setSandwichLeaveDates] = React.useState([]);
   // Find all leave days for this employee in the selected month (including weekends)
-  const leaveDates = [];
-  attendanceRecords.forEach(r => {
-    if (String(r.employeeId) === String(employeeId) && r.status === 'Leave' && r.date.startsWith(selectedMonth)) {
-      leaveDates.push(r.date);
-    }
-  });
-  leaveDates.sort();
+  const leaveDates = records.filter(r => r.status === 'Leave').map(r => r.date).sort();
   let sandwichLeaveCount = 0;
   const sandwichDatesArr = [];
   // Sandwich leave: leave on Saturday, Sunday (public holiday), and Monday
@@ -97,7 +91,7 @@ const EmployeeAttendanceProfile = () => {
     console.log("Sandwich Leave Count:", sandwichLeaveCount);
   }
 
-  // Get employee name
+  // Get employee name (from attendance record only)
   const employeeName = records.length > 0 ? records[0].name : employeeId;
 
   // Attendance summary
@@ -110,8 +104,8 @@ const EmployeeAttendanceProfile = () => {
   const totalWorkedHours = records.reduce((sum, r) => sum + (r.workedHours || 0), 0);
   const totalIdleTime = records.reduce((sum, r) => sum + (r.idleTime || 0), 0);
 
-  // Leave summary (if leaveRequests available)
-  const employeeLeaves = leaveRequests.filter((l) => l.employeeId === employeeId && l.date.startsWith(selectedMonth));
+  // Leave summary (from LeaveRequestProvider only)
+  const employeeLeaves = leaveRequests.filter((l) => String(l.employeeId) === employeeId && l.date.startsWith(selectedMonth));
   const leavesApplied = employeeLeaves.length;
   const leavesApproved = employeeLeaves.filter((l) => l.status === "Approved").length;
   const leavesRejected = employeeLeaves.filter((l) => l.status === "Rejected").length;

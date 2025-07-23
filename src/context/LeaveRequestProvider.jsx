@@ -105,9 +105,104 @@ export const LeaveRequestProvider = ({ children }) => {
       status: "Approved",
     },
   ]);
+  
+  // Helper: get month string from date
+  const getMonthString = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  // Monthly leave summary for a particular employee
+  const getMonthlyLeaveSummaryForEmployee = (employeeId, monthStr) => {
+    const filtered = leaveRequests.filter(
+      (req) => req.employeeId === employeeId && getMonthString(req.from) === monthStr
+    );
+    const statusCounts = filtered.reduce(
+      (acc, curr) => {
+        const status = curr?.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      { Approved: 0, Rejected: 0, Pending: 0 }
+    );
+    return {
+      total: filtered.length,
+      statusCounts,
+      requests: filtered,
+    };
+  };
+
+  // Monthly leave summary for all employees
+  const getMonthlyLeaveSummaryForAll = (monthStr) => {
+    const filtered = leaveRequests.filter(
+      (req) => getMonthString(req.from) === monthStr
+    );
+    // Group by employeeId
+    const summaryByEmployee = {};
+    filtered.forEach((req) => {
+      if (!summaryByEmployee[req.employeeId]) {
+        summaryByEmployee[req.employeeId] = [];
+      }
+      summaryByEmployee[req.employeeId].push(req);
+    });
+    // Status counts for all
+    const statusCounts = filtered.reduce(
+      (acc, curr) => {
+        const status = curr?.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      { Approved: 0, Rejected: 0, Pending: 0 }
+    );
+    return {
+      total: filtered.length,
+      statusCounts,
+      requests: filtered,
+      summaryByEmployee,
+    };
+  };
+
+  // Monthly leave summary for a selected department
+  // Assumes each request has a 'department' field (add if needed)
+  const getMonthlyLeaveSummaryForDepartment = (department, monthStr) => {
+    const filtered = leaveRequests.filter(
+      (req) => req.department === department && getMonthString(req.from) === monthStr
+    );
+    const statusCounts = filtered.reduce(
+      (acc, curr) => {
+        const status = curr?.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      { Approved: 0, Rejected: 0, Pending: 0 }
+    );
+    return {
+      total: filtered.length,
+      statusCounts,
+      requests: filtered,
+    };
+  };
+
+  // Get all months present in leaveRequests
+  const allMonths = Array.from(
+    new Set(
+      (leaveRequests || [])
+        .map((req) => getMonthString(req.from))
+        .filter((m) => m)
+    )
+  );
 
   return (
-    <LeaveRequestContext.Provider value={{ leaveRequests, setLeaveRequests }}>
+    <LeaveRequestContext.Provider value={{
+      leaveRequests,
+      setLeaveRequests,
+      getMonthString,
+      getMonthlyLeaveSummaryForEmployee,
+      getMonthlyLeaveSummaryForAll,
+      getMonthlyLeaveSummaryForDepartment,
+      allMonths,
+    }}>
       {children}
     </LeaveRequestContext.Provider>
   );

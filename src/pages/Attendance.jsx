@@ -179,7 +179,6 @@ const Attendance = () => {
         <table className="min-w-full bg-white rounded-xl shadow">
           <thead>
             <tr className="bg-gray-100 text-left">
-              <th className="p-4">ID</th>
               <th className="p-4">Employee ID</th>
               <th className="p-4">Name</th>
               <th className="p-4">Date</th>
@@ -194,7 +193,6 @@ const Attendance = () => {
                   key={record.id}
                   className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
                 >
-                  <td className="p-4 font-mono font-semibold">{record.id}</td>
                   <td className="p-4">{record.employeeId}</td>
                   <td className="p-4">{record.name}</td>
                   <td className="p-4">{record.date}</td>
@@ -226,7 +224,7 @@ const Attendance = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="p-4 text-center text-gray-500">
+                <td colSpan="5" className="p-4 text-center text-gray-500">
                   No matching attendance records found.
                 </td>
               </tr>

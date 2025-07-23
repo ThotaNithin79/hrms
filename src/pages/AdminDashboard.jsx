@@ -41,16 +41,20 @@ const AdminDashboard = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
+  // Filter attendance records by week and department, only for valid employees
   const filteredAttendance = useMemo(() => {
     return attendanceRecords.filter((record) => {
+      // Find employee for this record
       const employee = employees.find(
         (emp) => String(emp.employeeId) === String(record.employeeId)
       );
+      if (!employee) return false; // Only show records for valid employees
 
+      // Week filter
       const dateMatch = record.date >= weekDates.start && record.date <= weekDates.end;
 
-      const deptMatch =
-        selectedDept === "All" || (employee && employee.department === selectedDept);
+      // Department filter
+      const deptMatch = selectedDept === "All" || employee.department === selectedDept;
 
       return dateMatch && deptMatch;
     });
