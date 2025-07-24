@@ -96,29 +96,18 @@ const EmployeeDashboard = () => {
           <div className="text-xl font-bold text-gray-800 mb-2">Latest Notice</div>
           <div className="mt-2 w-full">
             {Array.isArray(notices) && notices.length > 0 ? (
-              (() => {
-                // Find the latest notice by date (ISO) or id fallback
-                let latest = notices[0];
-                for (let n of notices) {
-                  if (n.date && latest.date) {
-                    if (new Date(n.date) > new Date(latest.date)) latest = n;
-                  } else if (n.id > latest.id) {
-                    latest = n;
-                  }
-                }
-                return latest && latest.title ? (
-                  <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg shadow mb-2">
-                    <div className="font-semibold text-orange-700 text-lg">{latest.title}</div>
-                    <div className="text-gray-700 mt-1">{latest.message}</div>
-                    <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                      <span>By {latest.author || 'Admin'}</span>
-                      <span>{latest.date || ''}</span>
-                    </div>
+              notices[0] && notices[0].title ? (
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg shadow mb-2">
+                  <div className="font-semibold text-orange-700 text-lg">{notices[0].title}</div>
+                  <div className="text-gray-700 mt-1">{notices[0].message}</div>
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                    <span>By {notices[0].author || 'Admin'}</span>
+                    <span>{notices[0].date || ''}</span>
                   </div>
-                ) : (
-                  <div className="text-gray-400 text-sm">No notices yet.</div>
-                );
-              })()
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">No notices yet.</div>
+              )
             ) : (
               <div className="text-gray-400 text-sm text-center py-4">No notices yet.<br/>Admin has not posted any notices.</div>
             )}
