@@ -13,7 +13,8 @@ const EmployeeDashboard = () => {
   const { leaveRequests } = useContext(LeaveRequestContext);
   // Robust context check for notices
   const noticeContext = useContext(NoticeContext);
-  const notices = (noticeContext && Array.isArray(noticeContext.notices)) ? noticeContext.notices : [];
+  // If context is undefined, fallback to empty array
+  const notices = noticeContext?.notices ?? [];
 
   // Attendance summary
   const presentDays = attendanceRecords.filter(r => r.employeeId === "EMP101" && r.status === "Present").length;
