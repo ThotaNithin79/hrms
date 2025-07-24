@@ -122,7 +122,7 @@ const AdminNotices = () => {
                       placeholder="Edit message"
                       rows={3}
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-4 justify-center">
                       <button
                         className="px-4 py-1 rounded bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
                         onClick={() => handleEditSave(notice.id)}
@@ -147,9 +147,9 @@ const AdminNotices = () => {
                     </div>
                     <div className="text-gray-700 mb-2">{notice.message}</div>
                     <div className="text-xs text-gray-400">Posted by {notice.author}</div>
-                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute left-0 bottom-0 w-full flex gap-2 justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        className="px-2 py-1 rounded bg-yellow-400 text-white text-xs font-semibold shadow hover:bg-yellow-500 transition"
+                        className="px-3 py-1 rounded bg-yellow-400 text-white text-xs font-semibold shadow hover:bg-yellow-500 transition"
                         onClick={() => startEdit(notice)}
                         title="Edit"
                         type="button"
@@ -157,7 +157,7 @@ const AdminNotices = () => {
                         Edit
                       </button>
                       <button
-                        className="px-2 py-1 rounded bg-red-500 text-white text-xs font-semibold shadow hover:bg-red-600 transition"
+                        className="px-3 py-1 rounded bg-red-500 text-white text-xs font-semibold shadow hover:bg-red-600 transition"
                         onClick={() => handleDelete(notice.id)}
                         title="Delete"
                         type="button"
