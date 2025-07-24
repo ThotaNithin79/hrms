@@ -70,7 +70,9 @@ function App() {
       <Route
         element={
           <ProtectedRoute role="employee">
-            <LayoutEmployee />
+            <NoticeProvider>
+              <LayoutEmployee />
+            </NoticeProvider>
           </ProtectedRoute>
         }
       >
