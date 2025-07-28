@@ -7,7 +7,7 @@ import { FaUser, FaEdit, FaTrash } from "react-icons/fa";
 
 const EmployeeManagement = () => {
   const navigate = useNavigate();
-  const { employees, deactivateEmployee, activateEmployee } = useContext(EmployeeContext);
+  const { employees, deactivateEmployee } = useContext(EmployeeContext);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("All");
   const [snackbar, setSnackbar] = useState("");
@@ -165,16 +165,11 @@ const EmployeeManagement = () => {
                             <FaUser /> Profile
                           </button>
                           <button
-                            onClick={() => {
-                              if (window.confirm(`Are you sure you want to activate ${emp.name}?`)) {
-                                activateEmployee(emp.employeeId);
-                                showSnackbar(`${emp.name} activated successfully.`);
-                              }
-                            }}
+                            onClick={() => navigate(`/employees/reactivate/${emp.employeeId}`)}
                             className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 font-semibold shadow"
-                            title="Activate Employee"
+                            title="Reactivate Employee"
                           >
-                            <FaEdit /> Activate
+                            <FaEdit /> Reactivate
                           </button>
                         </div>
                       </td>

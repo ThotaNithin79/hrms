@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import AddEmployee from "./pages/AddEmployee";
+import ReactivateEmployee from "./pages/ReactivateEmployee";
 import EditEmployee from "./pages/EditEmployee";
 import Attendance from "./pages/Attendance";
 import AddAttendance from "./pages/AddAttendance";
@@ -49,6 +50,7 @@ function App() {
         <Route path="/admin/profile" element={<AdminProfile />} />
         <Route path="/employees" element={<EmployeeManagement />} />
         <Route path="/employees/add" element={<AddEmployee />} />
+        <Route path="/employees/reactivate/:id" element={<ReactivateEmployee />} />
         <Route path="/employees/edit/:id" element={<EditEmployee />} />
         <Route path="/employee/:id/profile" element={<EmployeeProfile />} />
         <Route path="/attendance" element={<Attendance />} />
