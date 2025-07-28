@@ -79,7 +79,7 @@ const EditAttendance = () => {
               required
             >
               <option value="">Select Employee</option>
-              {employees.map((emp) => (
+              {employees.filter((emp) => emp.isActive !== false).map((emp) => (
                 <option key={emp.employeeId} value={emp.employeeId}>
                   {emp.name} ({emp.employeeId})
                 </option>

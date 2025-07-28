@@ -57,21 +57,22 @@ const LeaveManagement = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
-  // Get all departments from employees
-  const allDepartments = Array.from(new Set(employees.map(emp => emp.department))).sort();
+  // Get all departments from active employees only
+  const allDepartments = Array.from(new Set(employees.filter(emp => emp.isActive !== false).map(emp => emp.department))).sort();
 
-  // Filter leave requests by week, status, search, and department
+  // Filter leave requests by week, status, search, and department (only active employees)
   const filteredRequests = leaveRequests.filter((req) => {
     const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
     const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-    // Get department for this employee
+    // Get department for this employee and check if employee is active
     const emp = employees.find(e => e.employeeId === req.employeeId);
+    const isActiveEmployee = emp?.isActive !== false;
     const matchesDept = filterDept === "All" ? true : emp?.department === filterDept;
     // Check if leave falls within the week
     const fromDate = req.from;
     const toDate = req.to;
     const inWeek = (fromDate >= weekDates.start && fromDate <= weekDates.end) || (toDate >= weekDates.start && toDate <= weekDates.end);
-    return matchesStatus && matchesSearch && matchesDept && inWeek;
+    return matchesStatus && matchesSearch && matchesDept && inWeek && isActiveEmployee;
   });
 
   const formatWeekRange = (start, end) => {

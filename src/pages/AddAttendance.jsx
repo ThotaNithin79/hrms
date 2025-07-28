@@ -55,7 +55,7 @@ const AddAttendance = () => {
           required
         >
           <option value="">Select Employee</option>
-          {employees.map((emp) => (
+          {employees.filter((emp) => emp.isActive !== false).map((emp) => (
             <option key={emp.id} value={emp.id}>
               {emp.name} ({emp.id})
             </option>

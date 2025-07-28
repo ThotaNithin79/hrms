@@ -17,9 +17,14 @@ const AdminDashboard = () => {
 
   const navigate = useNavigate();
 
-  const departmentSet = useMemo(() => {
-    return new Set(employees.map((emp) => emp.department));
+  // Filter only active employees
+  const activeEmployees = useMemo(() => {
+    return employees.filter((emp) => emp.isActive !== false);
   }, [employees]);
+
+  const departmentSet = useMemo(() => {
+    return new Set(activeEmployees.map((emp) => emp.department));
+  }, [activeEmployees]);
 
   // Calculate current week dates
   const getCurrentWeekDates = (weekOffset = 0) => {
@@ -41,14 +46,14 @@ const AdminDashboard = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
-  // Filter attendance records by week and department, only for valid employees
+  // Filter attendance records by week and department, only for active employees
   const filteredAttendance = useMemo(() => {
     return attendanceRecords.filter((record) => {
       // Find employee for this record
-      const employee = employees.find(
+      const employee = activeEmployees.find(
         (emp) => String(emp.employeeId) === String(record.employeeId)
       );
-      if (!employee) return false; // Only show records for valid employees
+      if (!employee) return false; // Only show records for active employees
 
       // Week filter
       const dateMatch = record.date >= weekDates.start && record.date <= weekDates.end;
@@ -58,7 +63,7 @@ const AdminDashboard = () => {
 
       return dateMatch && deptMatch;
     });
-  }, [attendanceRecords, employees, selectedDept, weekDates]);
+  }, [attendanceRecords, activeEmployees, selectedDept, weekDates]);
 
   const formatWeekRange = (start, end) => {
     const startDate = new Date(start);
@@ -105,7 +110,7 @@ const AdminDashboard = () => {
         >
           <FaUsers className="text-3xl text-blue-600 mb-1" />
           <h3 className="text-gray-600 font-semibold">Total Employees</h3>
-          <p className="text-3xl font-extrabold text-gray-800">{employees.length}</p>
+          <p className="text-3xl font-extrabold text-gray-800">{activeEmployees.length}</p>
         </div>
 
         <div
@@ -201,7 +206,7 @@ const AdminDashboard = () => {
 
         <div className="col-span-1 bg-white p-6 rounded-2xl shadow-lg">
           <h3 className="text-blue-700 font-bold mb-2">Department Stats</h3>
-          <DepartmentPieChart data={employees} />
+          <DepartmentPieChart data={activeEmployees} />
         </div>
       </div>
     </div>

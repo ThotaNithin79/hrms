@@ -19,8 +19,10 @@ const EmployeesOnLeaveToday = () => {
         id: record.employeeId,
         name: emp?.name || "Unknown",
         department: emp?.department || "N/A",
+        isActive: emp?.isActive !== false,
       };
-    });
+    })
+    .filter((emp) => emp.isActive); // Only include active employees
 
   // Department color mapping for badges
   const departmentColors = {
