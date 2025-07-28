@@ -94,9 +94,13 @@ const AdminDashboard = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const onLeaveToday = attendanceRecords.filter(
-    (record) => record.date === today && record.status === "Leave"
-  ).length;
+  // Filter attendance records to only include active employees
+  const onLeaveToday = attendanceRecords.filter((record) => {
+    const employee = activeEmployees.find(
+      (emp) => String(emp.employeeId) === String(record.employeeId)
+    );
+    return employee && record.date === today && record.status === "Leave";
+  }).length;
 
   const pendingCount = leaveRequests.filter((req) => req.status === "Pending").length;
 

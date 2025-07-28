@@ -1,6 +1,7 @@
 
 import { useState, useContext } from "react";
 import { AttendanceContext } from "../context/AttendanceContext";
+import { EmployeeContext } from "../context/EmployeeContext";
 import { useNavigate } from "react-router-dom";
 import { saveAs } from "file-saver";
 import { FaEdit, FaTrash } from "react-icons/fa";
@@ -8,6 +9,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 
 const Attendance = () => {
   const { attendanceRecords, deleteAttendance } = useContext(AttendanceContext);
+  const { employees } = useContext(EmployeeContext);
   const [sortOrder, setSortOrder] = useState("desc");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -43,18 +45,38 @@ const Attendance = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
-  const filteredAndSortedRecords = [...attendanceRecords]
+  // Separate active and inactive employee records
+  const separatedRecords = [...attendanceRecords]
     .filter((record) => {
       const matchesName = record.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "All" || record.status === statusFilter;
       const matchesWeek = record.date >= weekDates.start && record.date <= weekDates.end;
       return matchesName && matchesStatus && matchesWeek;
     })
-    .sort((a, b) => {
-      return sortOrder === "asc"
-        ? new Date(a.date) - new Date(b.date)
-        : new Date(b.date) - new Date(a.date);
-    });
+    .reduce((acc, record) => {
+      const employee = employees.find(emp => String(emp.employeeId) === String(record.employeeId));
+      const isActive = employee?.isActive !== false;
+      
+      if (isActive) {
+        acc.active.push(record);
+      } else {
+        acc.inactive.push(record);
+      }
+      return acc;
+    }, { active: [], inactive: [] });
+
+  // Sort both arrays
+  const sortRecords = (records) => records.sort((a, b) => {
+    return sortOrder === "asc"
+      ? new Date(a.date) - new Date(b.date)
+      : new Date(b.date) - new Date(a.date);
+  });
+
+  const activeRecords = sortRecords(separatedRecords.active);
+  const inactiveRecords = sortRecords(separatedRecords.inactive);
+  
+  // Combine for display: active first, then inactive
+  const filteredAndSortedRecords = [...activeRecords, ...inactiveRecords];
 
   const formatWeekRange = (start, end) => {
     const startDate = new Date(start);
@@ -188,40 +210,56 @@ const Attendance = () => {
           </thead>
           <tbody>
             {filteredAndSortedRecords.length > 0 ? (
-              filteredAndSortedRecords.map((record, idx) => (
-                <tr
-                  key={record.id}
-                  className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
-                >
-                  <td className="p-4">{record.employeeId}</td>
-                  <td className="p-4">{record.name}</td>
-                  <td className="p-4">{record.date}</td>
-                  <td className="p-4">{statusBadge(record.status)}</td>
-                  <td className="p-4 flex gap-2">
-                    <button
-                      onClick={() => navigate(`/attendance/edit/${record.id}`)}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center gap-1"
-                      title="Edit"
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(record.id)}
-                      className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
-                      title="Delete"
-                    >
-                      <FaTrash /> Delete
-                    </button>
-                    <button
-                      onClick={() => navigate(`/attendance/profile/${record.employeeId}`)}
-                      className="bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1"
-                      title="View Profile"
-                    >
-                      Profile
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filteredAndSortedRecords.map((record, idx) => {
+                const employee = employees.find(emp => String(emp.employeeId) === String(record.employeeId));
+                const isInactive = employee?.isActive === false;
+                
+                return (
+                  <tr
+                    key={record.id}
+                    className={`border-t transition duration-150 ${
+                      isInactive
+                        ? "bg-gray-300 text-gray-600 opacity-75"
+                        : idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    } hover:bg-blue-50`}
+                  >
+                    <td className="p-4">{record.employeeId}</td>
+                    <td className="p-4">
+                      {record.name}
+                      {isInactive && (
+                        <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">{record.date}</td>
+                    <td className="p-4">{statusBadge(record.status)}</td>
+                    <td className="p-4 flex gap-2">
+                      <button
+                        onClick={() => navigate(`/attendance/edit/${record.id}`)}
+                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center gap-1"
+                        title="Edit"
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
+                        title="Delete"
+                      >
+                        <FaTrash /> Delete
+                      </button>
+                      <button
+                        onClick={() => navigate(`/attendance/profile/${record.employeeId}`)}
+                        className="bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1"
+                        title="View Profile"
+                      >
+                        Profile
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan="5" className="p-4 text-center text-gray-500">
