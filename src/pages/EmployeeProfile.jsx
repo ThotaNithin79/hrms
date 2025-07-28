@@ -37,6 +37,8 @@ const EmployeeProfile = () => {
     company: <span className="mr-2">🏢</span>,
     role: <span className="mr-2">🧑‍💼</span>,
     years: <span className="mr-2">⏳</span>,
+    joiningDate: <span className="mr-2">📅</span>,
+    lastWorkingDate: <span className="mr-2">📆</span>,
   };
 
   // Tab content
@@ -79,7 +81,13 @@ const EmployeeProfile = () => {
             <div key={idx} className="border rounded-xl p-4 bg-gradient-to-r from-blue-50 to-blue-100 shadow">
               <div className="flex items-center mb-1">{icons.company}<span className="font-semibold">Company:</span> {exp.company}</div>
               <div className="flex items-center mb-1">{icons.role}<span className="font-semibold">Role:</span> {exp.role}</div>
-              <div className="flex items-center">{icons.years}<span className="font-semibold">Years:</span> {exp.years}</div>
+              <div className="flex items-center mb-1">{icons.years}<span className="font-semibold">Years:</span> {exp.years}</div>
+              {exp.joiningDate && (
+                <div className="flex items-center mb-1">{icons.joiningDate}<span className="font-semibold">Joining Date:</span> {exp.joiningDate}</div>
+              )}
+              {exp.lastWorkingDate && (
+                <div className="flex items-center">{icons.lastWorkingDate}<span className="font-semibold">Last Working Date:</span> {exp.lastWorkingDate}</div>
+              )}
             </div>
           ))}
         </div>

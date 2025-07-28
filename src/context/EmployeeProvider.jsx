@@ -29,12 +29,16 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "ABC Corp",
           role: "HR Executive",
-          years: 2
+          years: 2,
+          joiningDate: "2019-01-15",
+          lastWorkingDate: "2021-01-14"
         },
         {
           company: "XYZ Ltd",
           role: "HR Manager",
-          years: 3
+          years: 3,
+          joiningDate: "2021-02-01",
+          lastWorkingDate: "2024-01-31"
         }
       ]
     },
@@ -64,7 +68,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "FinTech Solutions",
           role: "Accountant",
-          years: 4
+          years: 4,
+          joiningDate: "2018-03-01",
+          lastWorkingDate: "2022-02-28"
         }
       ]
     },
@@ -94,7 +100,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "TechSoft",
           role: "Software Engineer",
-          years: 5
+          years: 5,
+          joiningDate: "2018-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -124,7 +132,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "MarketMinds",
           role: "Marketing Lead",
-          years: 6
+          years: 6,
+          joiningDate: "2017-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -154,12 +164,16 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "SalesPro",
           role: "Sales Executive",
-          years: 3
+          years: 3,
+          joiningDate: "2017-01-01",
+          lastWorkingDate: "2019-12-31"
         },
         {
           company: "RetailMart",
           role: "Sales Manager",
-          years: 2
+          years: 2,
+          joiningDate: "2020-01-01",
+          lastWorkingDate: "2021-12-31"
         }
       ]
     },
@@ -189,7 +203,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "HR Solutions",
           role: "HR Assistant",
-          years: 2
+          years: 2,
+          joiningDate: "2021-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -219,7 +235,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "CodeWorks",
           role: "Developer",
-          years: 4
+          years: 4,
+          joiningDate: "2019-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -249,7 +267,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "FinanceHub",
           role: "Finance Analyst",
-          years: 5
+          years: 5,
+          joiningDate: "2017-01-01",
+          lastWorkingDate: "2021-12-31"
         }
       ]
     },
@@ -279,7 +299,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "AdminPlus",
           role: "Admin Officer",
-          years: 6
+          years: 6,
+          joiningDate: "2017-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -309,7 +331,9 @@ export const EmployeeProvider = ({ children }) => {
         {
           company: "OpsGlobal",
           role: "Operations Executive",
-          years: 2
+          years: 2,
+          joiningDate: "2021-01-01",
+          lastWorkingDate: "2022-12-31"
         }
       ]
     },
@@ -356,10 +380,50 @@ const activateEmployee = (employeeId) => {
   );
 };
 
+const reactivateEmployeeWithExperience = (employeeId, newEmployeeData) => {
+  setEmployees((prev) =>
+    prev.map((emp) => {
+      if (emp.employeeId === employeeId) {
+        // Create new experience entry from current employee data
+        const currentExperience = {
+          company: "Current Company", // You can modify this as needed
+          role: emp.department,
+          years: new Date().getFullYear() - new Date(emp.joiningDate).getFullYear(),
+          joiningDate: emp.joiningDate,
+          lastWorkingDate: new Date().toISOString().split('T')[0] // Today's date
+        };
+
+        // Add current experience to existing experience details
+        const updatedExperienceDetails = [
+          ...(emp.experienceDetails || []),
+          currentExperience
+        ];
+
+        // Return updated employee with new data and updated experience
+        return {
+          ...emp,
+          ...newEmployeeData,
+          experienceDetails: updatedExperienceDetails,
+          isActive: true,
+          joiningDate: new Date().toISOString().split('T')[0] // New joining date
+        };
+      }
+      return emp;
+    })
+  );
+};
+
 
   return (
     <EmployeeContext.Provider
-      value={{ employees, addEmployee, editEmployee, deactivateEmployee, activateEmployee }}
+      value={{
+        employees,
+        addEmployee,
+        editEmployee,
+        deactivateEmployee,
+        activateEmployee,
+        reactivateEmployeeWithExperience
+      }}
     >
       {children}
     </EmployeeContext.Provider>
