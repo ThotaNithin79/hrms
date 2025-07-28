@@ -12,6 +12,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Hyderabad",
       joiningDate: "2023-05-10",
       emergency: "Jane Doe - 9999999999",
+      isActive: true,
       bankDetails: {
         accountNumber: "1234567890",
         bankName: "State Bank of India",
@@ -46,6 +47,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Bangalore",
       joiningDate: "2022-11-15",
       emergency: "Robert Johnson - 8888888888",
+      isActive: true,
       bankDetails: {
         accountNumber: "2345678901",
         bankName: "HDFC Bank",
@@ -75,6 +77,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Chennai",
       joiningDate: "2023-01-20",
       emergency: "Laura Smith - 7777777777",
+      isActive: true,
       bankDetails: {
         accountNumber: "3456789012",
         bankName: "ICICI Bank",
@@ -104,6 +107,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Delhi",
       joiningDate: "2023-04-01",
       emergency: "Ravi Sharma - 6666666666",
+      isActive: true,
       bankDetails: {
         accountNumber: "4567890123",
         bankName: "Axis Bank",
@@ -133,6 +137,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Pune",
       joiningDate: "2022-09-25",
       emergency: "Sneha Kumar - 5555555555",
+      isActive: true,
       bankDetails: {
         accountNumber: "5678901234",
         bankName: "Bank of Baroda",
@@ -167,6 +172,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Kolkata",
       joiningDate: "2023-06-18",
       emergency: "Tom Lee - 4444444444",
+      isActive: true,
       bankDetails: {
         accountNumber: "6789012345",
         bankName: "Punjab National Bank",
@@ -196,6 +202,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Ahmedabad",
       joiningDate: "2023-03-05",
       emergency: "Neha Mehta - 3333333333",
+      isActive: true,
       bankDetails: {
         accountNumber: "7890123456",
         bankName: "Kotak Mahindra Bank",
@@ -225,6 +232,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Kochi",
       joiningDate: "2022-12-12",
       emergency: "Deepak Nair - 2222222222",
+      isActive: true,
       bankDetails: {
         accountNumber: "8901234567",
         bankName: "Canara Bank",
@@ -254,6 +262,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Mumbai",
       joiningDate: "2023-02-10",
       emergency: "Emma Wilson - 1111111111",
+      isActive: true,
       bankDetails: {
         accountNumber: "9012345678",
         bankName: "Union Bank of India",
@@ -283,6 +292,7 @@ export const EmployeeProvider = ({ children }) => {
       address: "Jaipur",
       joiningDate: "2023-07-01",
       emergency: "Anand Raj - 9999988888",
+      isActive: true,
       bankDetails: {
         accountNumber: "1234098765",
         bankName: "IndusInd Bank",
@@ -317,7 +327,7 @@ export const EmployeeProvider = ({ children }) => {
       return;
     }
 
-    const newEmployee = { ...employee, employeeId: id };
+    const newEmployee = { ...employee, employeeId: id, isActive: true };
 
     setEmployees([...employees, newEmployee]);
   };
@@ -330,14 +340,26 @@ export const EmployeeProvider = ({ children }) => {
   );
 };
 
-const deleteEmployee = (employeeId) => {
-  setEmployees((prev) => prev.filter((emp) => emp.employeeId !== employeeId));
+const deactivateEmployee = (employeeId) => {
+  setEmployees((prev) =>
+    prev.map((emp) =>
+      emp.employeeId === employeeId ? { ...emp, isActive: false } : emp
+    )
+  );
+};
+
+const activateEmployee = (employeeId) => {
+  setEmployees((prev) =>
+    prev.map((emp) =>
+      emp.employeeId === employeeId ? { ...emp, isActive: true } : emp
+    )
+  );
 };
 
 
   return (
     <EmployeeContext.Provider
-      value={{ employees, addEmployee, editEmployee, deleteEmployee }}
+      value={{ employees, addEmployee, editEmployee, deactivateEmployee, activateEmployee }}
     >
       {children}
     </EmployeeContext.Provider>
