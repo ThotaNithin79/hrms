@@ -1,5 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { LeaveRequestContext } from "../context/LeaveRequestContext";
+import { EmployeeContext } from "../context/EmployeeContext";
 import {
   PieChart,
   Pie,
@@ -25,6 +26,7 @@ const AdminLeaveSummary = () => {
     getMonthlyLeaveSummaryForAll,
     allMonths,
   } = useContext(LeaveRequestContext);
+  const { employees } = useContext(EmployeeContext);
   const [filter, setFilter] = useState("All");
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [loading, setLoading] = useState(false);
@@ -45,10 +47,26 @@ const AdminLeaveSummary = () => {
     requests: leaveRequests,
   };
 
-  // Filter by status
-  const filteredRequests = (leaveSummary.requests || []).filter((req) => {
+  // Filter by status and separate active/inactive employees
+  const allFilteredRequests = (leaveSummary.requests || []).filter((req) => {
     return filter === "All" ? true : req.status === filter;
   });
+
+  // Separate active and inactive employee requests
+  const separatedRequests = allFilteredRequests.reduce((acc, req) => {
+    const employee = employees.find(emp => emp.employeeId === req.employeeId);
+    const isActive = employee?.isActive !== false;
+    
+    if (isActive) {
+      acc.active.push(req);
+    } else {
+      acc.inactive.push(req);
+    }
+    return acc;
+  }, { active: [], inactive: [] });
+
+  // Combine for display: active first, then inactive
+  const filteredRequests = [...separatedRequests.active, ...separatedRequests.inactive];
 
   // Status counts for filtered data
   const statusCounts = filteredRequests.reduce(
@@ -418,24 +436,43 @@ const AdminLeaveSummary = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRequests.map((req) => (
-                  <tr key={req.id} className="border-t hover:bg-blue-50 transition-all duration-100">
-                    <td className="p-3 border">{req.id}</td>
-                    <td className="p-3 border">{req.employeeId || 'EMP-XXX'}</td>
-                    <td className="p-3 border">{req.name}</td>
-                    <td className="p-3 border">{req.from}</td>
-                    <td className="p-3 border">{req.to}</td>
-                    <td className="p-3 border">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        req.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                        req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {req.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {filteredRequests.map((req) => {
+                  const employee = employees.find(emp => emp.employeeId === req.employeeId);
+                  const isInactive = employee?.isActive === false;
+                  
+                  return (
+                    <tr
+                      key={req.id}
+                      className={`border-t transition-all duration-100 ${
+                        isInactive
+                          ? "bg-gray-300 text-gray-600 opacity-75"
+                          : "hover:bg-blue-50"
+                      }`}
+                    >
+                      <td className="p-3 border">{req.id}</td>
+                      <td className="p-3 border">{req.employeeId || 'EMP-XXX'}</td>
+                      <td className="p-3 border">
+                        {req.name}
+                        {isInactive && (
+                          <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 border">{req.from}</td>
+                      <td className="p-3 border">{req.to}</td>
+                      <td className="p-3 border">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          req.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                          req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

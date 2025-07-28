@@ -60,20 +60,35 @@ const LeaveManagement = () => {
   // Get all departments from active employees only
   const allDepartments = Array.from(new Set(employees.filter(emp => emp.isActive !== false).map(emp => emp.department))).sort();
 
-  // Filter leave requests by week, status, search, and department (only active employees)
-  const filteredRequests = leaveRequests.filter((req) => {
+  // Filter leave requests by week, status, search, and department, then separate active/inactive
+  const allFilteredRequests = leaveRequests.filter((req) => {
     const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
     const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-    // Get department for this employee and check if employee is active
+    // Get department for this employee
     const emp = employees.find(e => e.employeeId === req.employeeId);
-    const isActiveEmployee = emp?.isActive !== false;
     const matchesDept = filterDept === "All" ? true : emp?.department === filterDept;
     // Check if leave falls within the week
     const fromDate = req.from;
     const toDate = req.to;
     const inWeek = (fromDate >= weekDates.start && fromDate <= weekDates.end) || (toDate >= weekDates.start && toDate <= weekDates.end);
-    return matchesStatus && matchesSearch && matchesDept && inWeek && isActiveEmployee;
+    return matchesStatus && matchesSearch && matchesDept && inWeek;
   });
+
+  // Separate active and inactive employee requests
+  const separatedRequests = allFilteredRequests.reduce((acc, req) => {
+    const emp = employees.find(e => e.employeeId === req.employeeId);
+    const isActiveEmployee = emp?.isActive !== false;
+    
+    if (isActiveEmployee) {
+      acc.active.push(req);
+    } else {
+      acc.inactive.push(req);
+    }
+    return acc;
+  }, { active: [], inactive: [] });
+
+  // Combine for display: active first, then inactive
+  const filteredRequests = [...separatedRequests.active, ...separatedRequests.inactive];
 
   const formatWeekRange = (start, end) => {
     const startDate = new Date(start);
@@ -196,13 +211,27 @@ const LeaveManagement = () => {
               });
               return filteredRequests.map((req, idx) => {
                 const isSandwichLeave = req.id === sandwichLeaveRowId;
+                const emp = employees.find(e => e.employeeId === req.employeeId);
+                const isInactive = emp?.isActive === false;
+                
                 return (
                   <tr
                     key={req.id}
-                    className={`border-t transition duration-150 ${idx % 2 === 0 ? "bg-gray-50" : "bg-white"} hover:bg-blue-50`}
+                    className={`border-t transition duration-150 ${
+                      isInactive
+                        ? "bg-gray-300 text-gray-600 opacity-75"
+                        : idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    } hover:bg-blue-50`}
                   >
                     <td className="p-4">{req.employeeId}</td>
-                    <td className="p-4">{req.name}</td>
+                    <td className="p-4">
+                      {req.name}
+                      {isInactive && (
+                        <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
                     <td className="p-4">{req.from}</td>
                     <td className="p-4">{req.to}</td>
                     <td className="p-4 flex items-center gap-2">
