@@ -42,8 +42,36 @@ export const AttendanceProvider = ({ children }) => {
   const [attendanceRecords, setAttendanceRecords] = useState(generateMonthlyAttendanceData());
 
   const addAttendance = (record) => {
-    const newId = attendanceRecords.length + 1;
-    setAttendanceRecords([...attendanceRecords, { id: newId, ...record }]);
+    // Check if attendance already exists for this employee on this date
+    const existingRecord = attendanceRecords.find(
+      (existing) => existing.employeeId === record.employeeId && existing.date === record.date
+    );
+
+    if (existingRecord) {
+      // Update existing record instead of creating a new one
+      setAttendanceRecords((prev) =>
+        prev.map((rec) =>
+          rec.employeeId === record.employeeId && rec.date === record.date
+            ? { ...rec, ...record }
+            : rec
+        )
+      );
+      return { success: true, message: "Attendance updated successfully!" };
+    } else {
+      // Create new attendance record with unique ID
+      const newId = `${record.employeeId}-${record.date}`;
+      const newRecord = {
+        id: newId,
+        ...record,
+        punchIn: record.status === "Present" ? "09:00" : "",
+        punchOut: record.status === "Present" ? "18:00" : "",
+        workHours: record.status === "Present" ? 9 : 0,
+        workedHours: record.status === "Present" ? 8.5 : 0,
+        idleTime: record.status === "Present" ? 0.5 : 0,
+      };
+      setAttendanceRecords([...attendanceRecords, newRecord]);
+      return { success: true, message: "Attendance marked successfully!" };
+    }
   };
 
   const editAttendance = (id, updatedRecord) => {

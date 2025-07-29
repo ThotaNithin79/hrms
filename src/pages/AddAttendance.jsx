@@ -21,7 +21,7 @@ const AddAttendance = () => {
     e.preventDefault();
 
     const selectedEmployee = employees.find(
-      (emp) => emp.id === formData.employeeId
+      (emp) => emp.employeeId === formData.employeeId
     );
 
     if (!selectedEmployee) {
@@ -29,13 +29,17 @@ const AddAttendance = () => {
       return;
     }
 
-    addAttendance({
+    const result = addAttendance({
       ...formData,
       name: selectedEmployee.name,
     });
 
-    alert("Attendance marked successfully!");
-    navigate("/attendance");
+    if (result && result.success) {
+      alert(result.message);
+      navigate("/attendance");
+    } else {
+      alert("Failed to mark attendance. Please try again.");
+    }
   };
 
   return (
@@ -56,8 +60,8 @@ const AddAttendance = () => {
         >
           <option value="">Select Employee</option>
           {employees.filter((emp) => emp.isActive !== false).map((emp) => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name} ({emp.id})
+            <option key={emp.employeeId} value={emp.employeeId}>
+              {emp.name} ({emp.employeeId})
             </option>
           ))}
         </select>
