@@ -9,7 +9,7 @@ import LayoutEmployee from "./components/employee/LayoutEmployee"; // ðŸ‘ˆ Youâ€
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
-import CurrentEmployeeAttendance from "./EmployeePages/CurrentEmployeeAttendanceProfile";
+import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAttendanceProfile";
 import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
@@ -84,7 +84,7 @@ function App() {
       >
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/profile" element={<EmployeeProfile />} />
-        <Route path="/attendance" element={<CurrentEmployeeAttendanceProfile />} />
+        <Route path="/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
