@@ -1,3 +1,5 @@
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
 export const NoticeContext = createContext();
+
+export const useNotice = () => useContext(NoticeContext);

@@ -10,6 +10,11 @@ import AdminProvider from './context/AdminProvider';
 import {AuthProvider} from './context/AuthProvider';
 import { NotificationProvider } from "./context/NotificationProvider";
 
+//employeeRoutes
+import CurrentEmployeeAttendanceProvider from './EmployeeContext/CurrentEmployeeAttendanceProvider';
+import CurrentEmployeeLeaveRequestProvider from './EmployeeContext/CurrentEmployeeLeaveRequestProvider';
+import { CurrentEmployeeProvider } from './EmployeeContext/CurrentEmployeeProvider';
+
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -20,7 +25,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <AdminProvider>
             <AuthProvider>
               <NotificationProvider>
-                <App />
+                <CurrentEmployeeAttendanceProvider>
+                  <CurrentEmployeeLeaveRequestProvider>
+                    <CurrentEmployeeProvider>
+                      <App />
+                    </CurrentEmployeeProvider>
+                  </CurrentEmployeeLeaveRequestProvider>
+                </CurrentEmployeeAttendanceProvider>
               </NotificationProvider>
             </AuthProvider>
           </AdminProvider>
