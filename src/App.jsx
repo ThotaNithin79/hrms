@@ -34,7 +34,6 @@ import { NoticeProvider } from "./context/NoticeProvider"; // Add NoticeProvider
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
-import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAttendanceProfile";
 
 function App() {
   return (
@@ -55,14 +54,13 @@ function App() {
         <Route path="/admin/profile" element={<AdminProfile />} />
         <Route path="/employees" element={<EmployeeManagement />} />
         <Route path="/employees/add" element={<AddEmployee />} />
-        <Route path="/employees/reactivate/:id" element={<ReactivateEmployee />} />
+        <Route path="/employees/reactivate/:id" element={<ReactivateEmployee />} />
         <Route path="/employees/edit/:id" element={<EditEmployee />} />
         <Route path="/employee/:id/profile" element={<EmployeeProfile />} />
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/attendance/add" element={<AddAttendance />} />
-        <Route path="/attendance/edit/:id" element={<EditAttendance />} />
-        <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
-        <Route path="/attendance" element={<CurrentEmployeeAttendanceProfile />} />
+        <Route path="/attendance/edit/:id" element={<EditAttendance />} />
+        <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />
         <Route path="/admin/notifications" element={<AdminNotifications />} />
@@ -73,8 +71,6 @@ function App() {
           </NoticeProvider>
         } /> {/* Notices feature route */}
       </Route>
-
-      {/* EmployeeRoutes */}
 
       {/* Employee protected routes */}
       <Route
