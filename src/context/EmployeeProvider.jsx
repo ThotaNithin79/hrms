@@ -31,14 +31,16 @@ export const EmployeeProvider = ({ children }) => {
           role: "HR Executive",
           years: 2,
           joiningDate: "2019-01-15",
-          lastWorkingDate: "2021-01-14"
+          lastWorkingDate: "2021-01-14",
+          salary: 45000
         },
         {
           company: "XYZ Ltd",
           role: "HR Manager",
           years: 3,
           joiningDate: "2021-02-01",
-          lastWorkingDate: "2024-01-31"
+          lastWorkingDate: "2024-01-31",
+          salary: 65000
         }
       ]
     },
@@ -70,7 +72,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Accountant",
           years: 4,
           joiningDate: "2018-03-01",
-          lastWorkingDate: "2022-02-28"
+          lastWorkingDate: "2022-02-28",
+          salary: 55000
         }
       ]
     },
@@ -102,7 +105,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Software Engineer",
           years: 5,
           joiningDate: "2018-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 75000
         }
       ]
     },
@@ -134,7 +138,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Marketing Lead",
           years: 6,
           joiningDate: "2017-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 70000
         }
       ]
     },
@@ -166,14 +171,16 @@ export const EmployeeProvider = ({ children }) => {
           role: "Sales Executive",
           years: 3,
           joiningDate: "2017-01-01",
-          lastWorkingDate: "2019-12-31"
+          lastWorkingDate: "2019-12-31",
+          salary: 40000
         },
         {
           company: "RetailMart",
           role: "Sales Manager",
           years: 2,
           joiningDate: "2020-01-01",
-          lastWorkingDate: "2021-12-31"
+          lastWorkingDate: "2021-12-31",
+          salary: 60000
         }
       ]
     },
@@ -205,7 +212,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "HR Assistant",
           years: 2,
           joiningDate: "2021-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 35000
         }
       ]
     },
@@ -237,7 +245,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Developer",
           years: 4,
           joiningDate: "2019-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 80000
         }
       ]
     },
@@ -269,7 +278,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Finance Analyst",
           years: 5,
           joiningDate: "2017-01-01",
-          lastWorkingDate: "2021-12-31"
+          lastWorkingDate: "2021-12-31",
+          salary: 68000
         }
       ]
     },
@@ -301,7 +311,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Admin Officer",
           years: 6,
           joiningDate: "2017-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 50000
         }
       ]
     },
@@ -333,7 +344,8 @@ export const EmployeeProvider = ({ children }) => {
           role: "Operations Executive",
           years: 2,
           joiningDate: "2021-01-01",
-          lastWorkingDate: "2022-12-31"
+          lastWorkingDate: "2022-12-31",
+          salary: 42000
         }
       ]
     },
