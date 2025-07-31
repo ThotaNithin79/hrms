@@ -1,66 +1,222 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { CurrentEmployeeContext } from "../EmployeeContext/CurrentEmployeeContext";
 
 const CurrentEmployeeProfile = () => {
-  const { currentEmployee } = useContext(CurrentEmployeeContext);
+  const { currentEmployee, editCurrentEmployee } = useContext(CurrentEmployeeContext);
 
-  // Optional fallback in case context is missing
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(currentEmployee);
+
   if (!currentEmployee) {
     return <div className="p-6 text-red-600">Employee data not available.</div>;
   }
 
-  const { personal, contact, job, bank } = currentEmployee;
+  // Fix: Destructure from correct object
+  const { personal, contact, job, bank, experience } = editing ? form : currentEmployee;
+
+  const handleChange = (section, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleExperienceChange = (idx, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      experience: prev.experience.map((exp, i) =>
+        i === idx ? { ...exp, [field]: value } : exp
+      ),
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    editCurrentEmployee(form);
+    setEditing(false);
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Go Back Button */}
-      <button className="mb-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm">
-        ← Go Back
-      </button>
-
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold">My Profile</h2>
-        <p className="text-gray-500 text-sm">View and verify your personal and job details below.</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-semibold">My Profile</h2>
+          <p className="text-gray-500 text-sm">View and verify your personal and job details below.</p>
+        </div>
+        {!editing && (
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => setEditing(true)}
+          >
+            Edit Profile
+          </button>
+        )}
       </div>
 
-      {/* Profile Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Personal Info */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-          <p><strong>Name:</strong> {personal?.name}</p>
-          <p><strong>Father's Name:</strong> {personal?.fatherName}</p>
-          <p><strong>Date of Birth:</strong> {personal?.dob}</p>
-          <p><strong>Gender:</strong> {personal?.gender}</p>
-        </div>
-
-        {/* Contact Info */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
-          <p><strong>Email:</strong> {contact?.email}</p>
-          <p><strong>Phone:</strong> {contact?.phone}</p>
-          <p><strong>Address:</strong> {contact?.address}</p>
-          <p><strong>City:</strong> {contact?.city}</p>
-        </div>
-
-        {/* Job Info */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
-          <p><strong>Employee ID:</strong> {job?.employeeId}</p>
-          <p><strong>Department:</strong> {job?.department}</p>
-          <p><strong>Designation:</strong> {job?.designation}</p>
-          <p><strong>Date of Joining:</strong> {job?.joiningDate}</p>
-        </div>
-
-        {/* Bank Info */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-bold mb-2 text-gray-700">Bank Information</h3>
-          <p><strong>Bank Name:</strong> {bank?.bankName}</p>
-          <p><strong>Account No:</strong> {bank?.accountNumber}</p>
-          <p><strong>IFSC Code:</strong> {bank?.ifsc}</p>
-        </div>
-      </div>
+      {editing ? (
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+              {Object.entries(form.personal).map(([key, value]) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <input
+                    type="text"
+                    className="border px-2 py-1 rounded w-full"
+                    value={value}
+                    onChange={(e) => handleChange("personal", key, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Contact Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
+              {Object.entries(form.contact).map(([key, value]) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <input
+                    type="text"
+                    className="border px-2 py-1 rounded w-full"
+                    value={value}
+                    onChange={(e) => handleChange("contact", key, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Job Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
+              {Object.entries(form.job).map(([key, value]) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <input
+                    type="text"
+                    className="border px-2 py-1 rounded w-full"
+                    value={value}
+                    onChange={(e) => handleChange("job", key, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Bank Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Bank Information</h3>
+              {Object.entries(form.bank).map(([key, value]) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <input
+                    type="text"
+                    className="border px-2 py-1 rounded w-full"
+                    value={value}
+                    onChange={(e) => handleChange("bank", key, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Experience Details */}
+          <div className="mt-8 bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
+            {form.experience.map((exp, idx) => (
+              <div key={idx} className="mb-4 border-b pb-2">
+                {Object.entries(exp).map(([key, value]) => (
+                  <div key={key} className="mb-2">
+                    <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                    <input
+                      type="text"
+                      className="border px-2 py-1 rounded w-full"
+                      value={value}
+                      onChange={(e) => handleExperienceChange(idx, key, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex gap-4">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+              onClick={() => {
+                setEditing(false);
+                setForm(currentEmployee);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+              <p><strong>Name:</strong> {personal?.name}</p>
+              <p><strong>Father's Name:</strong> {personal?.fatherName}</p>
+              <p><strong>Date of Birth:</strong> {personal?.dob}</p>
+              <p><strong>Gender:</strong> {personal?.gender}</p>
+              <p><strong>Marital Status:</strong> {personal?.maritalStatus}</p>
+              <p><strong>Nationality:</strong> {personal?.nationality}</p>
+            </div>
+            {/* Contact Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
+              <p><strong>Email:</strong> {contact?.email}</p>
+              <p><strong>Phone:</strong> {contact?.phone}</p>
+              <p><strong>Address:</strong> {contact?.address}</p>
+              <p><strong>City:</strong> {contact?.city}</p>
+            </div>
+            {/* Job Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
+              <p><strong>Employee ID:</strong> {job?.employeeId}</p>
+              <p><strong>Department:</strong> {job?.department}</p>
+              <p><strong>Designation:</strong> {job?.designation}</p>
+              <p><strong>Date of Joining:</strong> {job?.joiningDate}</p>
+            </div>
+            {/* Bank Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Bank Information</h3>
+              <p><strong>Bank Name:</strong> {bank?.bankName}</p>
+              <p><strong>Account No:</strong> {bank?.accountNumber}</p>
+              <p><strong>IFSC Code:</strong> {bank?.ifsc}</p>
+              <p><strong>Branch:</strong> {bank?.branch}</p>
+            </div>
+          </div>
+          {/* Experience Details */}
+          <div className="mt-8 bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
+            {experience && experience.length > 0 ? (
+              <ul className="list-disc pl-5">
+                {experience.map((exp, idx) => (
+                  <li key={idx}>
+                    <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
+                    <br />
+                    <span className="text-sm text-gray-600">
+                      {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No experience details available.</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

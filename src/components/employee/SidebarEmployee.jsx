@@ -23,11 +23,6 @@ const navLinks = [
     label: "Notice Board",
     icon: <FaBullhorn className="mr-2" />,
   },
-  {
-    to: "/employee/profile",
-    label: "My Profile",
-    icon: <FaUser className="mr-2" />,
-  },
 ];
 
 const SidebarEmployee = () => {
