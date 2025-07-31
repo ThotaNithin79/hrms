@@ -84,7 +84,7 @@ function App() {
       >
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/profile" element={<EmployeeProfile />} />
-        <Route path="/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
+        <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
