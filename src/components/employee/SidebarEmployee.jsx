@@ -9,7 +9,7 @@ const navLinks = [
     icon: <FaHome className="mr-2" />,
   },
   {
-    to: "/attendance",
+    to: "/employee/attendance", // <-- FIXED path
     label: "Attendance",
     icon: <FaClock className="mr-2" />,
   },
