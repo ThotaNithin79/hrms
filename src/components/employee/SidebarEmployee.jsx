@@ -15,12 +15,7 @@ const tabs = [
     path: "/attendance",
     description: "View punch in/out history. Filter by date/month. Show detailed status."
   },
-  {
-    label: "Calendar View",
-    icon: <FaCalendarAlt className="mr-2" />,
-    path: "/attendance/calendar",
-    description: "Monthly calendar. Shows status for each day. Clickable dates for details."
-  },
+
   {
     label: "Leave Management",
     icon: <FaClipboardList className="mr-2" />,
@@ -33,18 +28,6 @@ const tabs = [
     path: "/employee/notices",
     description: "View company-wide announcements and notices."
   },
-  {
-    label: "My Profile",
-    icon: <FaUser className="mr-2" />,
-    path: "/employee/profile",
-    description: "View and edit profile details. Upload/change profile photo."
-  },
-  {
-    label: "Change Password",
-    icon: <FaKey className="mr-2" />,
-    path: "/employee/change-password",
-    description: "Securely update login password."
-  },
 ];
 
 const SidebarEmployee = () => {
@@ -53,7 +36,6 @@ const SidebarEmployee = () => {
   const [open, setOpen] = useState(window.innerWidth >= 768);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Responsive sidebar: auto-show on desktop, auto-hide on mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -71,7 +53,6 @@ const SidebarEmployee = () => {
     navigate("/", { replace: true });
   };
 
-  // Active tab highlight
   const getActiveTab = () => {
     const current = location.pathname;
     return tabs.find((tab) => current.startsWith(tab.path));
@@ -81,31 +62,32 @@ const SidebarEmployee = () => {
   return (
     <>
       {/* Hamburger icon for small screens */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 bg-blue-900 text-white p-2 rounded-lg shadow-lg focus:outline-none"
-        onClick={() => setOpen(true)}
-        aria-label="Open sidebar"
-        style={{ display: open ? 'none' : 'block' }}
-      >
-        <FaBars className="text-2xl" />
-      </button>
+      {!open && (
+        <button
+          className="md:hidden fixed top-4 left-4 z-50 bg-blue-900 text-white p-2 rounded-lg shadow-lg focus:outline-none"
+          onClick={() => setOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <FaBars className="text-2xl" />
+        </button>
+      )}
       {/* Sidebar */}
       <div
         className={`fixed md:static top-0 left-0 h-full ${collapsed ? 'w-20' : 'w-72'} bg-gradient-to-b from-blue-900 to-blue-700 text-white shadow-xl flex flex-col p-2 md:p-6 z-40 transition-all duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
         style={{ minHeight: '100vh', transition: 'all 0.3s' }}
       >
-        {/* Collapse/Expand toggle button (always visible) */}
+        {/* Collapse/Expand toggle button (always visible on desktop) */}
         <button
-          className="absolute top-4 right-4 text-white text-xl bg-blue-700 rounded-full p-2 shadow focus:outline-none hover:bg-blue-800"
+          className="hidden md:block absolute top-4 right-4 text-white text-xl bg-blue-700 rounded-full p-2 shadow focus:outline-none hover:bg-blue-800"
           onClick={() => setCollapsed((v) => !v)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <FaBars /> : <FaTimes />}
         </button>
         {/* Close icon for mobile (only when sidebar is open and not collapsed) */}
-        {open && !collapsed && (
+        {open && (
           <button
-            className="md:hidden absolute top-4 left-4 text-white text-2xl focus:outline-none"
+            className="md:hidden absolute top-4 right-4 text-white text-2xl focus:outline-none"
             onClick={() => setOpen(false)}
             aria-label="Close sidebar"
           >
