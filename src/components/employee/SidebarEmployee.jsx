@@ -15,7 +15,6 @@ const tabs = [
     path: "/attendance",
     description: "View punch in/out history. Filter by date/month. Show detailed status."
   },
-
   {
     label: "Leave Management",
     icon: <FaClipboardList className="mr-2" />,
