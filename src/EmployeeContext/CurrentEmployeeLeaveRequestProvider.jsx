@@ -5,7 +5,7 @@ export const CurrentEmployeeLeaveRequestContext = createContext();
 const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   // Example state, replace with your actual leave request logic
   const [leaveRequests, setLeaveRequests] = useState([]);
-  Console.log("CurrentEmployeeLeaveRequestProvider initialized with leaveRequests:", leaveRequests);
+  console.log("CurrentEmployeeLeaveRequestProvider initialized with leaveRequests:", leaveRequests);
 
   return (
     <CurrentEmployeeLeaveRequestContext.Provider value={{ leaveRequests, setLeaveRequests }}>
