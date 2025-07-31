@@ -88,6 +88,7 @@ function App() {
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
+        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route
           path="/employee/leave-summary"
           element={<EmployeeLeaveSummary />}
