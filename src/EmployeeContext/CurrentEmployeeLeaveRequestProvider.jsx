@@ -11,59 +11,12 @@ const getStatusOptions = () => ["All", "Pending", "Approved", "Rejected"];
 
 const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   const [leaveRequests, setLeaveRequests] = useState([
-    // July
-    {
-      id: 1,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-07-10",
-      to: "2025-07-15",
-      reason: "Vacation",
-      date: "2025-07-08",
-      status: "Approved",
-    },
-    {
-      id: 2,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-07-20",
-      to: "2025-07-22",
-      reason: "Medical Leave",
-      date: "2025-07-18",
-      status: "Pending",
-    },
-    // August
-    {
-      id: 3,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-08-05",
-      to: "2025-08-07",
-      reason: "Conference",
-      date: "2025-08-01",
-      status: "Approved",
-    },
-    {
-      id: 4,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-08-15",
-      to: "2025-08-16",
-      reason: "Personal",
-      date: "2025-08-13",
-      status: "Rejected",
-    },
-    // September
-    {
-      id: 5,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-09-10",
-      to: "2025-09-12",
-      reason: "Family Event",
-      date: "2025-09-08",
-      status: "Pending",
-    },
+    // ...existing demo data...
+    { id: 1, employeeId: "EMP101", name: "John Doe", from: "2025-07-10", to: "2025-07-15", reason: "Vacation", date: "2025-07-08", status: "Approved" },
+    { id: 2, employeeId: "EMP101", name: "John Doe", from: "2025-07-20", to: "2025-07-22", reason: "Medical Leave", date: "2025-07-18", status: "Pending" },
+    { id: 3, employeeId: "EMP101", name: "John Doe", from: "2025-08-05", to: "2025-08-07", reason: "Conference", date: "2025-08-01", status: "Approved" },
+    { id: 4, employeeId: "EMP101", name: "John Doe", from: "2025-08-15", to: "2025-08-16", reason: "Personal", date: "2025-08-13", status: "Rejected" },
+    { id: 5, employeeId: "EMP101", name: "John Doe", from: "2025-09-10", to: "2025-09-12", reason: "Family Event", date: "2025-09-08", status: "Pending" },
   ]);
 
   const monthOptions = useMemo(() => getMonthOptions(leaveRequests), [leaveRequests]);
@@ -82,6 +35,21 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     [leaveRequests, selectedMonth, selectedStatus]
   );
 
+  // Apply leave functionality
+  const applyLeave = ({ from, to, reason }) => {
+    const newRequest = {
+      id: leaveRequests.length + 1,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from,
+      to,
+      reason,
+      date: new Date().toISOString().slice(0, 10),
+      status: "Pending",
+    };
+    setLeaveRequests((prev) => [...prev, newRequest]);
+  };
+
   return (
     <CurrentEmployeeLeaveRequestContext.Provider
       value={{
@@ -94,6 +62,7 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
         selectedStatus,
         setSelectedStatus,
         filteredRequests,
+        applyLeave,
       }}
     >
       {children}
