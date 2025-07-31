@@ -8,11 +8,6 @@ import LayoutEmployee from "./components/employee/LayoutEmployee"; // 👈 You�
 // Pages
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
-import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
-import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAttendanceProfile";
-import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement";
-import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
-import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import AddEmployee from "./pages/AddEmployee";
 import ReactivateEmployee from "./pages/ReactivateEmployee";
@@ -31,6 +26,13 @@ import ForgotPassword from "./pages/ForgotPassword"; // New forgot password page
 import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
 import AdminNotices from "./pages/AdminNotices.jsx"; // Add this import
 import { NoticeProvider } from "./context/NoticeProvider"; // Add NoticeProvider import
+
+// Employee pages
+import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
+import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAttendanceProfile";
+import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement";
+import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
+import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
@@ -83,7 +85,7 @@ function App() {
         }
       >
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
-        <Route path="/employee/profile" element={<EmployeeProfile />} />
+        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
