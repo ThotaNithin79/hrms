@@ -99,7 +99,7 @@ const EmployeeDashboard = () => {
   };
 
   // Employee Basic Details
-  const { personal, job } = currentEmployee;
+  const { personal, contact, job } = currentEmployee;
 
   // Noticeboard (show 3 most recent)
   const recentNotices = notices.slice(0, 3);
@@ -246,7 +246,7 @@ const EmployeeDashboard = () => {
               <span className="font-semibold">Department:</span> {job.department}
             </div>
             <div>
-              <span className="font-semibold">Email:</span> {personal.email || "--"}
+              <span className="font-semibold">Email:</span> {contact.email || "--"}
             </div>
           </div>
         </div>

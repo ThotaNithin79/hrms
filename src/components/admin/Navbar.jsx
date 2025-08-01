@@ -2,7 +2,7 @@ import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { NotificationContext } from "../../context/NotificationContext";
-import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser, FaKey } from "react-icons/fa";
 
 const Navbar = () => {
   const { logout } = useContext(AuthContext);
@@ -69,6 +69,15 @@ const Navbar = () => {
                 className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
               >
                 <FaUser className="text-blue-600" /> View Profile
+              </div>
+              <div
+                onClick={() => {
+                  navigate("/admin/change-password");
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
+              >
+                <FaKey className="text-blue-600" /> Change Password
               </div>
               <div
                 onClick={handleLogout}
