@@ -26,6 +26,8 @@ import ForgotPassword from "./pages/ForgotPassword"; // New forgot password page
 import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
 import AdminNotices from "./pages/AdminNotices.jsx"; // Add this import
 import { NoticeProvider } from "./context/NoticeProvider"; // Add NoticeProvider import
+import AdminHolidayCalendarPage from "./pages/AdminHolidayCalendarPage";
+import HolidayCalendarProvider from "./context/HolidayCalendarProvider";
 
 // Employee pages
 import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
@@ -74,6 +76,14 @@ function App() {
           </NoticeProvider>
         } /> {/* Notices feature route */}
         <Route path="/admin/change-password" element={<ChangePasswordPage />} /> {/* Change password route for admin */}
+        <Route
+          path="/admin/holiday-calendar"
+          element={
+            <HolidayCalendarProvider>
+              <AdminHolidayCalendarPage />
+            </HolidayCalendarProvider>
+          }
+        /> {/* Holiday calendar route */}
       </Route>
 
       {/* Employee protected routes */}
