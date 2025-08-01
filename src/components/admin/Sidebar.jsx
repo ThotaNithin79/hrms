@@ -76,18 +76,6 @@ const Sidebar = () => {
             </li>
           );
         })}
-        <li>
-          <NavLink
-            to="/admin/holiday-calendar"
-            className={({ isActive }) =>
-              "flex items-center gap-2 px-4 py-2 rounded hover:bg-blue-100 transition " +
-              (isActive ? "bg-blue-200 font-semibold text-blue-700" : "text-gray-700")
-            }
-          >
-            <FaCalendarAlt className="text-blue-500" />
-            Holiday Calendar
-          </NavLink>
-        </li>
       </ul>
       <div className={`mt-auto text-xs text-gray-400 transition-all duration-300 ${collapsed ? 'hidden' : ''}`}>
         &copy; {new Date().getFullYear()} HRMS Admin
