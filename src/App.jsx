@@ -33,6 +33,7 @@ import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAtt
 import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
+import ChangePasswordPage from "./pages/ChangePasswordPage"; // Import the change password component
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
@@ -72,6 +73,7 @@ function App() {
             <AdminNotices />
           </NoticeProvider>
         } /> {/* Notices feature route */}
+        <Route path="/admin/change-password" element={<ChangePasswordPage />} /> {/* Change password route for admin */}
       </Route>
 
       {/* Employee protected routes */}
@@ -90,10 +92,8 @@ function App() {
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
-        <Route
-          path="/employee/leave-summary"
-          element={<EmployeeLeaveSummary />}
-        />
+        <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
+        <Route path="/employee/change-password" element={<ChangePasswordPage />} /> {/* Change password route */}
       </Route>
     </Routes>
   );

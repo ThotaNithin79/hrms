@@ -14,6 +14,7 @@ import { NotificationProvider } from "./context/NotificationProvider";
 import CurrentEmployeeAttendanceProvider from './EmployeeContext/CurrentEmployeeAttendanceProvider';
 import CurrentEmployeeLeaveRequestProvider from './EmployeeContext/CurrentEmployeeLeaveRequestProvider';
 import { CurrentEmployeeProvider } from './EmployeeContext/CurrentEmployeeProvider';
+import CurrentEmployeeNotificationProvider from './EmployeeContext/CurrentEmployeeNotificationProvider';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -28,7 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <CurrentEmployeeAttendanceProvider>
                   <CurrentEmployeeLeaveRequestProvider>
                     <CurrentEmployeeProvider>
-                      <App />
+                      <CurrentEmployeeNotificationProvider>
+                       <App />
+                      </CurrentEmployeeNotificationProvider>
                     </CurrentEmployeeProvider>
                   </CurrentEmployeeLeaveRequestProvider>
                 </CurrentEmployeeAttendanceProvider>
