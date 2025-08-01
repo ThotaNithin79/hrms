@@ -11,7 +11,6 @@ const CurrentEmployeeProfile = () => {
     return <div className="p-6 text-red-600">Employee data not available.</div>;
   }
 
-  // Fix: Destructure from correct object
   const { personal, contact, job, bank, experience } = editing ? form : currentEmployee;
 
   const handleChange = (section, field, value) => {
@@ -64,13 +63,17 @@ const CurrentEmployeeProfile = () => {
               <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
               {Object.entries(form.personal).map(([key, value]) => (
                 <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
                   <input
-                    type="text"
+                    type={key === "dob" ? "date" : "text"}
                     className="border px-2 py-1 rounded w-full"
                     value={value}
-                    onChange={(e) => handleChange("personal", key, e.target.value)}
+                    onChange={(e) => handleChange("personal", key, key === "isActive" ? e.target.checked : e.target.value)}
+                    {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
                   />
+                  {key === "isActive" && (
+                    <span className="ml-2">{value ? "Active" : "Inactive"}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -79,7 +82,7 @@ const CurrentEmployeeProfile = () => {
               <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
               {Object.entries(form.contact).map(([key, value]) => (
                 <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
                   <input
                     type="text"
                     className="border px-2 py-1 rounded w-full"
@@ -94,9 +97,9 @@ const CurrentEmployeeProfile = () => {
               <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
               {Object.entries(form.job).map(([key, value]) => (
                 <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
                   <input
-                    type="text"
+                    type={key === "joiningDate" ? "date" : "text"}
                     className="border px-2 py-1 rounded w-full"
                     value={value}
                     onChange={(e) => handleChange("job", key, e.target.value)}
@@ -109,7 +112,7 @@ const CurrentEmployeeProfile = () => {
               <h3 className="text-lg font-bold mb-2 text-gray-700">Bank Information</h3>
               {Object.entries(form.bank).map(([key, value]) => (
                 <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
                   <input
                     type="text"
                     className="border px-2 py-1 rounded w-full"
@@ -127,9 +130,9 @@ const CurrentEmployeeProfile = () => {
               <div key={idx} className="mb-4 border-b pb-2">
                 {Object.entries(exp).map(([key, value]) => (
                   <div key={key} className="mb-2">
-                    <label className="block text-sm font-medium text-gray-600">{key.replace(/([A-Z])/g, ' $1')}</label>
+                    <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
                     <input
-                      type="text"
+                      type={key.toLowerCase().includes("date") ? "date" : "text"}
                       className="border px-2 py-1 rounded w-full"
                       value={value}
                       onChange={(e) => handleExperienceChange(idx, key, e.target.value)}
@@ -170,6 +173,7 @@ const CurrentEmployeeProfile = () => {
               <p><strong>Gender:</strong> {personal?.gender}</p>
               <p><strong>Marital Status:</strong> {personal?.maritalStatus}</p>
               <p><strong>Nationality:</strong> {personal?.nationality}</p>
+              <p><strong>Active:</strong> {personal?.isActive ? "Yes" : "No"}</p>
             </div>
             {/* Contact Info */}
             <div className="bg-white p-4 rounded-lg shadow">
@@ -178,11 +182,15 @@ const CurrentEmployeeProfile = () => {
               <p><strong>Phone:</strong> {contact?.phone}</p>
               <p><strong>Address:</strong> {contact?.address}</p>
               <p><strong>City:</strong> {contact?.city}</p>
+              <p><strong>Emergency Contact Name:</strong> {contact?.emergency_contact_name}</p>
+              <p><strong>Emergency Contact Phone:</strong> {contact?.emergency_contact_phone}</p>
+              <p><strong>Emergency Contact Relation:</strong> {contact?.emergency_contact_relation}</p>
             </div>
             {/* Job Info */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
               <p><strong>Employee ID:</strong> {job?.employeeId}</p>
+              <p><strong>Department ID:</strong> {job?.department_id}</p>
               <p><strong>Department:</strong> {job?.department}</p>
               <p><strong>Designation:</strong> {job?.designation}</p>
               <p><strong>Date of Joining:</strong> {job?.joiningDate}</p>
