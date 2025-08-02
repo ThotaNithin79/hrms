@@ -19,6 +19,11 @@ const navLinks = [
     icon: <FaClipboardList className="mr-2" />,
   },
   {
+    to: "/employee/holiday-calendar",
+    label: "Holiday Calendar",
+    icon: <FaClipboardList className="mr-2" />,
+  },
+  {
     to: "/employee/notices",
     label: "Notice Board",
     icon: <FaBullhorn className="mr-2" />,

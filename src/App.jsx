@@ -33,6 +33,7 @@ import HolidayCalendarProvider from "./context/HolidayCalendarProvider";
 import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
 import CurrentEmployeeAttendanceProfile from "./EmployeePages/CurrentEmployeeAttendanceProfile";
 import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement";
+import CurrentEmployeeHolidayCalendar from "./EmployeePages/CurrentEmployeeHolidayCalendar";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
 import ChangePasswordPage from "./pages/ChangePasswordPage"; // Import the change password component
@@ -78,10 +79,7 @@ function App() {
         <Route path="/admin/change-password" element={<ChangePasswordPage />} /> {/* Change password route for admin */}
         <Route
           path="/admin/holiday-calendar"
-          element={
-            <HolidayCalendarProvider>
-              <AdminHolidayCalendarPage />
-            </HolidayCalendarProvider>
+          element={ <AdminHolidayCalendarPage />
           }
         /> {/* Holiday calendar route */}
       </Route>
@@ -100,6 +98,11 @@ function App() {
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
+        <Route path="/employee/holiday-calendar" element={
+          <HolidayCalendarProvider>
+            <CurrentEmployeeHolidayCalendar />
+          </HolidayCalendarProvider>
+        } />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
