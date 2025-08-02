@@ -79,10 +79,7 @@ function App() {
         <Route path="/admin/change-password" element={<ChangePasswordPage />} /> {/* Change password route for admin */}
         <Route
           path="/admin/holiday-calendar"
-          element={
-            <HolidayCalendarProvider>
-              <AdminHolidayCalendarPage />
-            </HolidayCalendarProvider>
+          element={ <AdminHolidayCalendarPage />
           }
         /> {/* Holiday calendar route */}
       </Route>

@@ -15,6 +15,7 @@ import CurrentEmployeeAttendanceProvider from './EmployeeContext/CurrentEmployee
 import CurrentEmployeeLeaveRequestProvider from './EmployeeContext/CurrentEmployeeLeaveRequestProvider';
 import { CurrentEmployeeProvider } from './EmployeeContext/CurrentEmployeeProvider';
 import CurrentEmployeeNotificationProvider from './EmployeeContext/CurrentEmployeeNotificationProvider';
+import HolidayCalendarProvider from './context/HolidayCalendarProvider';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -30,7 +31,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <CurrentEmployeeLeaveRequestProvider>
                     <CurrentEmployeeProvider>
                       <CurrentEmployeeNotificationProvider>
-                       <App />
+                        <HolidayCalendarProvider>
+                          <App />
+                        </HolidayCalendarProvider>
                       </CurrentEmployeeNotificationProvider>
                     </CurrentEmployeeProvider>
                   </CurrentEmployeeLeaveRequestProvider>
