@@ -40,8 +40,8 @@ const CalendarCell = ({ day, record }) => {
     text = "text-yellow-700";
   }
   return (
-    <td className={`h-20 w-32 align-top ${bg} ${text} border rounded-lg`}>
-      <div className="font-bold">{day}</div>
+<td className={`h-28 w-40 align-top ${bg} ${text} border rounded-lg text-base`}>
+    <div className="font-bold">{day}</div>
       {record && (
         <div className="text-xs">
           {record.status}
@@ -241,13 +241,13 @@ const CurrentEmployeeAttendanceProfile = () => {
           <table className="bg-white rounded-xl shadow min-w-max">
             <thead>
               <tr>
-                <th className="p-2 text-center">Sun</th>
-                <th className="p-2 text-center">Mon</th>
-                <th className="p-2 text-center">Tue</th>
-                <th className="p-2 text-center">Wed</th>
-                <th className="p-2 text-center">Thu</th>
-                <th className="p-2 text-center">Fri</th>
-                <th className="p-2 text-center">Sat</th>
+                <th className="p-4 text-center text-lg">Sun</th>
+                <th className="p-4 text-center text-lg">Mon</th>
+                <th className="p-4 text-center text-lg">Tue</th>
+                <th className="p-4 text-center text-lg">Wed</th>
+                <th className="p-4 text-center text-lg">Thu</th>
+                <th className="p-4 text-center text-lg">Fri</th>
+                <th className="p-4 text-center text-lg">Sat</th>
               </tr>
             </thead>
             <tbody>{calendarRows}</tbody>
@@ -270,7 +270,17 @@ const CurrentEmployeeAttendanceProfile = () => {
             <tbody>
               {monthlyRecords.length > 0 ? (
                 monthlyRecords.map((record) => (
-                  <tr key={record.id}>
+                  <tr
+  key={record.id}
+  className={
+    record.status === "Leave"
+      ? "bg-yellow-100"
+      : record.status === "Absent"
+      ? "bg-red-100"
+      : ""
+  }
+>
+
                     <td className="border px-4 py-2">{record.date}</td>
                     <td className="border px-4 py-2">{record.status}</td>
                     <td className="border px-4 py-2">{record.punchIn}</td>

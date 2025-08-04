@@ -40,7 +40,9 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/line-clamp'),
+  ],
   future: {
     useOkLCH: false, // ✅ disables oklch usage
   },
