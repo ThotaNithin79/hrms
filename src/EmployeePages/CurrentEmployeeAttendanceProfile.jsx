@@ -270,7 +270,17 @@ const CurrentEmployeeAttendanceProfile = () => {
             <tbody>
               {monthlyRecords.length > 0 ? (
                 monthlyRecords.map((record) => (
-                  <tr key={record.id}>
+                  <tr
+  key={record.id}
+  className={
+    record.status === "Leave"
+      ? "bg-yellow-100"
+      : record.status === "Absent"
+      ? "bg-red-100"
+      : ""
+  }
+>
+
                     <td className="border px-4 py-2">{record.date}</td>
                     <td className="border px-4 py-2">{record.status}</td>
                     <td className="border px-4 py-2">{record.punchIn}</td>

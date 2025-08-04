@@ -49,9 +49,6 @@ const SidebarEmployee = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleLogout = () => {
-    navigate("/", { replace: true });
-  };
 
   return (
     <>
@@ -113,12 +110,7 @@ const SidebarEmployee = () => {
             );
           })}
         </ul>
-        <button
-          onClick={handleLogout}
-          className={`mt-auto flex items-center gap-2 px-4 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold shadow transition-all duration-150 ${collapsed ? 'justify-center px-2' : ''}`}
-        >
-          <FaSignOutAlt /> {!collapsed && "Logout"}
-        </button>
+      
         <div className={`mt-2 text-xs text-gray-400 transition-all duration-300 ${collapsed ? 'hidden' : ''}`}>
           &copy; {new Date().getFullYear()} HRMS Employee
         </div>
