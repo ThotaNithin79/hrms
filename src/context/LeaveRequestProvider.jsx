@@ -1,8 +1,21 @@
-import { useState } from "react";
+
+import { useState, useMemo } from "react";
 import { LeaveRequestContext } from "./LeaveRequestContext";
 
 export const LeaveRequestProvider = ({ children }) => {
+  // Helper: expand a leave range to an array of dates (YYYY-MM-DD)
+  const expandLeaveRange = (from, to) => {
+    const dates = [];
+    let current = new Date(from);
+    const end = new Date(to);
+    while (current <= end) {
+      dates.push(current.toISOString().slice(0, 10));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
   const [leaveRequests, setLeaveRequests] = useState([
+    // Original leave requests
     {
       id: 1,
       employeeId: "EMP101",
@@ -13,7 +26,6 @@ export const LeaveRequestProvider = ({ children }) => {
       date: "2025-07-08",
       status: "Approved",
     },
-    // Remove duplicate sandwich leave request for EMP101
     {
       id: 2,
       employeeId: "EMP102",
@@ -104,8 +116,119 @@ export const LeaveRequestProvider = ({ children }) => {
       date: "2025-07-08",
       status: "Approved",
     },
+
+    // Strategic sandwich leave requests
+    // Scenario 1: EMP101 - July 12 (Sat) + July 13 (Holiday) + July 14 (Mon)
+    {
+      id: 11,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from: "2025-07-12",
+      to: "2025-07-12",
+      reason: "Personal Work",
+      date: "2025-07-10",
+      status: "Approved",
+    },
+    {
+      id: 12,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from: "2025-07-14",
+      to: "2025-07-14",
+      reason: "Personal Work",
+      date: "2025-07-10",
+      status: "Approved",
+    },
+
+    // Scenario 2: EMP102 - August 12 (Tue) + August 13 (Holiday Wed) + August 14 (Thu)
+    {
+      id: 13,
+      employeeId: "EMP102",
+      name: "Alice Johnson",
+      from: "2025-08-12",
+      to: "2025-08-12",
+      reason: "Family Event",
+      date: "2025-08-08",
+      status: "Approved",
+    },
+    {
+      id: 14,
+      employeeId: "EMP102",
+      name: "Alice Johnson",
+      from: "2025-08-14",
+      to: "2025-08-14",
+      reason: "Family Event",
+      date: "2025-08-08",
+      status: "Approved",
+    },
+
+    // Scenario 3: EMP103 - September 16 (Tue) + September 17 (Holiday Wed) + September 18 (Thu)
+    {
+      id: 15,
+      employeeId: "EMP103",
+      name: "Michael Smith",
+      from: "2025-09-16",
+      to: "2025-09-16",
+      reason: "Medical Appointment",
+      date: "2025-09-12",
+      status: "Approved",
+    },
+    {
+      id: 16,
+      employeeId: "EMP103",
+      name: "Michael Smith",
+      from: "2025-09-18",
+      to: "2025-09-18",
+      reason: "Medical Follow-up",
+      date: "2025-09-12",
+      status: "Approved",
+    },
+
+    // Scenario 4: EMP104 - November 11 (Tue) + November 12 (Holiday Wed) + November 13 (Thu)
+    {
+      id: 17,
+      employeeId: "EMP104",
+      name: "Priya Sharma",
+      from: "2025-11-11",
+      to: "2025-11-11",
+      reason: "Wedding Preparation",
+      date: "2025-11-05",
+      status: "Approved",
+    },
+    {
+      id: 18,
+      employeeId: "EMP104",
+      name: "Priya Sharma",
+      from: "2025-11-13",
+      to: "2025-11-13",
+      reason: "Wedding Preparation",
+      date: "2025-11-05",
+      status: "Approved",
+    },
+
+    // Scenario 5: EMP105 - December 9 (Tue) + December 10 (Holiday Wed) + December 11 (Thu)
+    {
+      id: 19,
+      employeeId: "EMP105",
+      name: "Amit Kumar",
+      from: "2025-12-09",
+      to: "2025-12-09",
+      reason: "Travel",
+      date: "2025-12-05",
+      status: "Approved",
+    },
+    {
+      id: 20,
+      employeeId: "EMP105",
+      name: "Amit Kumar",
+      from: "2025-12-11",
+      to: "2025-12-11",
+      reason: "Travel",
+      date: "2025-12-05",
+      status: "Approved",
+    },
   ]);
-  
+
   // Helper: get month string from date
   const getMonthString = (dateStr) => {
     if (!dateStr) return "";
@@ -113,95 +236,130 @@ export const LeaveRequestProvider = ({ children }) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  // Monthly leave summary for a particular employee
-  const getMonthlyLeaveSummaryForEmployee = (employeeId, monthStr) => {
-    const filtered = leaveRequests.filter(
-      (req) => req.employeeId === employeeId && getMonthString(req.from) === monthStr
-    );
-    const statusCounts = filtered.reduce(
-      (acc, curr) => {
-        const status = curr?.status || 'Unknown';
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      },
-      { Approved: 0, Rejected: 0, Pending: 0 }
-    );
-    return {
-      total: filtered.length,
-      statusCounts,
-      requests: filtered,
-    };
+  // Efficiently get all approved leave dates for an employee (for sandwich leave calculation)
+  const getApprovedLeaveDatesByEmployee = (employeeId) => {
+    return leaveRequests
+      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
+      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
   };
+
+  // Monthly leave summary for a particular employee
+  const getMonthlyLeaveSummaryForEmployee = useMemo(() => {
+    return (employeeId, monthStr) => {
+      const filtered = leaveRequests.filter(
+        (req) => req.employeeId === employeeId && getMonthString(req.from) === monthStr
+      );
+      const statusCounts = filtered.reduce(
+        (acc, curr) => {
+          const status = curr?.status || 'Unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        },
+        { Approved: 0, Rejected: 0, Pending: 0 }
+      );
+      return {
+        total: filtered.length,
+        statusCounts,
+        requests: filtered,
+      };
+    };
+  }, [leaveRequests]);
 
   // Monthly leave summary for all employees
-  const getMonthlyLeaveSummaryForAll = (monthStr) => {
-    const filtered = leaveRequests.filter(
-      (req) => getMonthString(req.from) === monthStr
-    );
-    // Group by employeeId
-    const summaryByEmployee = {};
-    filtered.forEach((req) => {
-      if (!summaryByEmployee[req.employeeId]) {
-        summaryByEmployee[req.employeeId] = [];
-      }
-      summaryByEmployee[req.employeeId].push(req);
-    });
-    // Status counts for all
-    const statusCounts = filtered.reduce(
-      (acc, curr) => {
-        const status = curr?.status || 'Unknown';
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      },
-      { Approved: 0, Rejected: 0, Pending: 0 }
-    );
-    return {
-      total: filtered.length,
-      statusCounts,
-      requests: filtered,
-      summaryByEmployee,
+  const getMonthlyLeaveSummaryForAll = useMemo(() => {
+    return (monthStr) => {
+      const filtered = leaveRequests.filter(
+        (req) => getMonthString(req.from) === monthStr
+      );
+      // Group by employeeId
+      const summaryByEmployee = {};
+      filtered.forEach((req) => {
+        if (!summaryByEmployee[req.employeeId]) {
+          summaryByEmployee[req.employeeId] = [];
+        }
+        summaryByEmployee[req.employeeId].push(req);
+      });
+      // Status counts for all
+      const statusCounts = filtered.reduce(
+        (acc, curr) => {
+          const status = curr?.status || 'Unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        },
+        { Approved: 0, Rejected: 0, Pending: 0 }
+      );
+      return {
+        total: filtered.length,
+        statusCounts,
+        requests: filtered,
+        summaryByEmployee,
+      };
     };
-  };
+  }, [leaveRequests]);
 
   // Monthly leave summary for a selected department
-  // Assumes each request has a 'department' field (add if needed)
-  const getMonthlyLeaveSummaryForDepartment = (department, monthStr) => {
-    const filtered = leaveRequests.filter(
-      (req) => req.department === department && getMonthString(req.from) === monthStr
-    );
-    const statusCounts = filtered.reduce(
-      (acc, curr) => {
-        const status = curr?.status || 'Unknown';
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      },
-      { Approved: 0, Rejected: 0, Pending: 0 }
-    );
-    return {
-      total: filtered.length,
-      statusCounts,
-      requests: filtered,
+  const getMonthlyLeaveSummaryForDepartment = useMemo(() => {
+    return (department, monthStr) => {
+      const filtered = leaveRequests.filter(
+        (req) => req.department === department && getMonthString(req.from) === monthStr
+      );
+      const statusCounts = filtered.reduce(
+        (acc, curr) => {
+          const status = curr?.status || 'Unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        },
+        { Approved: 0, Rejected: 0, Pending: 0 }
+      );
+      return {
+        total: filtered.length,
+        statusCounts,
+        requests: filtered,
+      };
     };
+  }, [leaveRequests]);
+
+  // Get all months present in leaveRequests - memoized for efficiency
+  const allMonths = useMemo(() => {
+    return Array.from(
+      new Set(
+        (leaveRequests || [])
+          .map((req) => getMonthString(req.from))
+          .filter((m) => m)
+      )
+    );
+  }, [leaveRequests]);
+
+  // CRUD operations for leave requests
+  const addLeaveRequest = (newRequest) => {
+    const id = Math.max(...leaveRequests.map(req => req.id), 0) + 1;
+    setLeaveRequests(prev => [...prev, { ...newRequest, id }]);
   };
 
-  // Get all months present in leaveRequests
-  const allMonths = Array.from(
-    new Set(
-      (leaveRequests || [])
-        .map((req) => getMonthString(req.from))
-        .filter((m) => m)
-    )
-  );
+  const updateLeaveRequest = (id, updatedData) => {
+    setLeaveRequests(prev =>
+      prev.map(req => req.id === id ? { ...req, ...updatedData } : req)
+    );
+  };
+
+  const deleteLeaveRequest = (id) => {
+    setLeaveRequests(prev => prev.filter(req => req.id !== id));
+  };
 
   return (
     <LeaveRequestContext.Provider value={{
       leaveRequests,
       setLeaveRequests,
+      addLeaveRequest,
+      updateLeaveRequest,
+      deleteLeaveRequest,
       getMonthString,
       getMonthlyLeaveSummaryForEmployee,
       getMonthlyLeaveSummaryForAll,
       getMonthlyLeaveSummaryForDepartment,
       allMonths,
+      getApprovedLeaveDatesByEmployee, // Expose for sandwich leave calculation
+      expandLeaveRange, // Expose utility function
     }}>
       {children}
     </LeaveRequestContext.Provider>

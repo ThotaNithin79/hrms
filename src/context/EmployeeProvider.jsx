@@ -1,5 +1,8 @@
+
+
 import { useState } from "react";
 import { EmployeeContext } from "./EmployeeContext";
+
 
 export const EmployeeProvider = ({ children }) => {
   const [employees, setEmployees] = useState([
@@ -369,28 +372,28 @@ export const EmployeeProvider = ({ children }) => {
   };
 
   const editEmployee = (employeeId, updatedData) => {
-  setEmployees((prev) =>
-    prev.map((emp) =>
-      emp.employeeId === employeeId ? { ...emp, ...updatedData } : emp
-    )
-  );
-};
-
-const deactivateEmployee = (employeeId) => {
-  setEmployees((prev) =>
-    prev.map((emp) =>
-      emp.employeeId === employeeId ? { ...emp, isActive: false } : emp
-    )
-  );
-};
-
-const activateEmployee = (employeeId) => {
-  setEmployees((prev) =>
-    prev.map((emp) =>
-      emp.employeeId === employeeId ? { ...emp, isActive: true } : emp
-    )
-  );
-};
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp.employeeId === employeeId ? { ...emp, ...updatedData } : emp
+      )
+    );
+  };
+  
+  const deactivateEmployee = (employeeId) => {
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp.employeeId === employeeId ? { ...emp, isActive: false } : emp
+      )
+    );
+  };
+  
+  const activateEmployee = (employeeId) => {
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp.employeeId === employeeId ? { ...emp, isActive: true } : emp
+      )
+    );
+  };
 
 const reactivateEmployeeWithExperience = (employeeId, newEmployeeData) => {
   setEmployees((prev) =>
@@ -425,6 +428,9 @@ const reactivateEmployeeWithExperience = (employeeId, newEmployeeData) => {
   );
 };
 
+// Utility: get employee by ID (for cross-provider/reporting use)
+const getEmployeeById = (employeeId) => employees.find(emp => emp.employeeId === employeeId);
+
 
   return (
     <EmployeeContext.Provider
@@ -434,7 +440,8 @@ const reactivateEmployeeWithExperience = (employeeId, newEmployeeData) => {
         editEmployee,
         deactivateEmployee,
         activateEmployee,
-        reactivateEmployeeWithExperience
+        reactivateEmployeeWithExperience,
+        getEmployeeById, // Expose for cross-provider/reporting
       }}
     >
       {children}
