@@ -72,21 +72,24 @@ export const AttendanceProvider = ({ children }) => {
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayOfWeek = getDayOfWeek(dateStr);
           let status = "Present";
+          let statusType = "working_day"; // working_day, holiday, approved_leave, absent
           let punchIn = "";
           let punchOut = "";
           let workHours = 0;
           let workedHours = 0;
           let idleTime = 0;
           
-          // Check if it's Sunday (holiday)
+          // Priority 1: Check if it's Sunday (holiday)
           if (dayOfWeek === 0) {
-            status = "Leave"; // Sunday is holiday
+            status = "Holiday";
+            statusType = "holiday";
           }
-          // Check if it's a public holiday
+          // Priority 2: Check if it's a public holiday
           else if (holidays.includes(dateStr)) {
-            status = "Leave";
+            status = "Holiday";
+            statusType = "holiday";
           }
-          // Check if employee has approved leave on this date
+          // Priority 3: Check if employee has approved leave on this date
           else {
             const employeeLeave = leaveRequests.find(leave =>
               leave.employeeId === emp.employeeId &&
@@ -95,18 +98,33 @@ export const AttendanceProvider = ({ children }) => {
             );
             if (employeeLeave) {
               status = "Leave";
+              statusType = "approved_leave";
             }
-            // Add some random absences (2-3% chance)
-            else if (Math.random() < 0.025) {
-              status = "Absent";
-            }
-            // Saturday has 50% chance of being present (half day or optional)
-            else if (dayOfWeek === 6 && Math.random() < 0.5) {
-              status = "Leave";
+            // Priority 4: For working days, determine if Present or Absent
+            else {
+              // Saturday has 70% chance of being present (working Saturday)
+              if (dayOfWeek === 6) {
+                if (Math.random() < 0.7) {
+                  status = "Present";
+                  statusType = "working_day";
+                } else {
+                  status = "Absent";
+                  statusType = "absent";
+                }
+              }
+              // Regular working days (Mon-Fri) - 5% chance of being absent
+              else if (Math.random() < 0.05) {
+                status = "Absent";
+                statusType = "absent";
+              }
+              else {
+                status = "Present";
+                statusType = "working_day";
+              }
             }
           }
           
-          // Generate punch times and work hours for present days
+          // Generate punch times and work hours only for present days
           if (status === "Present") {
             const punchData = generatePunchTimes();
             punchIn = punchData.punchIn;
@@ -122,6 +140,7 @@ export const AttendanceProvider = ({ children }) => {
             name: emp.name,
             date: dateStr,
             status,
+            statusType,
             punchIn,
             punchOut,
             workHours,
@@ -132,8 +151,6 @@ export const AttendanceProvider = ({ children }) => {
       }
     }
     
-    // The sandwich leave logic is now handled automatically through the leave requests
-    // and holiday data - no need for hardcoded scenarios
     return records;
   };
 
@@ -227,32 +244,58 @@ export const AttendanceProvider = ({ children }) => {
   };
 
   const addAttendance = (record) => {
+    // Validate that Sundays and holidays cannot be marked as Leave
+    const dayOfWeek = getDayOfWeek(record.date);
+    const isPublicHoliday = holidays.includes(record.date);
+    
+    // Prevent marking Sundays as Leave
+    if (dayOfWeek === 0 && record.status === "Leave") {
+      return { success: false, message: "Cannot mark Sunday as Leave. Sundays are automatically holidays." };
+    }
+    
+    // Prevent marking public holidays as Leave
+    if (isPublicHoliday && record.status === "Leave") {
+      return { success: false, message: "Cannot mark public holiday as Leave. This date is already a holiday." };
+    }
+    
+    // Auto-correct status for Sundays and holidays
+    let finalRecord = { ...record };
+    if (dayOfWeek === 0 || isPublicHoliday) {
+      finalRecord.status = "Holiday";
+      finalRecord.statusType = "holiday";
+      finalRecord.punchIn = "";
+      finalRecord.punchOut = "";
+      finalRecord.workHours = 0;
+      finalRecord.workedHours = 0;
+      finalRecord.idleTime = 0;
+    }
+
     // Check if attendance already exists for this employee on this date
     const existingRecord = attendanceRecords.find(
-      (existing) => existing.employeeId === record.employeeId && existing.date === record.date
+      (existing) => existing.employeeId === finalRecord.employeeId && existing.date === finalRecord.date
     );
 
     if (existingRecord) {
       // Update existing record instead of creating a new one
       setAttendanceRecords((prev) =>
         prev.map((rec) =>
-          rec.employeeId === record.employeeId && rec.date === record.date
-            ? { ...rec, ...record }
+          rec.employeeId === finalRecord.employeeId && rec.date === finalRecord.date
+            ? { ...rec, ...finalRecord }
             : rec
         )
       );
       return { success: true, message: "Attendance updated successfully!" };
     } else {
       // Create new attendance record with unique ID
-      const newId = `${record.employeeId}-${record.date}`;
+      const newId = `${finalRecord.employeeId}-${finalRecord.date}`;
       const newRecord = {
         id: newId,
-        ...record,
-        punchIn: record.status === "Present" ? "09:00" : "",
-        punchOut: record.status === "Present" ? "18:00" : "",
-        workHours: record.status === "Present" ? 9 : 0,
-        workedHours: record.status === "Present" ? 8.5 : 0,
-        idleTime: record.status === "Present" ? 0.5 : 0,
+        ...finalRecord,
+        punchIn: finalRecord.status === "Present" ? "09:00" : "",
+        punchOut: finalRecord.status === "Present" ? "18:00" : "",
+        workHours: finalRecord.status === "Present" ? 9 : 0,
+        workedHours: finalRecord.status === "Present" ? 8.5 : 0,
+        idleTime: finalRecord.status === "Present" ? 0.5 : 0,
       };
       setAttendanceRecords([...attendanceRecords, newRecord]);
       return { success: true, message: "Attendance marked successfully!" };
@@ -261,7 +304,29 @@ export const AttendanceProvider = ({ children }) => {
 
   const editAttendance = (id, updatedRecord) => {
     setAttendanceRecords((prev) =>
-      prev.map((rec) => (rec.id === id ? { ...rec, ...updatedRecord } : rec))
+      prev.map((rec) => {
+        if (rec.id === id) {
+          // Validate that Sundays and holidays cannot be marked as Leave
+          const dayOfWeek = getDayOfWeek(rec.date);
+          const isPublicHoliday = holidays.includes(rec.date);
+          
+          let finalRecord = { ...rec, ...updatedRecord };
+          
+          // Auto-correct status for Sundays and holidays
+          if (dayOfWeek === 0 || isPublicHoliday) {
+            finalRecord.status = "Holiday";
+            finalRecord.statusType = "holiday";
+            finalRecord.punchIn = "";
+            finalRecord.punchOut = "";
+            finalRecord.workHours = 0;
+            finalRecord.workedHours = 0;
+            finalRecord.idleTime = 0;
+          }
+          
+          return finalRecord;
+        }
+        return rec;
+      })
     );
   };
 
