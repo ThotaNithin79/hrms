@@ -107,10 +107,11 @@ const EmployeeAttendanceProfile = () => {
     const employeeObj = typeof getEmployeeById === 'function' ? getEmployeeById(employeeId) : null;
     const employeeName = employeeObj?.name || (records.length > 0 ? records[0].name : employeeId);
 
-    // Attendance summary
+    // Attendance summary with improved categorization
     const presentDays = records.filter((r) => r.status === "Present").length;
     const absentDays = records.filter((r) => r.status === "Absent").length;
     const leaveDays = records.filter((r) => r.status === "Leave").length;
+    const holidayDays = records.filter((r) => r.status === "Holiday").length;
 
     // Work hour stats
     const totalWorkHours = records.reduce((sum, r) => sum + (r.workHours || 0), 0);
@@ -131,6 +132,7 @@ const EmployeeAttendanceProfile = () => {
       presentDays,
       absentDays,
       leaveDays,
+      holidayDays,
       totalWorkHours,
       totalWorkedHours,
       totalIdleTime,
@@ -146,6 +148,7 @@ const EmployeeAttendanceProfile = () => {
     presentDays,
     absentDays,
     leaveDays,
+    holidayDays,
     totalWorkHours,
     totalWorkedHours,
     totalIdleTime,
@@ -157,15 +160,16 @@ const EmployeeAttendanceProfile = () => {
 
   // Chart data for monthly attendance summary
   const attendanceChartData = {
-    labels: ["Present", "Absent", "Leave"],
+    labels: ["Present", "Absent", "Leave", "Holiday"],
     datasets: [
       {
         label: "Days",
-        data: [presentDays, absentDays, leaveDays],
+        data: [presentDays, absentDays, leaveDays, holidayDays],
         backgroundColor: [
-          "#34d399", // green
-          "#f87171", // red
-          "#fbbf24", // yellow
+          "#34d399", // green - Present
+          "#f87171", // red - Absent
+          "#fbbf24", // yellow - Leave
+          "#a78bfa", // purple - Holiday
         ],
         borderRadius: 8,
       },
@@ -246,21 +250,30 @@ const EmployeeAttendanceProfile = () => {
             </div>
             <div className="flex-1" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
               <span className="text-2xl mb-1 text-green-600">●</span>
               <h3 className="font-semibold mb-1 text-gray-700">Present</h3>
               <span className="text-2xl font-bold text-green-700">{presentDays}</span>
+              <span className="text-xs text-gray-500 mt-1">Punched In</span>
             </div>
             <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
               <span className="text-2xl mb-1 text-red-600">●</span>
               <h3 className="font-semibold mb-1 text-gray-700">Absent</h3>
               <span className="text-2xl font-bold text-red-700">{absentDays}</span>
+              <span className="text-xs text-gray-500 mt-1">Without Leave</span>
             </div>
             <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
               <span className="text-2xl mb-1 text-yellow-500">●</span>
               <h3 className="font-semibold mb-1 text-gray-700">On Leave</h3>
               <span className="text-2xl font-bold text-yellow-700">{leaveDays}</span>
+              <span className="text-xs text-gray-500 mt-1">Approved Leave</span>
+            </div>
+            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
+              <span className="text-2xl mb-1 text-purple-500">●</span>
+              <h3 className="font-semibold mb-1 text-gray-700">Holiday</h3>
+              <span className="text-2xl font-bold text-purple-700">{holidayDays}</span>
+              <span className="text-xs text-gray-500 mt-1">Public/Sunday</span>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -338,6 +351,7 @@ const EmployeeAttendanceProfile = () => {
                         {rec.status === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">Present</span>}
                         {rec.status === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
                         {rec.status === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
+                        {rec.status === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
                       </td>
                       <td className="p-3">{rec.status === "Present" && rec.punchIn ? rec.punchIn : ""}</td>
                       <td className="p-3">{rec.status === "Present" && rec.punchOut ? rec.punchOut : ""}</td>
@@ -385,6 +399,9 @@ const EmployeeAttendanceProfile = () => {
                       } else if (rec.status === 'Leave') {
                         statusColor = 'bg-yellow-100 text-yellow-700';
                         statusText = 'Leave';
+                      } else if (rec.status === 'Holiday') {
+                        statusColor = 'bg-purple-100 text-purple-700';
+                        statusText = 'Holiday';
                       }
                     }
                     cells.push(
