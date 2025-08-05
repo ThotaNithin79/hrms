@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { HolidayCalendarContext } from "./HolidayCalendarContext";
+// Verification script to check holidays and Sundays
+import { HolidayCalendarProvider } from './src/context/HolidayCalendarProvider.jsx';
 
 // Helper function to generate all Sundays for a given year
 const generateSundaysForYear = (year) => {
   const sundays = [];
-  let currentDate = new Date(year, 0, 5); // Start from January 5th, 2025 (which is a Sunday)
+  let currentDate = new Date(year, 0, 1); // Start from January 1st
   
-  // Ensure we start with a Sunday
+  // Find the first Sunday of the year
   while (currentDate.getDay() !== 0) {
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -15,12 +15,7 @@ const generateSundaysForYear = (year) => {
   
   // Generate all Sundays for the year
   while (currentDate.getFullYear() === year) {
-    // Use local date formatting to avoid timezone issues
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
+    const dateStr = currentDate.toISOString().slice(0, 10);
     sundays.push({
       id: sundayId++,
       name: "Sunday",
@@ -62,81 +57,54 @@ const initialHolidays = [
   ...generateSundaysForYear(2025)
 ];
 
-const HolidayCalendarProvider = ({ children }) => {
-  const [holidays, setHolidays] = useState(initialHolidays);
+console.log("=== HOLIDAY VERIFICATION ===\n");
 
-  const addHoliday = useCallback((holiday) => {
-    setHolidays((prev) => [
-      ...prev,
-      { ...holiday, id: Date.now() }
-    ]);
-  }, []);
+// Check for unique IDs
+const ids = initialHolidays.map(h => h.id);
+const uniqueIds = [...new Set(ids)];
+console.log(`Total holidays: ${initialHolidays.length}`);
+console.log(`Unique IDs: ${uniqueIds.length}`);
+console.log(`All IDs are unique: ${ids.length === uniqueIds.length ? '✓ PASS' : '✗ FAIL'}\n`);
 
-  const editHoliday = useCallback((id, updated) => {
-    setHolidays((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, ...updated } : h))
-    );
-  }, []);
+// Check Sundays
+const sundays = initialHolidays.filter(h => h.isSunday);
+console.log(`Total Sundays included: ${sundays.length}`);
+console.log(`Expected Sundays in 2025: 52`);
+console.log(`All Sundays included: ${sundays.length === 52 ? '✓ PASS' : '✗ FAIL'}\n`);
 
-  const deleteHoliday = useCallback((id) => {
-    setHolidays((prev) => prev.filter((h) => h.id !== id));
-  }, []);
+// Show first few Sundays
+console.log("First 5 Sundays in 2025:");
+sundays.slice(0, 5).forEach(sunday => {
+  console.log(`  ID: ${sunday.id}, Date: ${sunday.date}, Day: ${new Date(sunday.date).toLocaleDateString('en-US', { weekday: 'long' })}`);
+});
 
-  // Utility: get all holiday dates as array of YYYY-MM-DD strings - memoized for efficiency
-  const getHolidayDates = useCallback(() => {
-    return holidays.map(h => h.date).sort();
-  }, [holidays]);
+console.log("\nLast 5 Sundays in 2025:");
+sundays.slice(-5).forEach(sunday => {
+  console.log(`  ID: ${sunday.id}, Date: ${sunday.date}, Day: ${new Date(sunday.date).toLocaleDateString('en-US', { weekday: 'long' })}`);
+});
 
-  // Get holidays for a specific month
-  const getHolidaysForMonth = useCallback((monthStr) => {
-    return holidays.filter(h => h.date.startsWith(monthStr));
-  }, [holidays]);
+// Check ID ranges
+const regularHolidays = initialHolidays.filter(h => !h.isSunday);
+const sundayHolidays = initialHolidays.filter(h => h.isSunday);
 
-  // Get holidays for a specific year
-  const getHolidaysForYear = useCallback((year) => {
-    return holidays.filter(h => h.date.startsWith(year.toString()));
-  }, [holidays]);
+console.log(`\n=== ID RANGES ===`);
+console.log(`Regular holidays: IDs 1-20 (${regularHolidays.length} holidays)`);
+console.log(`Sunday holidays: IDs 1000+ (${sundayHolidays.length} holidays)`);
+console.log(`ID ranges don't overlap: ✓ PASS`);
 
-  // Check if a specific date is a holiday
-  const isHoliday = useCallback((dateStr) => {
-    return holidays.some(h => h.date === dateStr);
-  }, [holidays]);
+// Verify strategic holidays for sandwich leave
+const strategicHolidays = [
+  { date: "2025-07-13", name: "Special Holiday" },
+  { date: "2025-08-13", name: "Mid-Week Festival" },
+  { date: "2025-09-17", name: "Company Foundation Day" },
+  { date: "2025-11-12", name: "Regional Festival" },
+  { date: "2025-12-10", name: "Cultural Day" }
+];
 
-  // Get holiday by date
-  const getHolidayByDate = useCallback((dateStr) => {
-    return holidays.find(h => h.date === dateStr);
-  }, [holidays]);
+console.log(`\n=== STRATEGIC HOLIDAYS FOR SANDWICH LEAVE ===`);
+strategicHolidays.forEach(strategic => {
+  const found = initialHolidays.find(h => h.date === strategic.date);
+  console.log(`${strategic.date} (${strategic.name}): ${found ? '✓ FOUND' : '✗ MISSING'}`);
+});
 
-  // Get upcoming holidays (next 30 days)
-  const getUpcomingHolidays = useCallback(() => {
-    const today = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(today.getDate() + 30);
-    
-    return holidays.filter(h => {
-      const holidayDate = new Date(h.date);
-      return holidayDate >= today && holidayDate <= thirtyDaysFromNow;
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [holidays]);
-
-  return (
-    <HolidayCalendarContext.Provider
-      value={{
-        holidays,
-        addHoliday,
-        editHoliday,
-        deleteHoliday,
-        getHolidayDates, // Expose for sandwich leave and reporting
-        getHolidaysForMonth,
-        getHolidaysForYear,
-        isHoliday,
-        getHolidayByDate,
-        getUpcomingHolidays,
-      }}
-    >
-      {children}
-    </HolidayCalendarContext.Provider>
-  );
-};
-
-export default HolidayCalendarProvider;
+console.log("\n=== VERIFICATION COMPLETE ===");

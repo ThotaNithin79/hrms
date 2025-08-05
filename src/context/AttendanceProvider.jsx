@@ -1,64 +1,30 @@
-import { useState } from "react";
+import { useState, useMemo, useContext } from "react";
 import { AttendanceContext } from "./AttendanceContext";
+import { getSandwichLeaveDates, getSandwichLeaveCount, getSandwichLeaveDetails } from "../lib/utils";
+import { EmployeeContext } from "./EmployeeContext";
+import { LeaveRequestContext } from "./LeaveRequestContext";
+import { HolidayCalendarContext } from "./HolidayCalendarContext";
 
 export const AttendanceProvider = ({ children }) => {
+  // Helper: check if a date is in a leave range (inclusive)
+  const isDateInLeaveRange = (dateStr, fromDate, toDate) => {
+    const date = new Date(dateStr);
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    return date >= from && date <= to;
+  };
 
-  // Generates demo attendance data for all employees considering holidays, leave requests, and realistic patterns
-  const generateMonthlyAttendanceData = () => {
-    // All employees from LeaveRequestProvider
-    const employees = [
-      { employeeId: "EMP101", name: "John Doe" },
-      { employeeId: "EMP102", name: "Jane Smith" },
-      { employeeId: "EMP103", name: "Michael Smith" },
-      { employeeId: "EMP104", name: "Priya Sharma" },
-      { employeeId: "EMP105", name: "Amit Kumar" },
-      { employeeId: "EMP106", name: "Sara Lee" },
-      { employeeId: "EMP107", name: "Rohan Mehta" },
-      { employeeId: "EMP108", name: "Anjali Nair" },
-      { employeeId: "EMP109", name: "David Wilson" },
-      { employeeId: "EMP110", name: "Meera Raj" },
-    ];
-
-    // Public holidays from HolidayCalendarProvider
-    const publicHolidays = [
-      "2025-01-01", // New Year's Day
-      "2025-01-26", // Republic Day
-      "2025-02-26", // Maha Shivaratri
-      "2025-03-14", // Holi
-      "2025-04-14", // Ambedkar Jayanti
-      "2025-04-18", // Good Friday
-      "2025-05-01", // May Day
-      "2025-06-06", // Bakrid / Eid al-Adha
-      "2025-07-13", // Special holiday for sandwich leave testing
-      "2025-08-15", // Independence Day
-      "2025-08-18", // Raksha Bandhan
-      "2025-08-25", // Janmashtami
-      "2025-10-02", // Gandhi Jayanti & Dussehra
-      "2025-10-20", // Diwali
-      "2025-12-25", // Christmas
-    ];
-
-    // Leave requests data (from LeaveRequestProvider)
-    const leaveRequests = [
-      { employeeId: "EMP101", from: "2025-07-10", to: "2025-07-15", status: "Approved" },
-      { employeeId: "EMP102", from: "2025-07-12", to: "2025-07-14", status: "Pending" },
-      { employeeId: "EMP103", from: "2025-07-20", to: "2025-07-22", status: "Rejected" },
-      { employeeId: "EMP104", from: "2025-07-18", to: "2025-07-20", status: "Approved" },
-      { employeeId: "EMP105", from: "2025-07-25", to: "2025-07-28", status: "Pending" },
-      { employeeId: "EMP106", from: "2025-07-15", to: "2025-07-16", status: "Approved" },
-      { employeeId: "EMP107", from: "2025-07-22", to: "2025-07-24", status: "Approved" },
-      { employeeId: "EMP108", from: "2025-07-17", to: "2025-07-18", status: "Rejected" },
-      { employeeId: "EMP109", from: "2025-07-21", to: "2025-07-23", status: "Pending" },
-      { employeeId: "EMP110", from: "2025-07-14", to: "2025-07-15", status: "Approved" },
-    ];
-
-    // Helper function to check if date is in leave range
-    const isDateInLeaveRange = (dateStr, fromDate, toDate) => {
-      const date = new Date(dateStr);
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      return date >= from && date <= to;
-    };
+  // Helper: expand a leave range to an array of dates (YYYY-MM-DD)
+  const expandLeaveRange = (from, to) => {
+    const dates = [];
+    let current = new Date(from);
+    const end = new Date(to);
+    while (current <= end) {
+      dates.push(current.toISOString().slice(0, 10));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
 
     // Helper function to get day of week (0=Sunday, 6=Saturday)
     const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
@@ -89,45 +55,44 @@ export const AttendanceProvider = ({ children }) => {
       };
     };
 
-    // Generate attendance for multiple months (current and previous months)
+
+  // Generate attendance for multiple months (current and previous months)
+  const generateMonthlyAttendanceData = (employees, holidays, leaveRequests) => {
     const records = [];
     const currentDate = new Date();
-    
     // Generate for current month and previous 2 months
     for (let monthOffset = -2; monthOffset <= 0; monthOffset++) {
       const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthOffset, 1);
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+      
       for (const emp of employees) {
         for (let day = 1; day <= daysInMonth; day++) {
           const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayOfWeek = getDayOfWeek(dateStr);
-          
           let status = "Present";
           let punchIn = "";
           let punchOut = "";
           let workHours = 0;
           let workedHours = 0;
           let idleTime = 0;
-
+          
           // Check if it's Sunday (holiday)
           if (dayOfWeek === 0) {
             status = "Leave"; // Sunday is holiday
           }
           // Check if it's a public holiday
-          else if (publicHolidays.includes(dateStr)) {
+          else if (holidays.includes(dateStr)) {
             status = "Leave";
           }
           // Check if employee has approved leave on this date
           else {
-            const employeeLeave = leaveRequests.find(leave => 
-              leave.employeeId === emp.employeeId && 
+            const employeeLeave = leaveRequests.find(leave =>
+              leave.employeeId === emp.employeeId &&
               leave.status === "Approved" &&
               isDateInLeaveRange(dateStr, leave.from, leave.to)
             );
-            
             if (employeeLeave) {
               status = "Leave";
             }
@@ -140,7 +105,7 @@ export const AttendanceProvider = ({ children }) => {
               status = "Leave";
             }
           }
-
+          
           // Generate punch times and work hours for present days
           if (status === "Present") {
             const punchData = generatePunchTimes();
@@ -150,7 +115,7 @@ export const AttendanceProvider = ({ children }) => {
             workedHours = punchData.workedHours;
             idleTime = punchData.idleTime;
           }
-
+          
           records.push({
             id: `${emp.employeeId}-${dateStr}`,
             employeeId: emp.employeeId,
@@ -166,39 +131,100 @@ export const AttendanceProvider = ({ children }) => {
         }
       }
     }
-
-    // Add some sandwich leave scenarios for testing
-    // EMP101: Saturday (July 12), Sunday (July 13 - public holiday), Monday (July 14)
-    const sandwichLeaveRecords = [
-      { employeeId: "EMP101", date: "2025-07-12", status: "Leave" }, // Saturday
-      { employeeId: "EMP101", date: "2025-07-13", status: "Leave" }, // Sunday (public holiday)
-      { employeeId: "EMP101", date: "2025-07-14", status: "Leave" }, // Monday
-    ];
-
-    // Update records with sandwich leave scenario
-    sandwichLeaveRecords.forEach(sandwichRecord => {
-      const existingRecordIndex = records.findIndex(record => 
-        record.employeeId === sandwichRecord.employeeId && 
-        record.date === sandwichRecord.date
-      );
-      
-      if (existingRecordIndex !== -1) {
-        records[existingRecordIndex] = {
-          ...records[existingRecordIndex],
-          status: sandwichRecord.status,
-          punchIn: "",
-          punchOut: "",
-          workHours: 0,
-          workedHours: 0,
-          idleTime: 0,
-        };
-      }
-    });
-
+    
+    // The sandwich leave logic is now handled automatically through the leave requests
+    // and holiday data - no need for hardcoded scenarios
     return records;
   };
 
-  const [attendanceRecords, setAttendanceRecords] = useState(generateMonthlyAttendanceData());
+
+
+  // Use memoized data from contexts
+  const employeeContext = useContext(EmployeeContext);
+  const leaveRequestContext = useContext(LeaveRequestContext);
+  const holidayContext = useContext(HolidayCalendarContext);
+
+  // Get data from contexts with fallbacks
+  const employees = employeeContext?.employees || [];
+  const leaveRequests = leaveRequestContext?.leaveRequests || [];
+  const holidays = holidayContext?.getHolidayDates?.() || [];
+
+  // Memoized attendance data generation
+  const initialAttendanceData = useMemo(() => {
+    if (employees.length > 0) {
+      return generateMonthlyAttendanceData(employees, holidays, leaveRequests);
+    }
+    return [];
+  }, [employees, holidays, leaveRequests]);
+
+  const [attendanceRecords, setAttendanceRecords] = useState(initialAttendanceData);
+
+  // Efficient sandwich leave calculation for any employee
+  // Returns array of sandwich leave dates for the given employeeId
+  const getSandwichLeaveDatesByEmployee = (employeeId) => {
+    // 1. Get all approved leave requests for this employee from context
+    const approvedLeaves = leaveRequests
+      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
+      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
+    // 2. Use utility to get sandwich leave dates
+    return getSandwichLeaveDates(approvedLeaves, holidays);
+  };
+
+  // Get sandwich leave count for any employee
+  const getSandwichLeaveCountByEmployee = (employeeId) => {
+    const approvedLeaves = leaveRequests
+      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
+      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
+    return getSandwichLeaveCount(approvedLeaves, holidays);
+  };
+
+  // Get detailed sandwich leave information for any employee
+  const getSandwichLeaveDetailsByEmployee = (employeeId) => {
+    const approvedLeaves = leaveRequests
+      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
+      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
+    return getSandwichLeaveDetails(approvedLeaves, holidays);
+  };
+
+  // Get sandwich leave summary for all employees
+  const getAllEmployeesSandwichLeaveSummary = () => {
+    const summary = {};
+    employees.forEach(emp => {
+      const details = getSandwichLeaveDetailsByEmployee(emp.employeeId);
+      summary[emp.employeeId] = {
+        employeeId: emp.employeeId,
+        name: emp.name,
+        department: emp.department,
+        sandwichLeaveCount: details.count,
+        sandwichLeaveDates: details.dates,
+        sandwichLeaveDetails: details.details
+      };
+    });
+    return summary;
+  };
+
+  // Get sandwich leave summary for a specific month
+  const getSandwichLeaveSummaryForMonth = (monthStr) => {
+    const summary = {};
+    employees.forEach(emp => {
+      const details = getSandwichLeaveDetailsByEmployee(emp.employeeId);
+      // Filter sandwich leaves for the specific month
+      const monthSandwichLeaves = details.details.filter(detail =>
+        detail.holidayDate.startsWith(monthStr)
+      );
+      
+      if (monthSandwichLeaves.length > 0) {
+        summary[emp.employeeId] = {
+          employeeId: emp.employeeId,
+          name: emp.name,
+          department: emp.department,
+          sandwichLeaveCount: monthSandwichLeaves.length,
+          sandwichLeaveDetails: monthSandwichLeaves
+        };
+      }
+    });
+    return summary;
+  };
 
   const addAttendance = (record) => {
     // Check if attendance already exists for this employee on this date
@@ -250,9 +276,14 @@ export const AttendanceProvider = ({ children }) => {
         addAttendance,
         editAttendance,
         deleteAttendance,
+        getSandwichLeaveDatesByEmployee, // Expose sandwich leave utility
+        getSandwichLeaveCountByEmployee, // Expose sandwich leave count
+        getSandwichLeaveDetailsByEmployee, // Expose detailed sandwich leave info
+        getAllEmployeesSandwichLeaveSummary, // Expose all employees sandwich leave summary
+        getSandwichLeaveSummaryForMonth, // Expose monthly sandwich leave summary
       }}
     >
       {children}
     </AttendanceContext.Provider>
   );
-};
+}
