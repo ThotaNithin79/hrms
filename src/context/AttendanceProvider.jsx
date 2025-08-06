@@ -1,4 +1,4 @@
-import { useState, useMemo, useContext } from "react";
+import { useState, useMemo, useContext, useCallback } from "react";
 import { AttendanceContext } from "./AttendanceContext";
 import { getSandwichLeaveDates, getSandwichLeaveCount, getSandwichLeaveDetails } from "../lib/utils";
 import { EmployeeContext } from "./EmployeeContext";
@@ -29,31 +29,31 @@ export const AttendanceProvider = ({ children }) => {
     // Helper function to get day of week (0=Sunday, 6=Saturday)
     const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
-    // Helper function to generate random punch times with some variation
-    const generatePunchTimes = () => {
-      const punchInHour = 8 + Math.floor(Math.random() * 2); // 8-9 AM
-      const punchInMinute = Math.floor(Math.random() * 60);
-      const punchOutHour = 17 + Math.floor(Math.random() * 2); // 5-6 PM
-      const punchOutMinute = Math.floor(Math.random() * 60);
-      
-      const punchIn = `${String(punchInHour).padStart(2, "0")}:${String(punchInMinute).padStart(2, "0")}`;
-      const punchOut = `${String(punchOutHour).padStart(2, "0")}:${String(punchOutMinute).padStart(2, "0")}`;
-      
-      // Calculate work hours
-      const punchInTime = punchInHour + punchInMinute / 60;
-      const punchOutTime = punchOutHour + punchOutMinute / 60;
-      const workHours = punchOutTime - punchInTime;
-      const workedHours = workHours - 1; // Subtract 1 hour for lunch
-      const idleTime = Math.random() * 0.5; // Random idle time up to 30 minutes
-      
-      return {
-        punchIn,
-        punchOut,
-        workHours: Math.round(workHours * 100) / 100,
-        workedHours: Math.round((workedHours - idleTime) * 100) / 100,
-        idleTime: Math.round(idleTime * 100) / 100,
-      };
-    };
+const FIXED_PUNCH_IN = "09:30";
+const FIXED_PUNCH_OUT = "18:30";
+
+const generatePunchTimes = (dateStr, lateCount) => {
+  let punchIn = FIXED_PUNCH_IN;
+  let punchOut = FIXED_PUNCH_OUT;
+  let isHalfDay = false;
+  if (dateStr < new Date().toISOString().slice(0, 10)) {
+    const lateMinutes = Math.floor(Math.random() * 360); // up to 6 hours late
+    punchIn = lateMinutes > 0
+      ? `${String(9 + Math.floor(lateMinutes / 60)).padStart(2, "0")}:${String(30 + lateMinutes % 60).padStart(2, "0")}`
+      : FIXED_PUNCH_IN;
+    if (lateMinutes >= 300 || (lateCount > 0 && lateCount % 3 === 0)) {
+      isHalfDay = true;
+    }
+  }
+  return {
+    punchIn,
+    punchOut,
+    workHours: 9,
+    workedHours: isHalfDay ? 4.5 : 8.5,
+    idleTime: 0.5,
+    isHalfDay,
+  };
+};
 
 
   // Generate attendance for multiple months (current and previous months)
@@ -126,7 +126,7 @@ export const AttendanceProvider = ({ children }) => {
           
           // Generate punch times and work hours only for present days
           if (status === "Present") {
-            const punchData = generatePunchTimes();
+            const punchData = generatePunchTimes(dateStr, emp.lateCount || 0);
             punchIn = punchData.punchIn;
             punchOut = punchData.punchOut;
             workHours = punchData.workHours;
@@ -166,15 +166,26 @@ export const AttendanceProvider = ({ children }) => {
   const leaveRequests = leaveRequestContext?.leaveRequests || [];
   const holidays = holidayContext?.getHolidayDates?.() || [];
 
+
+  // Helper: filter out future attendance records
+  const filterRecordsUpToToday = (records) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return records.filter(rec => rec.date <= todayStr);
+  };
+
   // Memoized attendance data generation
   const initialAttendanceData = useMemo(() => {
     if (employees.length > 0) {
-      return generateMonthlyAttendanceData(employees, holidays, leaveRequests);
+      const allRecords = generateMonthlyAttendanceData(employees, holidays, leaveRequests);
+      return filterRecordsUpToToday(allRecords);
     }
     return [];
   }, [employees, holidays, leaveRequests]);
 
   const [attendanceRecords, setAttendanceRecords] = useState(initialAttendanceData);
+
+  // Expose filter utility for consumers
+  const getAttendanceRecordsUpToToday = useCallback((records) => filterRecordsUpToToday(records), []);
 
   // Efficient sandwich leave calculation for any employee
   // Returns array of sandwich leave dates for the given employeeId
