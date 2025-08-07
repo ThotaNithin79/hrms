@@ -19,6 +19,24 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     { id: 5, employeeId: "EMP101", name: "John Doe", from: "2025-09-10", to: "2025-09-12", reason: "Family Event", date: "2025-09-08", status: "Pending" },
   ]);
 
+  const [lateLoginRequests, setLateLoginRequests] = useState([
+  { id: 1, employeeId: "EMP101", name: "John Doe", date: "2025-08-01", tillTime: "10:30", reason: "Traffic", status: "Pending" },
+]);
+
+const applyLateLogin = ({ date, tillTime, reason }) => {
+  const newRequest = {
+    id: lateLoginRequests.length + 1,
+    employeeId: "EMP101",
+    name: "John Doe",
+    date,
+    tillTime,
+    reason,
+    status: "Pending",
+  };
+  setLateLoginRequests((prev) => [...prev, newRequest]);
+};
+
+
   const monthOptions = useMemo(() => getMonthOptions(leaveRequests), [leaveRequests]);
   const statusOptions = useMemo(() => getStatusOptions(), []);
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[monthOptions.length - 1] || "");
@@ -63,6 +81,8 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
         setSelectedStatus,
         filteredRequests,
         applyLeave,
+        lateLoginRequests,
+        applyLateLogin,
       }}
     >
       {children}
