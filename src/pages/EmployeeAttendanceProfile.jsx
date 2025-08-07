@@ -18,6 +18,8 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const EmployeeAttendanceProfile = () => {
+  // Ensure todayStr is defined at the top of the component
+  const todayStr = new Date().toISOString().slice(0, 10);
   // Helper: get day of week (0=Sun, 6=Sat)
   const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
