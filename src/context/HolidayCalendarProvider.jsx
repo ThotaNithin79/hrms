@@ -34,9 +34,9 @@ const HolidayCalendarProvider = ({ children }) => {
     const todayStr = new Date().toISOString().slice(0, 10);
     if (holiday.date <= todayStr) return; // Restrict past/present
     if (holidays.some(h => h.date === holiday.date)) return; // Prevent duplicate
-    setHolidays((prev) => [
+    setHolidays(prev => [
       ...prev,
-      // { ...holiday, id: Date.now() }
+      { ...holiday, id: Date.now() }
     ]);
   }, [holidays]);
 

@@ -329,7 +329,7 @@ const AdminLeaveSummary = () => {
             className="px-3 py-2 rounded border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">All</option>
-            {allMonths.map(month => {
+            {(Array.isArray(allMonths) ? allMonths : []).map(month => {
               const [year] = month.split('-');
               const monthName = new Date(`${month}-01`).toLocaleString('default', { month: 'long' });
               return (
@@ -376,7 +376,7 @@ const AdminLeaveSummary = () => {
       {/* Chart */}
       <div ref={chartContainerRef} className="bg-white rounded-xl shadow p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4 text-center">Leave Status Distribution</h3>
-        {chartData.length > 0 ? (
+        {Array.isArray(chartData) && chartData.length > 0 ? (
           isPdfMode ? (
             // Canvas-based pie chart for PDF - Larger size for PDF export
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
@@ -391,7 +391,7 @@ const AdminLeaveSummary = () => {
             <ResponsiveContainer width="100%" height={350}>
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={Array.isArray(chartData) ? chartData : []}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -401,7 +401,7 @@ const AdminLeaveSummary = () => {
                   label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
                   labelLine={false}
                 >
-                  {chartData.map((entry) => (
+                  {(Array.isArray(chartData) ? chartData : []).map((entry) => (
                     <Cell key={entry.name} fill={COLORS[entry.name] || "#ccc"} />
                   ))}
                 </Pie>
@@ -436,7 +436,7 @@ const AdminLeaveSummary = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRequests.map((req) => {
+                {(Array.isArray(filteredRequests) ? filteredRequests : []).map((req) => {
                   const employee = employees.find(emp => emp.employeeId === req.employeeId);
                   const isInactive = employee?.isActive === false;
                   
