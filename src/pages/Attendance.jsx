@@ -1,4 +1,3 @@
-
 import { useState, useContext } from "react";
 import { AttendanceContext } from "../context/AttendanceContext";
 import { EmployeeContext } from "../context/EmployeeContext";
@@ -44,6 +43,7 @@ const Attendance = () => {
   };
 
   const weekDates = getCurrentWeekDates(currentWeek);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   // Separate active and inactive employee records
   const separatedRecords = [...attendanceRecords]
@@ -51,7 +51,8 @@ const Attendance = () => {
       const matchesName = record.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "All" || record.status === statusFilter;
       const matchesWeek = record.date >= weekDates.start && record.date <= weekDates.end;
-      return matchesName && matchesStatus && matchesWeek;
+      const isPastOrToday = record.date <= todayStr; // Only show up to today
+      return matchesName && matchesStatus && matchesWeek && isPastOrToday;
     })
     .reduce((acc, record) => {
       const employee = employees.find(emp => String(emp.employeeId) === String(record.employeeId));

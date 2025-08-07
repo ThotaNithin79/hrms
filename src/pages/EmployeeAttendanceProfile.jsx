@@ -18,6 +18,8 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const EmployeeAttendanceProfile = () => {
+  // Ensure todayStr is defined at the top of the component
+  const todayStr = new Date().toISOString().slice(0, 10);
   // Helper: get day of week (0=Sun, 6=Sat)
   const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
@@ -54,52 +56,22 @@ const EmployeeAttendanceProfile = () => {
     )
   ).sort((a, b) => b.localeCompare(a));
 
-  // Filter records for selected month, sorted by latest first
-  const records = attendanceRecords
-    .filter((rec) => String(rec.employeeId) === employeeId && rec.date.startsWith(selectedMonth))
-    .sort((a, b) => b.date.localeCompare(a.date));
+  // Use provider utility to filter records up to today for current month
+  // ...existing code...
+  const isCurrentMonth = selectedMonth === todayStr.slice(0, 7);
+  let records = attendanceRecords
+    .filter((rec) => String(rec.employeeId) === employeeId && rec.date.startsWith(selectedMonth));
+  if (isCurrentMonth && attendanceContext?.getAttendanceRecordsUpToToday) {
+    records = attendanceContext.getAttendanceRecordsUpToToday(records);
+  }
+  records = records.sort((a, b) => b.date.localeCompare(a.date));
 
   // Get public holidays for the selected month from context
   const publicHolidays = (typeof getHolidayDates === 'function')
     ? getHolidayDates().filter(date => date.startsWith(selectedMonth))
     : [];
 
-
-  // Memoized sandwich leave calculation for better performance
-  const sandwichLeaveData = useMemo(() => {
-    if (!getApprovedLeaveDatesByEmployee || !getHolidayDates) {
-      return { allDates: [], monthlyDates: [], count: 0 };
-    }
-
-    try {
-      // Get approved leave dates for this employee
-      const approvedLeaveDates = getApprovedLeaveDatesByEmployee(employeeId);
-      
-      // Get all holiday dates
-      const holidayDates = getHolidayDates();
-      
-      // Calculate sandwich leave dates using utility function
-      const allSandwichLeaveDates = getSandwichLeaveDates(approvedLeaveDates, holidayDates);
-      
-      // Filter for selected month
-      const monthlySandwichLeaveDates = allSandwichLeaveDates.filter(date =>
-        date.startsWith(selectedMonth)
-      );
-      
-      return {
-        allDates: allSandwichLeaveDates,
-        monthlyDates: monthlySandwichLeaveDates,
-        count: monthlySandwichLeaveDates.length
-      };
-    } catch (error) {
-      console.error('Error calculating sandwich leaves:', error);
-      return { allDates: [], monthlyDates: [], count: 0 };
-    }
-  }, [employeeId, selectedMonth, getApprovedLeaveDatesByEmployee, getHolidayDates]);
-
-  const sandwichLeaveDates = sandwichLeaveData.monthlyDates;
-  const sandwichLeaveCount = sandwichLeaveData.count;
-  const [showSandwichModal, setShowSandwichModal] = React.useState(false);
+  // ...existing code...
 
   // Memoized employee data and statistics for better performance
   const employeeData = useMemo(() => {
@@ -108,15 +80,23 @@ const EmployeeAttendanceProfile = () => {
     const employeeName = employeeObj?.name || (records.length > 0 ? records[0].name : employeeId);
 
     // Attendance summary with improved categorization
-    const presentDays = records.filter((r) => r.status === "Present").length;
-    const absentDays = records.filter((r) => r.status === "Absent").length;
-    const leaveDays = records.filter((r) => r.status === "Leave").length;
-    const holidayDays = records.filter((r) => r.status === "Holiday").length;
+    const isCurrentMonth = selectedMonth === todayStr.slice(0, 7);
+
+    // Only include records up to today for current month
+    const filteredRecords = isCurrentMonth
+      ? records.filter(r => r.date <= todayStr)
+      : records;
+
+    // Use filteredRecords for all summary calculations
+    const presentDays = filteredRecords.filter((r) => r.status === "Present").length;
+    const absentDays = filteredRecords.filter((r) => r.status === "Absent").length;
+    const leaveDays = filteredRecords.filter((r) => r.status === "Leave").length;
+    const holidayDays = filteredRecords.filter((r) => r.status === "Holiday").length;
 
     // Work hour stats
-    const totalWorkHours = records.reduce((sum, r) => sum + (r.workHours || 0), 0);
-    const totalWorkedHours = records.reduce((sum, r) => sum + (r.workedHours || 0), 0);
-    const totalIdleTime = records.reduce((sum, r) => sum + (r.idleTime || 0), 0);
+    const totalWorkHours = filteredRecords.reduce((sum, r) => sum + (r.workHours || 0), 0);
+    const totalWorkedHours = filteredRecords.reduce((sum, r) => sum + (r.workedHours || 0), 0);
+    const totalIdleTime = filteredRecords.reduce((sum, r) => sum + (r.idleTime || 0), 0);
 
     // Leave summary (from LeaveRequestProvider only)
     const employeeLeaves = leaveRequests.filter((l) =>
@@ -141,7 +121,7 @@ const EmployeeAttendanceProfile = () => {
       leavesRejected,
       leavesPending
     };
-  }, [records, leaveRequests, employeeId, selectedMonth, getEmployeeById]);
+  }, [records, leaveRequests, employeeId, selectedMonth, getEmployeeById, todayStr]);
 
   const {
     employeeName,
@@ -207,6 +187,36 @@ const EmployeeAttendanceProfile = () => {
 
   // Add state for view toggle
   const [attendanceView, setAttendanceView] = React.useState('table'); // 'table' or 'calendar'
+
+  // Memoized sandwich leave calculation for better performance
+  const sandwichLeaveData = useMemo(() => {
+    if (!getApprovedLeaveDatesByEmployee || !getHolidayDates) {
+      return { allDates: [], monthlyDates: [], count: 0 };
+    }
+    // Get all sandwich leave dates for employee
+    const allSandwichLeaveDates = getSandwichLeaveDates(
+      getApprovedLeaveDatesByEmployee(employeeId),
+      getHolidayDates()
+    );
+    // Filter for selected month
+    let monthlySandwichLeaveDates = allSandwichLeaveDates.filter(date =>
+      date.startsWith(selectedMonth)
+    );
+    // For current month, only up to today
+    const isCurrentMonth = selectedMonth === todayStr.slice(0, 7);
+    if (isCurrentMonth) {
+      monthlySandwichLeaveDates = monthlySandwichLeaveDates.filter(date => date <= todayStr);
+    }
+    return {
+      allDates: allSandwichLeaveDates,
+      monthlyDates: monthlySandwichLeaveDates,
+      count: monthlySandwichLeaveDates.length
+    };
+  }, [employeeId, selectedMonth, getApprovedLeaveDatesByEmployee, getHolidayDates, todayStr]);
+
+  const sandwichLeaveDates = sandwichLeaveData.monthlyDates;
+  const sandwichLeaveCount = sandwichLeaveData.count;
+  const [showSandwichModal, setShowSandwichModal] = React.useState(false);
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col items-center justify-center py-0">
@@ -327,101 +337,144 @@ const EmployeeAttendanceProfile = () => {
             </button>
           </h3>
           {attendanceView === 'table' ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-xl shadow border border-gray-200">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Punch In</th>
-                    <th className="p-3">Punch Out</th>
-                    <th className="p-3">Work Hours</th>
-                    <th className="p-3">Worked Hours</th>
-                    <th className="p-3">Idle Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((rec, idx) => (
-                    <tr
-                      key={rec.date}
-                      className={`border-t transition-colors duration-150 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50`}
-                    >
-                      <td className="p-3 font-mono text-gray-700">{rec.date}</td>
-                      <td className="p-3">
-                        {rec.status === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">Present</span>}
-                        {rec.status === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
-                        {rec.status === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
-                        {rec.status === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
-                      </td>
-                      <td className="p-3">{rec.status === "Present" && rec.punchIn ? rec.punchIn : ""}</td>
-                      <td className="p-3">{rec.status === "Present" && rec.punchOut ? rec.punchOut : ""}</td>
-                      <td className="p-3">{rec.status === "Present" && typeof rec.workHours === "number" ? rec.workHours.toFixed(2) : ""}</td>
-                      <td className="p-3">{rec.status === "Present" && typeof rec.workedHours === "number" ? rec.workedHours.toFixed(2) : ""}</td>
-                      <td className="p-3">{rec.status === "Present" && typeof rec.idleTime === "number" ? rec.idleTime.toFixed(2) : ""}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            // Calendar view
-            <div className="w-full bg-white rounded-xl shadow border border-gray-200 p-4">
-              <div className="grid grid-cols-7 gap-2">
-                {/* Render day headers */}
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                  <div key={day} className="text-xs font-bold text-blue-700 text-center py-1">{day}</div>
-                ))}
-                {/* Render days for the selected month */}
-                {(() => {
-                  const daysInMonth = new Date(selectedMonth + '-01');
-                  const year = daysInMonth.getFullYear();
-                  const month = daysInMonth.getMonth();
-                  const lastDay = new Date(year, month + 1, 0).getDate();
-                  const firstDayOfWeek = new Date(year, month, 1).getDay();
-                  const cells = [];
-                  // Empty cells for days before the 1st
-                  for (let i = 0; i < firstDayOfWeek; i++) {
-                    cells.push(<div key={'empty-' + i} className="bg-transparent"></div>);
-                  }
-                  // Render each day
-                  for (let day = 1; day <= lastDay; day++) {
-                    const dateStr = `${selectedMonth}-${day.toString().padStart(2, '0')}`;
-                    const rec = records.find(r => r.date === dateStr);
-                    let statusColor = '';
-                    let statusText = '';
-                    if (rec) {
-                      if (rec.status === 'Present') {
-                        statusColor = 'bg-green-100 text-green-700';
-                        statusText = 'Present';
-                      } else if (rec.status === 'Absent') {
-                        statusColor = 'bg-red-100 text-red-700';
-                        statusText = 'Absent';
-                      } else if (rec.status === 'Leave') {
-                        statusColor = 'bg-yellow-100 text-yellow-700';
-                        statusText = 'Leave';
-                      } else if (rec.status === 'Holiday') {
-                        statusColor = 'bg-purple-100 text-purple-700';
-                        statusText = 'Holiday';
-                      }
-                    }
-                    cells.push(
-                      <div key={dateStr} className={`flex flex-col items-center justify-center border rounded-lg py-2 px-1 ${statusColor} min-h-[60px]`}>
-                        <span className="font-mono text-xs text-gray-700">{day}</span>
-                        {rec && <span className="text-[10px] font-semibold mt-1">{statusText}</span>}
-                        {rec && rec.status === 'Present' && rec.punchIn && (
-                          <span className="text-[9px] text-gray-500">In: {rec.punchIn}</span>
-                        )}
-                        {rec && rec.status === 'Present' && rec.punchOut && (
-                          <span className="text-[9px] text-gray-500">Out: {rec.punchOut}</span>
-                        )}
-                      </div>
-                    );
-                  }
-                  return cells;
-                })()}
+  <div className="overflow-x-auto">
+    <table className="min-w-full bg-white rounded-xl shadow border border-gray-200">
+      <thead className="sticky top-0 z-10">
+        <tr className="bg-gray-100 text-left">
+          <th className="p-3">Date</th>
+          <th className="p-3">Status</th>
+          <th className="p-3">Punch In</th>
+          <th className="p-3">Punch Out</th>
+          <th className="p-3">Work Hours</th>
+          <th className="p-3">Worked Hours</th>
+          <th className="p-3">Idle Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {records.map((rec, idx) => {
+          const isFuture = rec.date > todayStr;
+          return (
+            <tr
+              key={rec.date}
+              className={`border-t transition-colors duration-150 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} ${isFuture ? 'opacity-60 bg-gray-100 cursor-not-allowed' : 'hover:bg-blue-50'}`}
+            >
+              <td className="p-3 font-mono text-gray-700">{rec.date}</td>
+              <td className="p-3">
+                {rec.status === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">{rec.isHalfDay ? "Half-Day Present" : "Present"}</span>}
+                {rec.status === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
+                {rec.status === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
+                {rec.status === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
+                {isFuture && <span className="ml-2 text-xs text-gray-400">Future</span>}
+              </td>
+              <td className="p-3">{rec.status === "Present" && rec.punchIn ? rec.punchIn : ""}</td>
+              <td className="p-3">{rec.status === "Present" && rec.punchOut ? rec.punchOut : ""}</td>
+              <td className="p-3">{rec.status === "Present" && typeof rec.workHours === "number" ? rec.workHours.toFixed(2) : ""}</td>
+              <td className="p-3">{rec.status === "Present" && typeof rec.workedHours === "number" ? rec.workedHours.toFixed(2) : ""}</td>
+              <td className="p-3">{rec.status === "Present" && typeof rec.idleTime === "number" ? rec.idleTime.toFixed(2) : ""}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+) : (
+  // Calendar view
+  <div className="w-full bg-white rounded-xl shadow border border-gray-200 p-4">
+    <div className="grid grid-cols-7 gap-2">
+      {/* Render day headers */}
+      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+        <div key={day} className="text-xs font-bold text-blue-700 text-center py-1">{day}</div>
+      ))}
+      {/* Render days for the selected month */}
+      {(() => {
+        const daysInMonth = new Date(selectedMonth + '-01');
+        const year = daysInMonth.getFullYear();
+        const month = daysInMonth.getMonth();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const firstDayOfWeek = new Date(year, month, 1).getDay();
+        const cells = [];
+        // Empty cells for days before the 1st
+        for (let i = 0; i < firstDayOfWeek; i++) {
+          cells.push(<div key={'empty-' + i} className="bg-transparent"></div>);
+        }
+        // Render each day
+        for (let day = 1; day <= lastDay; day++) {
+          const dateStr = `${selectedMonth}-${day.toString().padStart(2, '0')}`;
+          const rec = records.find(r => r.date === dateStr);
+          const isFuture = dateStr > todayStr;
+          let statusColor = '';
+          let statusText = '';
+          let futureShade = isFuture ? 'bg-gray-100 opacity-60 cursor-not-allowed border-dashed' : '';
+          let borderColor = '';
+
+          // For future dates, show only "Future" (no attendance status)
+          if (isFuture) {
+            cells.push(
+              <div
+                key={dateStr}
+                className={`flex flex-col items-center justify-center border rounded-lg py-2 px-1 min-h-[60px] font-semibold bg-gray-100 border-gray-300 opacity-60 border-dashed`}
+                style={{
+                  borderWidth: '2px',
+                  borderStyle: 'dashed',
+                  borderColor: '#e5e7eb',
+                  boxShadow: 'none'
+                }}
+                title="Future date"
+              >
+                <span className="font-mono text-xs text-gray-700">{day}</span>
+                <span className="text-[10px] font-semibold mt-1 text-gray-400">Future</span>
               </div>
+            );
+            continue;
+          }
+
+          // For past/present dates, show actual status
+          if (rec) {
+            if (rec.status === 'Present') {
+              statusColor = 'bg-green-50 text-green-700 border-green-300';
+              statusText = rec.isHalfDay ? 'Half-Day Present' : 'Present';
+              borderColor = 'border-green-400';
+            } else if (rec.status === 'Absent') {
+              statusColor = 'bg-red-50 text-red-700 border-red-300';
+              statusText = 'Absent';
+              borderColor = 'border-red-400';
+            } else if (rec.status === 'Leave') {
+              statusColor = 'bg-yellow-50 text-yellow-700 border-yellow-300';
+              statusText = 'Leave';
+              borderColor = 'border-yellow-400';
+            } else if (rec.status === 'Holiday') {
+              statusColor = 'bg-purple-50 text-purple-700 border-purple-300';
+              statusText = 'Holiday';
+              borderColor = 'border-purple-400';
+            }
+          }
+
+          cells.push(
+            <div
+              key={dateStr}
+              className={`flex flex-col items-center justify-center border rounded-lg py-2 px-1 min-h-[60px] font-semibold ${statusColor} ${borderColor}`}
+              style={{
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: borderColor ? borderColor.replace('border-', '') : '#e5e7eb',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.05)'
+              }}
+            >
+              <span className="font-mono text-xs text-gray-700">{day}</span>
+              {rec && <span className="text-[10px] font-semibold mt-1">{statusText}</span>}
+              {rec && rec.status === "Present" && (
+                <span className="text-[9px] text-gray-500 mt-1">
+                  In: {rec.punchIn} / Out: {rec.punchOut}
+                </span>
+              )}
             </div>
-          )}
+          );
+        }
+        return cells;
+      })()}
+    </div>
+  </div>
+)}
           {showSandwichModal && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
     <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative animate-fade-in">

@@ -65,22 +65,34 @@ const initialHolidays = [
 const HolidayCalendarProvider = ({ children }) => {
   const [holidays, setHolidays] = useState(initialHolidays);
 
+  // Add holiday: only for future dates, prevent duplicate date
   const addHoliday = useCallback((holiday) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (holiday.date <= todayStr) return; // Restrict past/present
+    if (holidays.some(h => h.date === holiday.date)) return; // Prevent duplicate
     setHolidays((prev) => [
       ...prev,
-      { ...holiday, id: Date.now() }
+      // { ...holiday, id: Date.now() }
     ]);
-  }, []);
+  }, [holidays]);
 
+  // Edit holiday: only for future dates, prevent duplicate date
   const editHoliday = useCallback((id, updated) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (updated.date <= todayStr) return; // Restrict past/present
+    if (holidays.some(h => h.date === updated.date && h.id !== id)) return; // Prevent duplicate
     setHolidays((prev) =>
       prev.map((h) => (h.id === id ? { ...h, ...updated } : h))
     );
-  }, []);
+  }, [holidays]);
 
+  // Delete holiday: only for future dates
   const deleteHoliday = useCallback((id) => {
+    const holiday = holidays.find(h => h.id === id);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (holiday?.date <= todayStr) return; // Restrict past/present
     setHolidays((prev) => prev.filter((h) => h.id !== id));
-  }, []);
+  }, [holidays]);
 
   // Utility: get all holiday dates as array of YYYY-MM-DD strings - memoized for efficiency
   const getHolidayDates = useCallback(() => {
@@ -112,7 +124,7 @@ const HolidayCalendarProvider = ({ children }) => {
     const today = new Date();
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(today.getDate() + 30);
-    
+
     return holidays.filter(h => {
       const holidayDate = new Date(h.date);
       return holidayDate >= today && holidayDate <= thirtyDaysFromNow;
@@ -126,7 +138,7 @@ const HolidayCalendarProvider = ({ children }) => {
         addHoliday,
         editHoliday,
         deleteHoliday,
-        getHolidayDates, // Expose for sandwich leave and reporting
+        getHolidayDates,
         getHolidaysForMonth,
         getHolidaysForYear,
         isHoliday,
