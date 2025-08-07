@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { LeaveRequestContext } from "./LeaveRequestContext";
 
@@ -229,108 +228,7 @@ export const LeaveRequestProvider = ({ children }) => {
     },
   ]);
 
-  // Helper: get month string from date
-  const getMonthString = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  };
-
-  // Efficiently get all approved leave dates for an employee (for sandwich leave calculation)
-  const getApprovedLeaveDatesByEmployee = (employeeId) => {
-    return leaveRequests
-      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
-      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
-  };
-
-  // Monthly leave summary for a particular employee
-  const getMonthlyLeaveSummaryForEmployee = useMemo(() => {
-    return (employeeId, monthStr) => {
-      const filtered = leaveRequests.filter(
-        (req) => req.employeeId === employeeId && getMonthString(req.from) === monthStr
-      );
-      const statusCounts = filtered.reduce(
-        (acc, curr) => {
-          const status = curr?.status || 'Unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        },
-        { Approved: 0, Rejected: 0, Pending: 0 }
-      );
-      return {
-        total: filtered.length,
-        statusCounts,
-        requests: filtered,
-      };
-    };
-  }, [leaveRequests]);
-
-  // Monthly leave summary for all employees
-  const getMonthlyLeaveSummaryForAll = useMemo(() => {
-    return (monthStr) => {
-      const filtered = leaveRequests.filter(
-        (req) => getMonthString(req.from) === monthStr
-      );
-      // Group by employeeId
-      const summaryByEmployee = {};
-      filtered.forEach((req) => {
-        if (!summaryByEmployee[req.employeeId]) {
-          summaryByEmployee[req.employeeId] = [];
-        }
-        summaryByEmployee[req.employeeId].push(req);
-      });
-      // Status counts for all
-      const statusCounts = filtered.reduce(
-        (acc, curr) => {
-          const status = curr?.status || 'Unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        },
-        { Approved: 0, Rejected: 0, Pending: 0 }
-      );
-      return {
-        total: filtered.length,
-        statusCounts,
-        requests: filtered,
-        summaryByEmployee,
-      };
-    };
-  }, [leaveRequests]);
-
-  // Monthly leave summary for a selected department
-  const getMonthlyLeaveSummaryForDepartment = useMemo(() => {
-    return (department, monthStr) => {
-      const filtered = leaveRequests.filter(
-        (req) => req.department === department && getMonthString(req.from) === monthStr
-      );
-      const statusCounts = filtered.reduce(
-        (acc, curr) => {
-          const status = curr?.status || 'Unknown';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        },
-        { Approved: 0, Rejected: 0, Pending: 0 }
-      );
-      return {
-        total: filtered.length,
-        statusCounts,
-        requests: filtered,
-      };
-    };
-  }, [leaveRequests]);
-
-  // Get all months present in leaveRequests - memoized for efficiency
-  const allMonths = useMemo(() => {
-    return Array.from(
-      new Set(
-        (leaveRequests || [])
-          .map((req) => getMonthString(req.from))
-          .filter((m) => m)
-      )
-    );
-  }, [leaveRequests]);
-
-  // CRUD operations for leave requests
+  // Only expose CRUD and summary utilities
   const addLeaveRequest = (newRequest) => {
     const id = Math.max(...leaveRequests.map(req => req.id), 0) + 1;
     setLeaveRequests(prev => [...prev, { ...newRequest, id }]);
@@ -346,6 +244,12 @@ export const LeaveRequestProvider = ({ children }) => {
     setLeaveRequests(prev => prev.filter(req => req.id !== id));
   };
 
+  const getApprovedLeaveDatesByEmployee = (employeeId) => {
+    return leaveRequests
+      .filter(lr => lr.employeeId === employeeId && lr.status === "Approved")
+      .flatMap(lr => expandLeaveRange(lr.from, lr.to));
+  };
+
   return (
     <LeaveRequestContext.Provider value={{
       leaveRequests,
@@ -353,13 +257,7 @@ export const LeaveRequestProvider = ({ children }) => {
       addLeaveRequest,
       updateLeaveRequest,
       deleteLeaveRequest,
-      getMonthString,
-      getMonthlyLeaveSummaryForEmployee,
-      getMonthlyLeaveSummaryForAll,
-      getMonthlyLeaveSummaryForDepartment,
-      allMonths,
-      getApprovedLeaveDatesByEmployee, // Expose for sandwich leave calculation
-      expandLeaveRange, // Expose utility function
+      getApprovedLeaveDatesByEmployee,
     }}>
       {children}
     </LeaveRequestContext.Provider>

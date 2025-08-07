@@ -17,9 +17,9 @@ import {
 } from "chart.js";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const EmployeeAttendanceProfile = () => {
-  // Ensure todayStr is defined at the top of the component
-  const todayStr = new Date().toISOString().slice(0, 10);
+const EmployeeAttendanceProfile = () =>                         {
+  // Ensure todayStr is defined at the top of      the component
+  const todayStr = new Date().toISOString().slice(0, 10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       );
   // Helper: get day of week (0=Sun, 6=Sat)
   const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
@@ -81,14 +81,13 @@ const EmployeeAttendanceProfile = () => {
 
     // Attendance summary with improved categorization
     const isCurrentMonth = selectedMonth === todayStr.slice(0, 7);
-
-    // Only include records up to today for current month
     const filteredRecords = isCurrentMonth
       ? records.filter(r => r.date <= todayStr)
       : records;
 
-    // Use filteredRecords for all summary calculations
-    const presentDays = filteredRecords.filter((r) => r.status === "Present").length;
+    const fullDayPresent = filteredRecords.filter(r => r.status === "Present" && !r.isHalfDay).length;
+    const halfDayPresent = filteredRecords.filter(r => r.status === "Present" && r.isHalfDay).length;
+    const presentDays = fullDayPresent + halfDayPresent;
     const absentDays = filteredRecords.filter((r) => r.status === "Absent").length;
     const leaveDays = filteredRecords.filter((r) => r.status === "Leave").length;
     const holidayDays = filteredRecords.filter((r) => r.status === "Holiday").length;
@@ -119,7 +118,9 @@ const EmployeeAttendanceProfile = () => {
       leavesApplied,
       leavesApproved,
       leavesRejected,
-      leavesPending
+      leavesPending,
+      fullDayPresent,
+      halfDayPresent
     };
   }, [records, leaveRequests, employeeId, selectedMonth, getEmployeeById, todayStr]);
 
@@ -135,18 +136,21 @@ const EmployeeAttendanceProfile = () => {
     leavesApplied,
     leavesApproved,
     leavesRejected,
-    leavesPending
+    leavesPending,
+    fullDayPresent,
+    halfDayPresent
   } = employeeData;
 
   // Chart data for monthly attendance summary
   const attendanceChartData = {
-    labels: ["Present", "Absent", "Leave", "Holiday"],
+    labels: ["Full Day Present", "Half Day Present", "Absent", "Leave", "Holiday"],
     datasets: [
       {
         label: "Days",
-        data: [presentDays, absentDays, leaveDays, holidayDays],
+        data: [fullDayPresent, halfDayPresent, absentDays, leaveDays, holidayDays],
         backgroundColor: [
-          "#34d399", // green - Present
+          "#34d399", // green - Full Day Present
+          "#fbbf24", // yellow - Half Day Present
           "#f87171", // red - Absent
           "#fbbf24", // yellow - Leave
           "#a78bfa", // purple - Holiday
@@ -260,12 +264,18 @@ const EmployeeAttendanceProfile = () => {
             </div>
             <div className="flex-1" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
               <span className="text-2xl mb-1 text-green-600">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">Present</h3>
-              <span className="text-2xl font-bold text-green-700">{presentDays}</span>
+              <h3 className="font-semibold mb-1 text-gray-700">Present (Full Day)</h3>
+              <span className="text-2xl font-bold text-green-700">{fullDayPresent}</span>
               <span className="text-xs text-gray-500 mt-1">Punched In</span>
+            </div>
+            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
+              <span className="text-2xl mb-1 text-yellow-500">●</span>
+              <h3 className="font-semibold mb-1 text-gray-700">Present (Half Day)</h3>
+              <span className="text-2xl font-bold text-yellow-700">{halfDayPresent}</span>
+              <span className="text-xs text-gray-500 mt-1">Late/Policy</span>
             </div>
             <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
               <span className="text-2xl mb-1 text-red-600">●</span>
@@ -353,6 +363,10 @@ const EmployeeAttendanceProfile = () => {
       <tbody>
         {records.map((rec, idx) => {
           const isFuture = rec.date > todayStr;
+          let statusLabel = rec.status;
+          if (rec.status === "Present") {
+            statusLabel = rec.isHalfDay ? "Half Day Present" : "Present";
+          }
           return (
             <tr
               key={rec.date}
@@ -360,17 +374,23 @@ const EmployeeAttendanceProfile = () => {
             >
               <td className="p-3 font-mono text-gray-700">{rec.date}</td>
               <td className="p-3">
-                {rec.status === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">{rec.isHalfDay ? "Half-Day Present" : "Present"}</span>}
-                {rec.status === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
-                {rec.status === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
-                {rec.status === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
-                {isFuture && <span className="ml-2 text-xs text-gray-400">Future</span>}
+                {!isFuture ? (
+                  <>
+                    {statusLabel === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">Present</span>}
+                    {statusLabel === "Half Day Present" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Half Day Present</span>}
+                    {statusLabel === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
+                    {statusLabel === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
+                    {statusLabel === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
+                  </>
+                ) : (
+                  <span className="ml-2 text-xs text-gray-400">Future</span>
+                )}
               </td>
-              <td className="p-3">{rec.status === "Present" && rec.punchIn ? rec.punchIn : ""}</td>
-              <td className="p-3">{rec.status === "Present" && rec.punchOut ? rec.punchOut : ""}</td>
-              <td className="p-3">{rec.status === "Present" && typeof rec.workHours === "number" ? rec.workHours.toFixed(2) : ""}</td>
-              <td className="p-3">{rec.status === "Present" && typeof rec.workedHours === "number" ? rec.workedHours.toFixed(2) : ""}</td>
-              <td className="p-3">{rec.status === "Present" && typeof rec.idleTime === "number" ? rec.idleTime.toFixed(2) : ""}</td>
+              <td className="p-3">{!isFuture && rec.status === "Present" && rec.punchIn ? rec.punchIn : ""}</td>
+              <td className="p-3">{!isFuture && rec.status === "Present" && rec.punchOut ? rec.punchOut : ""}</td>
+              <td className="p-3">{!isFuture && rec.status === "Present" && typeof rec.workHours === "number" ? rec.workHours.toFixed(2) : ""}</td>
+              <td className="p-3">{!isFuture && rec.status === "Present" && typeof rec.workedHours === "number" ? rec.workedHours.toFixed(2) : ""}</td>
+              <td className="p-3">{!isFuture && rec.status === "Present" && typeof rec.idleTime === "number" ? rec.idleTime.toFixed(2) : ""}</td>
             </tr>
           );
         })}
@@ -378,14 +398,11 @@ const EmployeeAttendanceProfile = () => {
     </table>
   </div>
 ) : (
-  // Calendar view
   <div className="w-full bg-white rounded-xl shadow border border-gray-200 p-4">
     <div className="grid grid-cols-7 gap-2">
-      {/* Render day headers */}
       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
         <div key={day} className="text-xs font-bold text-blue-700 text-center py-1">{day}</div>
       ))}
-      {/* Render days for the selected month */}
       {(() => {
         const daysInMonth = new Date(selectedMonth + '-01');
         const year = daysInMonth.getFullYear();
@@ -393,11 +410,9 @@ const EmployeeAttendanceProfile = () => {
         const lastDay = new Date(year, month + 1, 0).getDate();
         const firstDayOfWeek = new Date(year, month, 1).getDay();
         const cells = [];
-        // Empty cells for days before the 1st
         for (let i = 0; i < firstDayOfWeek; i++) {
           cells.push(<div key={'empty-' + i} className="bg-transparent"></div>);
         }
-        // Render each day
         for (let day = 1; day <= lastDay; day++) {
           const dateStr = `${selectedMonth}-${day.toString().padStart(2, '0')}`;
           const rec = records.find(r => r.date === dateStr);
@@ -406,8 +421,6 @@ const EmployeeAttendanceProfile = () => {
           let statusText = '';
           let futureShade = isFuture ? 'bg-gray-100 opacity-60 cursor-not-allowed border-dashed' : '';
           let borderColor = '';
-
-          // For future dates, show only "Future" (no attendance status)
           if (isFuture) {
             cells.push(
               <div
@@ -427,13 +440,11 @@ const EmployeeAttendanceProfile = () => {
             );
             continue;
           }
-
-          // For past/present dates, show actual status
           if (rec) {
             if (rec.status === 'Present') {
-              statusColor = 'bg-green-50 text-green-700 border-green-300';
+              statusColor = rec.isHalfDay ? 'bg-yellow-50 text-yellow-700 border-yellow-300' : 'bg-green-50 text-green-700 border-green-300';
               statusText = rec.isHalfDay ? 'Half-Day Present' : 'Present';
-              borderColor = 'border-green-400';
+              borderColor = rec.isHalfDay ? 'border-yellow-400' : 'border-green-400';
             } else if (rec.status === 'Absent') {
               statusColor = 'bg-red-50 text-red-700 border-red-300';
               statusText = 'Absent';
@@ -448,7 +459,6 @@ const EmployeeAttendanceProfile = () => {
               borderColor = 'border-purple-400';
             }
           }
-
           cells.push(
             <div
               key={dateStr}
