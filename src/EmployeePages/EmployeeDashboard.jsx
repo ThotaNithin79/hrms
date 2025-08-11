@@ -60,8 +60,8 @@ function calculateIdleTime(punchIn, punchOut) {
 
 const EmployeeDashboard = () => {
   const { currentEmployee } = useContext(CurrentEmployeeContext);
-  const { attendanceRecords } = useContext(CurrentEmployeeAttendanceContext);
-  const { leaveRequests } = useContext(CurrentEmployeeLeaveRequestContext);
+  const { attendanceRecords, monthlyWorkHours, monthlyIdleHours } = useContext(CurrentEmployeeAttendanceContext);
+  const { leaveRequests, filteredRequests, selectedMonth } = useContext(CurrentEmployeeLeaveRequestContext);
   const { notices } = useContext(NoticeContext);
 
   // Attendance Tracker State
@@ -71,8 +71,9 @@ const EmployeeDashboard = () => {
   const [trackerIdle, setTrackerIdle] = useState(0);
 
   const todayStr = getTodayStr();
-  const empId = currentEmployee.job.employeeId;
 
+  // Get employeeId from currentEmployee context
+  const empId = currentEmployee && currentEmployee.job && currentEmployee.job.employeeId ? currentEmployee.job.employeeId : "";
   // Get today's attendance record (if any)
   const todayAttendance = attendanceRecords.find(
     (rec) => rec.employeeId === empId && rec.date === todayStr
@@ -104,11 +105,13 @@ const EmployeeDashboard = () => {
   // Noticeboard (show 3 most recent)
   const recentNotices = notices.slice(0, 3);
 
-  // Leave Summary (Bar Chart)
-  const leaveMonth = todayStr.slice(0, 7);
+  // Leaves (This Month or filtered) - use filteredRequests from provider
+  // Use filteredRequests for the current employee for the bar chart
+  // For the bar graph and summary, use only requests for the selected month
   const leavesThisMonth = leaveRequests.filter(
-    (req) => req.employeeId === empId && req.from.startsWith(leaveMonth)
+    (req) => selectedMonth ? req.from.startsWith(selectedMonth) : true
   );
+  // Count by status for bar chart (for the selected month)
   const leaveStatusCounts = {
     Approved: leavesThisMonth.filter((l) => l.status === "Approved").length,
     Pending: leavesThisMonth.filter((l) => l.status === "Pending").length,
@@ -131,14 +134,22 @@ const EmployeeDashboard = () => {
     ],
   };
 
-  // Work Hours Summary (Pie Chart)
+  // Work Hours & Idle Time (This Month) - fetch from provider, add today's tracker if any
+  // Remove reference to leaveMonth (no longer needed)
   const thisMonthAttendance = attendanceRecords.filter(
-    (rec) =>
-      rec.employeeId === empId && rec.date.startsWith(leaveMonth)
+    (rec) => rec.employeeId === empId
   );
-  const totalWorkHours = thisMonthAttendance.reduce((sum, r) => sum + (r.workHours || 0), 0);
-  const totalWorkedHours = thisMonthAttendance.reduce((sum, r) => sum + (r.workedHours || 0), 0);
-  const totalIdleTime = thisMonthAttendance.reduce((sum, r) => sum + (r.idleTime || 0), 0);
+  // Use context monthlyWorkHours/monthlyIdleHours, add today's tracker if punched in/out
+  let totalWorkedHours = monthlyWorkHours;
+  let totalIdleTime = monthlyIdleHours;
+  if (punchedIn && punchOutTime) {
+    // Add today's tracker values if not already in attendanceRecords
+    const alreadyCounted = todayAttendance && todayAttendance.workedHours > 0;
+    if (!alreadyCounted) {
+      totalWorkedHours += WORK_HOURS - trackerIdle;
+      totalIdleTime += trackerIdle;
+    }
+  }
 
   const workPieData = {
     labels: ["Worked Hours", "Idle Time"],
@@ -153,11 +164,42 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
-      {/* Attendance Tracker */}
+
+      {/* Employee Profile Card (now first) */}
+      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
+        <div className="flex-shrink-0">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
+            alt="Employee"
+            className="w-28 h-28 rounded-full border-4 border-white shadow"
+          />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
+            <FaUserCircle className="text-blue-400" /> {personal.name}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
+            <div>
+              <span className="font-semibold">Employee ID:</span> {job.employeeId}
+            </div>
+            <div>
+              <span className="font-semibold">Designation:</span> {job.designation}
+            </div>
+            <div>
+              <span className="font-semibold">Department:</span> {job.department}
+            </div>
+            <div>
+              <span className="font-semibold">Email:</span> {contact.email || "--"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Check-in (now after profile) */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <div className="flex items-center mb-4 gap-2">
           <FaRegClock className="text-blue-600 text-xl" />
-          <h2 className="text-xl font-bold tracking-tight">Attendance Tracker</h2>
+          <h2 className="text-xl font-bold tracking-tight">Daily Check-in</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -220,36 +262,6 @@ const EmployeeDashboard = () => {
           <FaRegClock className="inline mr-1" />
           Working hours: <span className="font-semibold">09:30 - 18:30</span>. Idle time is calculated for late punch in or early punch out.
         </p>
-      </div>
-
-      {/* Employee Profile Card */}
-      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
-        <div className="flex-shrink-0">
-          <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
-            alt="Employee"
-            className="w-28 h-28 rounded-full border-4 border-white shadow"
-          />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
-            <FaUserCircle className="text-blue-400" /> {personal.name}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
-            <div>
-              <span className="font-semibold">Employee ID:</span> {job.employeeId}
-            </div>
-            <div>
-              <span className="font-semibold">Designation:</span> {job.designation}
-            </div>
-            <div>
-              <span className="font-semibold">Department:</span> {job.department}
-            </div>
-            <div>
-              <span className="font-semibold">Email:</span> {contact.email || "--"}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Dashboard Summary Cards */}
