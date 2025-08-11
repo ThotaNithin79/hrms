@@ -3,145 +3,89 @@ import { HolidayCalendarContext } from "../context/HolidayCalendarContext";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
-const getHolidayDates = (holidays) => holidays.map((h) => new Date(h.date));
-const isSameDay = (date1, date2) =>
-  date1.getFullYear() === date2.getFullYear() &&
-  date1.getMonth() === date2.getMonth() &&
-  date1.getDate() === date2.getDate();
+
 
 const CurrentEmployeeHolidayCalendar = () => {
   const { holidays } = useContext(HolidayCalendarContext);
-  const holidayDates = getHolidayDates(holidays);
+
   const currentYear = new Date().getFullYear();
   const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today);
 
-  const [calendarValues, setCalendarValues] = useState(
-    [...Array(12)].map((_, i) => new Date(currentYear, i, 1))
-  );
-
-  const [clickedHoliday, setClickedHoliday] = useState(null);
-
-
-  const tileContent = ({ date, view }) => {
-    if (view === "month") {
-      const holiday = holidays.find((h) => isSameDay(new Date(h.date), date));
-      if (holiday) {
-        return (
-          <div
-            className="flex flex-col items-center justify-start h-16 overflow-hidden text-center leading-tight text-[10px] text-red-600 font-medium px-1"
-            title={holiday.name}
-          >
-            <span className="w-1.5 h-1.5 bg-red-500 rounded-full mb-0.5"></span>
-            <span className="break-words line-clamp-2 w-full">
-              {holiday.name}
-            </span>
-          </div>
-        );
-      }
-    }
-    return null;
-  };
-
-  const tileClassName = ({ date, view }) => {
-    if (view === "month") {
-      const isHoliday = holidayDates.some((holidayDate) =>
-        isSameDay(holidayDate, date)
-      );
-
-      const isToday =
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear();
-
-      if (isHoliday && isToday) {
-        return "bg-yellow-300 border-2 border-red-400 font-bold";
-      } else if (isHoliday) {
-        return "react-calendar__tile--holiday border-2 border-red-400";
-      } else if (isToday) {
-        return "bg-yellow-300 font-bold";
-      }
-    }
-
-    return "h-20 flex items-start justify-center pt-1";
-  };
+  // Only show upcoming holidays (date > today)
+  const upcomingHolidays = holidays
+    .filter(h => new Date(h.date) > today)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2 md:px-6">
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-10">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-10">
         <h2 className="text-2xl md:text-3xl font-bold mb-8 text-blue-900 text-center tracking-wide drop-shadow">
           Holiday Calendar - {currentYear}
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(12)].map((_, i) => {
-            const monthStartDate = new Date(currentYear, i, 1);
-            const monthName = monthStartDate.toLocaleString("default", {
-              month: "long",
-            });
-
-            return (
-              <div key={i} className="bg-blue-50 rounded-xl p-4 shadow-inner">
-                <h3 className="text-center font-semibold mb-2 text-blue-800">
-                  {monthName}
-                </h3>
-                <Calendar
-  key={`calendar-${i}`}
-  value={null} // 👈 No date should be selected
-  activeStartDate={calendarValues[i]}
-  onActiveStartDateChange={({ activeStartDate }) => {
-    const updated = [...calendarValues];
-    updated[i] = new Date(currentYear, i, 1);
-    setCalendarValues(updated);
-  }}
-  defaultActiveStartDate={calendarValues[i]}
-  goToRangeStartOnSelect={false}
-  tileContent={tileContent}
-  tileClassName={tileClassName}
-  className="border-0 shadow-none w-full rounded-lg"
-  prev2Label={null}
-  next2Label={null}
-  showNavigation={false}
-  onClickDay={(value) => {
-  const updated = [...calendarValues];
-  updated[i] = new Date(currentYear, i, 1);
-  setCalendarValues(updated);
-
-  const clickedDate = value.toLocaleDateString("en-CA");
-  const holiday = holidays.find((h) => h.date === clickedDate);
-
-  if (holiday) {
-    setClickedHoliday(holiday);
-  } else {
-    setClickedHoliday(null); // clear if not a holiday
-  }
-}}
-/>
-              </div>
-            );
-          })}
+        <div className="flex flex-col items-center">
+          <Calendar
+            value={selectedDate}
+            onChange={setSelectedDate}
+            className="border-0 shadow w-full rounded-lg calendar-custom"
+            tileClassName={({ date, view }) => {
+              const isToday =
+                date.getDate() === today.getDate() &&
+                date.getMonth() === today.getMonth() &&
+                date.getFullYear() === today.getFullYear();
+              return isToday ? "bg-yellow-200 font-bold" : "";
+            }}
+            prev2Label={null}
+            next2Label={null}
+            showNavigation={true}
+            minDetail="year"
+            maxDetail="month"
+          />
         </div>
 
-{clickedHoliday && (
-  <div className="mt-6 text-center text-blue-800 font-semibold text-lg bg-blue-100 p-4 rounded shadow">
-    📅 {clickedHoliday.name} – {clickedHoliday.date}
-    <p className="text-sm text-gray-600 mt-1">{clickedHoliday.description}</p>
-  </div>
-)}
-
+        <div className="mt-10">
+          <h3 className="text-xl font-semibold text-blue-800 mb-4 text-center">Upcoming Holidays</h3>
+          {upcomingHolidays.length === 0 ? (
+            <div className="text-center text-gray-500">No upcoming holidays.</div>
+          ) : (
+            <ul className="divide-y divide-blue-100 rounded-lg overflow-hidden shadow-md bg-blue-50">
+              {upcomingHolidays.map((h) => (
+                <li key={h.date} className="flex flex-col md:flex-row md:items-center gap-2 px-4 py-3 hover:bg-blue-100 transition">
+                  <div className="flex-1 flex flex-col md:flex-row md:items-center gap-2">
+                    <span className="font-bold text-blue-700 text-base md:text-lg">{h.name}</span>
+                    <span className="text-gray-500 text-sm md:ml-4">{new Date(h.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  {h.description && (
+                    <span className="text-xs text-gray-600 md:ml-4">{h.description}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div className="mt-8 text-xs text-gray-400 text-center">
-          <span className="inline-block w-2 h-2 bg-red-500 rounded-full align-middle mr-1"></span>
-          Holidays are marked with a red dot and their name below the date.
+          Use the calendar above to browse months. Upcoming holidays are listed below.
         </div>
 
         <style>{`
-          .react-calendar__tile--holiday {
-            background: #fef2f2 !important;
-            color: #b91c1c !important;
+          .calendar-custom {
+            font-size: 1rem;
+            background: #f8fafc;
           }
-          .react-calendar__tile--holiday:enabled:hover,
-          .react-calendar__tile--holiday:enabled:focus {
-            background: #fecaca !important;
+          .react-calendar__tile {
+            min-height: 3.5rem;
+            border-radius: 0.5rem;
+            margin: 2px;
+            transition: background 0.2s;
+          }
+          .react-calendar__tile:enabled:hover,
+          .react-calendar__tile:enabled:focus {
+            background: #dbeafe;
+          }
+          .bg-yellow-200 {
+            background: #fef9c3 !important;
           }
         `}</style>
       </div>
