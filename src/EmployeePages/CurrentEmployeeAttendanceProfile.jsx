@@ -1,3 +1,6 @@
+
+  // ...existing imports and code...
+  // ...existing imports and code...
 import React, { useContext, useMemo, useState } from "react";
 import { CurrentEmployeeAttendanceContext } from "../EmployeeContext/CurrentEmployeeAttendanceContext";
 import { CurrentEmployeeLeaveRequestContext } from "../EmployeeContext/CurrentEmployeeLeaveRequestContext";
@@ -90,17 +93,41 @@ const CurrentEmployeeAttendanceProfile = () => {
       employeeRecords.filter((rec) => rec.date.startsWith(selectedMonth)),
     [employeeRecords, selectedMonth]
   );
+const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
+const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
 
-  // Monthly summary
-  const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
-  const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
-  const leaveCount = monthlyRecords.filter((r) => r.status === "Leave").length;
+  // Calculate approved leave days from leaveRequests for the selected month
+  function getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId) {
+    let leaveDates = new Set();
+    leaveRequests.forEach((req) => {
+      if (req.employeeId !== employeeId) return;
+      if (req.status !== "Approved") return;
+      // Only consider approved leaves that overlap with the selected month
+      const from = new Date(req.from);
+      const to = new Date(req.to);
+      for (
+        let d = new Date(from);
+        d <= to;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateStr = d.toISOString().slice(0, 10);
+        if (dateStr.startsWith(month)) {
+          leaveDates.add(dateStr);
+        }
+      }
+    });
+    return leaveDates;
+  }
 
-  // Leaves applied in selected month
+  // Get approved leave days for selected month
+  const approvedLeaveDaysSet = getApprovedLeaveDaysForMonth(leaveRequests, selectedMonth, employeeId);
+  const leaveCount = approvedLeaveDaysSet.size;
+
+  // Leaves applied in selected month (requests whose from or to is in selected month)
   const leavesApplied = leaveRequests.filter(
     (req) =>
       req.employeeId === employeeId &&
-      req.from.startsWith(selectedMonth)
+      (req.from.startsWith(selectedMonth) || req.to.startsWith(selectedMonth))
   );
 
   // Work hours summary
@@ -199,7 +226,7 @@ const CurrentEmployeeAttendanceProfile = () => {
         />
       </div>
 
-      {/* Summary boxes */}
+      // Summary boxes
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-green-600 font-bold text-lg">Present</span>
