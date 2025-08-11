@@ -100,7 +100,7 @@ const EmployeeDashboard = () => {
   };
 
   // Employee Basic Details
-  const { personal, contact, job } = currentEmployee;
+  const { personal, contact, job, profilePhoto } = currentEmployee;
 
   // Noticeboard (show 3 most recent)
   const recentNotices = notices.slice(0, 3);
@@ -169,11 +169,22 @@ const EmployeeDashboard = () => {
       {/* Employee Profile Card (now first) */}
       <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
         <div className="flex-shrink-0">
-          <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
-            alt="Employee"
-            className="w-28 h-28 rounded-full border-4 border-white shadow"
-          />
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt="Employee"
+              className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
+            />
+          ) : (
+            <div className="w-28 h-28 rounded-full border-4 border-white shadow bg-blue-600 flex items-center justify-center text-white text-4xl font-bold select-none">
+              {personal.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2)}
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">

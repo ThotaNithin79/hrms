@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CurrentEmployeeContext } from "./CurrentEmployeeContext";
 
 export const CurrentEmployeeProvider = ({ children }) => {
-  // Store current employee as an object
+  // Store current employee as an object, add profilePhoto (null by default)
   const [currentEmployee, setCurrentEmployee] = useState({
     personal: {
       name: "John Doe",
@@ -53,13 +53,33 @@ export const CurrentEmployeeProvider = ({ children }) => {
         salary: 65000,
       },
     ],
+    profilePhoto: null, // base64 or url string
   });
 
-  // Edit function for current employee
+  // Edit function for current employee (supports profilePhoto update)
   const editCurrentEmployee = (updatedData) => {
     setCurrentEmployee((prev) => ({
       ...prev,
       ...updatedData,
+      // If updating nested fields, merge them
+      personal: {
+        ...prev.personal,
+        ...(updatedData.personal || {}),
+      },
+      contact: {
+        ...prev.contact,
+        ...(updatedData.contact || {}),
+      },
+      job: {
+        ...prev.job,
+        ...(updatedData.job || {}),
+      },
+      bank: {
+        ...prev.bank,
+        ...(updatedData.bank || {}),
+      },
+      experience: updatedData.experience || prev.experience,
+      profilePhoto: updatedData.profilePhoto !== undefined ? updatedData.profilePhoto : prev.profilePhoto,
     }));
   };
 

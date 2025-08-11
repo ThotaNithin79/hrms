@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import { CurrentEmployeeContext } from "../EmployeeContext/CurrentEmployeeContext";
 
 const CurrentEmployeeProfile = () => {
@@ -6,12 +6,14 @@ const CurrentEmployeeProfile = () => {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(currentEmployee);
+  const [photoPreview, setPhotoPreview] = useState(currentEmployee.profilePhoto || null);
+  const fileInputRef = useRef();
 
   if (!currentEmployee) {
     return <div className="p-6 text-red-600">Employee data not available.</div>;
   }
 
-  const { personal, contact, job, bank, experience } = editing ? form : currentEmployee;
+  const { personal, contact, job, bank, experience, profilePhoto } = editing ? form : currentEmployee;
 
   const handleChange = (section, field, value) => {
     setForm((prev) => ({
@@ -32,9 +34,21 @@ const CurrentEmployeeProfile = () => {
     }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+        setForm((prev) => ({ ...prev, profilePhoto: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    editCurrentEmployee(form);
+    editCurrentEmployee({ ...form, profilePhoto: photoPreview });
     setEditing(false);
   };
 
@@ -57,6 +71,49 @@ const CurrentEmployeeProfile = () => {
 
       {editing ? (
         <form onSubmit={handleSubmit}>
+          {/* Profile Photo Upload & Preview */}
+          <div className="flex items-center gap-6 mb-6">
+            <div>
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt="Profile Preview"
+                  className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-full border-4 border-white shadow bg-blue-600 flex items-center justify-center text-white text-4xl font-bold select-none">
+                  {form.personal.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block font-medium mb-2">Profile Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handlePhotoChange}
+                className="block mb-2"
+              />
+              <button
+                type="button"
+                className="text-blue-700 underline text-sm"
+                onClick={() => {
+                  setPhotoPreview(null);
+                  setForm((prev) => ({ ...prev, profilePhoto: null }));
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                style={{ display: photoPreview ? "inline" : "none" }}
+              >
+                Remove Photo
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Info */}
             <div className="bg-white p-4 rounded-lg shadow">
@@ -163,6 +220,27 @@ const CurrentEmployeeProfile = () => {
         </form>
       ) : (
         <>
+          {/* Profile Photo Display */}
+          <div className="flex items-center gap-6 mb-6">
+            <div>
+              {profilePhoto ? (
+                <img
+                  src={profilePhoto}
+                  alt="Profile"
+                  className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-full border-4 border-white shadow bg-blue-600 flex items-center justify-center text-white text-4xl font-bold select-none">
+                  {personal?.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Info */}
             <div className="bg-white p-4 rounded-lg shadow">
