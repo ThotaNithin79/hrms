@@ -50,6 +50,27 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     setLeaveRequests((prev) => [...prev, newRequest]);
   };
 
+  // Dummy data for late login requests
+  const [lateLoginRequests, setLateLoginRequests] = useState([
+    { id: 1, employeeId: "EMP101", name: "John Doe", date: "2025-08-01", lateTill: "10:00", reason: "Traffic jam", status: "Approved" },
+    { id: 2, employeeId: "EMP101", name: "John Doe", date: "2025-08-05", lateTill: "09:45", reason: "Doctor appointment", status: "Pending" },
+    { id: 3, employeeId: "EMP101", name: "John Doe", date: "2025-07-20", lateTill: "10:15", reason: "Family emergency", status: "Rejected" },
+  ]);
+
+  // Add late login request
+  const applyLateLogin = ({ date, lateTill, reason }) => {
+    const newRequest = {
+      id: lateLoginRequests.length + 1 + Math.floor(Math.random() * 10000),
+      employeeId: "EMP101",
+      name: "John Doe",
+      date,
+      lateTill,
+      reason,
+      status: "Pending",
+    };
+    setLateLoginRequests((prev) => [newRequest, ...prev]);
+  };
+
   return (
     <CurrentEmployeeLeaveRequestContext.Provider
       value={{
@@ -63,6 +84,8 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
         setSelectedStatus,
         filteredRequests,
         applyLeave,
+        lateLoginRequests,
+        applyLateLogin,
       }}
     >
       {children}

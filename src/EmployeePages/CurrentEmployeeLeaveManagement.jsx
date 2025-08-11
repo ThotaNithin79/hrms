@@ -22,8 +22,7 @@ const CurrentEmployeeLeaveManagement = () => {
     applyLateLogin,
   } = useContext(CurrentEmployeeLeaveRequestContext);
 
-  // Local state for dynamic late logins
-  const [localLateLogins, setLocalLateLogins] = useState([]);
+  // Remove local state for dynamic late logins; use context instead
 
   // Leave form state
   const [form, setForm] = useState({ from: "", to: "", reason: "" });
@@ -84,9 +83,8 @@ const CurrentEmployeeLeaveManagement = () => {
     monthOptions.length > 0 ? monthOptions[monthOptions.length - 1] : ""
   );
   const [lateStatus, setLateStatus] = useState("All");
-  // Combine dummy and local late logins, newest first
-  const allLateLogins = [...localLateLogins, ...lateLoginRequests];
-  const filteredLateLogins = allLateLogins.filter((req) => {
+  // Use context lateLoginRequests, filter by month and status
+  const filteredLateLogins = lateLoginRequests.filter((req) => {
     const matchMonth = lateMonth ? req.date.startsWith(lateMonth) : true;
     const matchStatus = lateStatus === "All" ? true : req.status === lateStatus;
     return matchMonth && matchStatus;
@@ -326,14 +324,7 @@ const CurrentEmployeeLeaveManagement = () => {
                 setLateSuccess("");
                 return;
               }
-              const newEntry = {
-                id: Date.now(),
-                date: lateForm.date,
-                lateTill: lateForm.lateTill,
-                reason: lateForm.reason,
-                status: "Pending",
-              };
-              setLocalLateLogins(prev => [newEntry, ...prev]);
+              applyLateLogin(lateForm);
               setLateForm({ date: "", lateTill: "", reason: "" });
               setLateError("");
               setLateSuccess("Late login request submitted successfully!");
