@@ -61,7 +61,7 @@ function calculateIdleTime(punchIn, punchOut) {
 const EmployeeDashboard = () => {
   const { currentEmployee } = useContext(CurrentEmployeeContext);
   const { attendanceRecords, monthlyWorkHours, monthlyIdleHours } = useContext(CurrentEmployeeAttendanceContext);
-  const { leaveRequests, filteredRequests, selectedMonth } = useContext(CurrentEmployeeLeaveRequestContext);
+  const { leaveRequests } = useContext(CurrentEmployeeLeaveRequestContext);
   const { notices } = useContext(NoticeContext);
 
   // Attendance Tracker State
@@ -105,17 +105,18 @@ const EmployeeDashboard = () => {
   // Noticeboard (show 3 most recent)
   const recentNotices = notices.slice(0, 3);
 
-  // Leaves (This Month or filtered) - use filteredRequests from provider
-  // Use filteredRequests for the current employee for the bar chart
-  // For the bar graph and summary, use only requests for the selected month
-  const leavesThisMonth = leaveRequests.filter(
-    (req) => selectedMonth ? req.from.startsWith(selectedMonth) : true
-  );
-  // Count by status for bar chart (for the selected month)
+  // --- LEAVE DATA FILTERING FOR DASHBOARD ---
+  // Get current month in YYYY-MM format
+  const currentMonth = todayStr.slice(0, 7);
+  // Filter leaveRequests for current month
+  const leavesThisMonthAll = leaveRequests.filter(req => req.from.startsWith(currentMonth));
+  // For card: count only approved leaves in current month
+  const approvedLeavesThisMonth = leavesThisMonthAll.filter(l => l.status === "Approved").length;
+  // For bar chart: count by status in current month
   const leaveStatusCounts = {
-    Approved: leavesThisMonth.filter((l) => l.status === "Approved").length,
-    Pending: leavesThisMonth.filter((l) => l.status === "Pending").length,
-    Rejected: leavesThisMonth.filter((l) => l.status === "Rejected").length,
+    Approved: leavesThisMonthAll.filter((l) => l.status === "Approved").length,
+    Pending: leavesThisMonthAll.filter((l) => l.status === "Pending").length,
+    Rejected: leavesThisMonthAll.filter((l) => l.status === "Rejected").length,
   };
   const leaveBarData = {
     labels: ["Approved", "Pending", "Rejected"],
@@ -270,7 +271,7 @@ const EmployeeDashboard = () => {
           <FaCalendarAlt className="text-blue-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Leaves (This Month)</div>
-            <div className="font-bold text-lg text-blue-900">{leavesThisMonth.length}</div>
+            <div className="font-bold text-lg text-blue-900">{approvedLeavesThisMonth}</div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
