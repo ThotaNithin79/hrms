@@ -228,7 +228,29 @@ export const LeaveRequestProvider = ({ children }) => {
     },
   ]);
 
-  // Only expose CRUD and summary utilities
+  // Utility: get all unique months from leaveRequests
+  const allMonths = useMemo(() => {
+    const monthsSet = new Set();
+    leaveRequests.forEach(req => {
+      if (req.from) monthsSet.add(req.from.slice(0, 7));
+      if (req.to) monthsSet.add(req.to.slice(0, 7));
+    });
+    return Array.from(monthsSet).sort().reverse(); // Most recent first
+  }, [leaveRequests]);
+
+  // Utility: get leave summary for a given month
+  const getMonthlyLeaveSummaryForAll = (monthStr) => {
+    const filtered = leaveRequests.filter(req => req.from && req.from.slice(0, 7) === monthStr);
+    return {
+      total: filtered.length,
+      statusCounts: filtered.reduce((acc, curr) => {
+        const status = curr?.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, { Approved: 0, Rejected: 0, Pending: 0 }),
+      requests: filtered,
+    };
+  };
   const addLeaveRequest = (newRequest) => {
     const id = Math.max(...leaveRequests.map(req => req.id), 0) + 1;
     setLeaveRequests(prev => [...prev, { ...newRequest, id }]);
@@ -258,6 +280,8 @@ export const LeaveRequestProvider = ({ children }) => {
       updateLeaveRequest,
       deleteLeaveRequest,
       getApprovedLeaveDatesByEmployee,
+      allMonths,
+      getMonthlyLeaveSummaryForAll,
     }}>
       {children}
     </LeaveRequestContext.Provider>

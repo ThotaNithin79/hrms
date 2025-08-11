@@ -57,16 +57,32 @@ const LeaveManagement = () => {
 
   const weekDates = getCurrentWeekDates(currentWeek);
 
-  // Get all departments from active employees only
-  const allDepartments = Array.from(new Set(employees.filter(emp => emp.isActive !== false).map(emp => emp.department))).sort();
+  // Get all departments from active employees' current experience only
+  const allDepartments = Array.from(new Set(
+    employees
+      .filter(emp => emp.isActive !== false)
+      .map(emp => {
+        if (Array.isArray(emp.experienceDetails)) {
+          const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
+          return currentExp?.department || null;
+        }
+        return null;
+      })
+      .filter(dept => dept)
+  )).sort();
 
   // Filter leave requests by week, status, search, and department, then separate active/inactive
   const allFilteredRequests = leaveRequests.filter((req) => {
     const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
     const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-    // Get department for this employee
+    // Get current department for this employee
     const emp = employees.find(e => e.employeeId === req.employeeId);
-    const matchesDept = filterDept === "All" ? true : emp?.department === filterDept;
+    let currentDept = null;
+    if (emp && Array.isArray(emp.experienceDetails)) {
+      const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
+      currentDept = currentExp?.department || null;
+    }
+    const matchesDept = filterDept === "All" ? true : currentDept === filterDept;
     // Check if leave falls within the week
     const fromDate = req.from;
     const toDate = req.to;

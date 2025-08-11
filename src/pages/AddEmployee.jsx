@@ -1,38 +1,97 @@
 import { useState, useContext } from "react";
 import { EmployeeContext } from "../context/EmployeeContext";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaEnvelope, FaBuilding, FaIdBadge } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaBuilding, FaIdBadge, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaBriefcase, FaMoneyBill, FaBirthdayCake, FaTransgender, FaFlag, FaHeartbeat, FaUniversity, FaCreditCard, FaCodeBranch } from "react-icons/fa";
 
-const TABS = [
-  { key: "basic", label: "Basic Info", icon: <FaUser /> },
-  { key: "contact", label: "Contact Info", icon: <FaEnvelope /> },
-  { key: "job", label: "Job Details", icon: <FaBuilding /> },
-];
+// Snackbar hook
+const useSnackbar = (timeout = 2500) => {
+  const [message, setMessage] = useState("");
+  const show = (msg) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), timeout);
+  };
+  return { message, show };
+};
 
 const AddEmployee = () => {
+  const navigate = useNavigate();
+  const { addEmployee, employees } = useContext(EmployeeContext);
+  const snackbar = useSnackbar();
+
+  // Form state
   const [formData, setFormData] = useState({
-    id: "",
+    employeeId: "",
     name: "",
     email: "",
-    department: "",
+    phone: "",
+    address: "",
+    joiningDate: "",
+    emergency: "",
+    isActive: true,
+    bankDetails: {
+      accountNumber: "",
+      bankName: "",
+      ifsc: "",
+      branch: "",
+    },
+    personalDetails: {
+      dob: "",
+      gender: "Male",
+      maritalStatus: "Single",
+      nationality: "",
+    },
+    currentRole: "",
+    currentDepartment: "",
+    currentSalary: "",
   });
-  const [activeTab, setActiveTab] = useState("basic");
+
+  // Mandatory fields for UI
+  const mandatoryFields = [
+    "name",
+    "email",
+    "currentDepartment",
+    "currentRole",
+    "joiningDate",
+    "currentSalary",
+  ];
+
   const [error, setError] = useState("");
 
-  const { addEmployee, employees } = useContext(EmployeeContext);
-  const navigate = useNavigate();
-
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name.startsWith("bankDetails.")) {
+      const bankField = name.split(".")[1];
+      setFormData(prev => ({
+        ...prev,
+        bankDetails: {
+          ...prev.bankDetails,
+          [bankField]: value,
+        },
+      }));
+    } else if (name.startsWith("personalDetails.")) {
+      const personalField = name.split(".")[1];
+      setFormData(prev => ({
+        ...prev,
+        personalDetails: {
+          ...prev.personalDetails,
+          [personalField]: value,
+        },
+      }));
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const validate = () => {
-    if (!formData.name.trim()) return "Name is required.";
+    if (!formData.name.trim()) return "Full Name is required.";
     if (!formData.email.trim()) return "Email is required.";
-    if (!formData.department.trim()) return "Department is required.";
-    if (formData.id.trim()) {
+    if (!formData.currentDepartment.trim()) return "Department is required.";
+    if (!formData.currentRole.trim()) return "Role is required.";
+    if (!formData.joiningDate) return "Joining Date is required.";
+    if (!formData.currentSalary || isNaN(formData.currentSalary)) return "Salary is required.";
+    if (formData.employeeId.trim()) {
       const exists = employees.some(
-        (emp) => emp.employeeId === formData.id.trim()
+        (emp) => emp.employeeId === formData.employeeId.trim()
       );
       if (exists) return "Employee ID already exists.";
     }
@@ -47,109 +106,296 @@ const AddEmployee = () => {
       setTimeout(() => setError(""), 2500);
       return;
     }
-    addEmployee(formData);
-    alert("Employee added successfully.");
+
+    // Create new employee object matching EmployeeProvider.jsx structure
+    const newEmployee = {
+      employeeId: formData.employeeId || `EMP${String(employees.length + 1).padStart(3, '0')}`,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      emergency: formData.emergency,
+      isActive: true,
+      bankDetails: {
+        accountNumber: formData.bankDetails.accountNumber,
+        bankName: formData.bankDetails.bankName,
+        ifsc: formData.bankDetails.ifsc,
+        branch: formData.bankDetails.branch,
+      },
+      personalDetails: {
+        dob: formData.personalDetails.dob,
+        gender: formData.personalDetails.gender,
+        maritalStatus: formData.personalDetails.maritalStatus,
+        nationality: formData.personalDetails.nationality,
+      },
+      experienceDetails: [
+        {
+          company: "Vagarious Solutions Pvt Ltd.",
+          role: formData.currentRole,
+          department: formData.currentDepartment,
+          years: 0,
+          joiningDate: formData.joiningDate,
+          lastWorkingDate: "Present", // For current employment
+          salary: parseFloat(formData.currentSalary) || 0,
+        },
+      ],
+    };
+
+    addEmployee(newEmployee);
+    snackbar.show("Employee added successfully.");
     navigate("/employees");
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200 flex flex-col items-center justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg">
+    <div className="p-6 min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-4xl">
+        {/* Back Button */}
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-4 px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition shadow flex items-center gap-2"
+          className="mb-6 px-4 py-2 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition shadow flex items-center gap-2"
         >
-          &#8592; Back
+          &#8592; Back to Employees
         </button>
-        <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">Add New Employee</h2>
-        <div className="flex gap-2 justify-center mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`flex items-center gap-1 px-4 py-2 rounded-lg font-semibold transition-all duration-150 focus:outline-none text-base shadow-sm border-b-2 ${
-                activeTab === tab.key
-                  ? "bg-blue-600 text-white border-blue-700"
-                  : "bg-gray-100 text-gray-700 border-transparent hover:bg-blue-50"
-              }`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
+
+        {/* Header */}
+        <h2 className="text-3xl font-bold text-blue-800 mb-8 text-center tracking-wide">
+          Add New Employee
+        </h2>
+
         {error && (
-          <div className="mb-4 text-center text-red-600 font-semibold bg-red-100 rounded-lg py-2 px-3 shadow">
+          <div className="mb-6 text-center text-red-600 font-semibold bg-red-100 rounded-lg py-3 px-4 shadow">
             {error}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {activeTab === "basic" && (
-            <>
-              <div className="relative">
-                <FaIdBadge className="absolute left-3 top-4 text-gray-400" />
-                <input
-                  type="text"
-                  name="id"
-                  placeholder="Employee ID (optional)"
-                  value={formData.id}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50"
-                />
-              </div>
-              <div className="relative">
-                <FaUser className="absolute left-3 top-4 text-gray-400" />
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Full Name *"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50"
-                  required
-                />
-              </div>
-            </>
-          )}
-          {activeTab === "contact" && (
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Section: Basic & Contact Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border rounded-xl bg-blue-50/50 shadow-inner">
+            <h3 className="md:col-span-2 text-xl font-bold text-blue-700 border-b pb-3 mb-3">Basic Information</h3>
+            <InputField
+              icon={<FaIdBadge />}
+              name="employeeId"
+              label="Employee ID (optional)"
+              value={formData.employeeId}
+              onChange={handleChange}
+              placeholder="Enter Employee ID"
+            />
+            <InputField
+              icon={<FaUser />}
+              name="name"
+              label="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g., John Doe"
+              required
+              isMandatory={true}
+            />
+            <InputField
+              icon={<FaEnvelope />}
+              name="email"
+              label="Email Address"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="e.g., john.doe@example.com"
+              required
+              isMandatory={true}
+            />
+            <InputField
+              icon={<FaPhone />}
+              name="phone"
+              label="Phone Number"
+              type="tel"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="e.g., 9876543210"
+            />
+            <InputField
+              icon={<FaMapMarkerAlt />}
+              name="address"
+              label="Address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="e.g., 123 Main St, Hyderabad"
+            />
+            <InputField
+              icon={<FaHeartbeat />}
+              name="emergency"
+              label="Emergency Contact"
+              value={formData.emergency}
+              onChange={handleChange}
+              placeholder="e.g., Jane Doe - 9999999999"
+            />
+          </div>
+
+          {/* Section: Job Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border rounded-xl bg-green-50/50 shadow-inner">
+            <h3 className="md:col-span-2 text-xl font-bold text-green-700 border-b pb-3 mb-3">Job Details</h3>
+            <InputField
+              icon={<FaBuilding />}
+              name="currentDepartment"
+              label="Department"
+              value={formData.currentDepartment}
+              onChange={handleChange}
+              placeholder="e.g., Marketing"
+              required
+              isMandatory={true}
+            />
+            <InputField
+              icon={<FaBriefcase />}
+              name="currentRole"
+              label="Job Role"
+              value={formData.currentRole}
+              onChange={handleChange}
+              placeholder="e.g., Marketing Manager"
+              required
+              isMandatory={true}
+            />
+            <InputField
+              icon={<FaMoneyBill />}
+              name="currentSalary"
+              label="Current Salary (INR)"
+              type="number"
+              value={formData.currentSalary}
+              onChange={handleChange}
+              placeholder="e.g., 85000"
+              required
+              isMandatory={true}
+            />
+            <InputField
+              icon={<FaCalendarAlt />}
+              name="joiningDate"
+              label="Joining Date"
+              type="date"
+              value={formData.joiningDate}
+              onChange={handleChange}
+              required
+              isMandatory={true}
+            />
+          </div>
+
+          {/* Section: Personal & Bank Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border rounded-xl bg-purple-50/50 shadow-inner">
+            <h3 className="md:col-span-2 text-xl font-bold text-purple-700 border-b pb-3 mb-3">Personal & Bank Details</h3>
+            <InputField
+              icon={<FaBirthdayCake />}
+              name="personalDetails.dob"
+              label="Date of Birth"
+              type="date"
+              value={formData.personalDetails.dob}
+              onChange={handleChange}
+            />
+            <InputField
+              icon={<FaFlag />}
+              name="personalDetails.nationality"
+              label="Nationality"
+              value={formData.personalDetails.nationality}
+              onChange={handleChange}
+              placeholder="e.g., Indian"
+            />
             <div className="relative">
-              <FaEnvelope className="absolute left-3 top-4 text-gray-400" />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address *"
-                value={formData.email}
+              <FaTransgender className="absolute left-3 top-4 text-gray-400" />
+              <label htmlFor="gender-select" className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">Gender</label>
+              <select
+                id="gender-select"
+                name="personalDetails.gender"
+                value={formData.personalDetails.gender}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50"
-                required
-              />
+                className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 appearance-none"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
-          )}
-          {activeTab === "job" && (
             <div className="relative">
-              <FaBuilding className="absolute left-3 top-4 text-gray-400" />
-              <input
-                type="text"
-                name="department"
-                placeholder="Department *"
-                value={formData.department}
+              <FaHeartbeat className="absolute left-3 top-4 text-gray-400" />
+              <label htmlFor="marital-select" className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">Marital Status</label>
+              <select
+                id="marital-select"
+                name="personalDetails.maritalStatus"
+                value={formData.personalDetails.maritalStatus}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50"
-                required
-              />
+                className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 appearance-none"
+              >
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
             </div>
-          )}
+            <InputField
+              icon={<FaCreditCard />}
+              name="bankDetails.accountNumber"
+              label="Account Number"
+              value={formData.bankDetails.accountNumber}
+              onChange={handleChange}
+              placeholder="e.g., 1234567890"
+            />
+            <InputField
+              icon={<FaUniversity />}
+              name="bankDetails.bankName"
+              label="Bank Name"
+              value={formData.bankDetails.bankName}
+              onChange={handleChange}
+              placeholder="e.g., State Bank of India"
+            />
+            <InputField
+              icon={<FaCodeBranch />}
+              name="bankDetails.ifsc"
+              label="IFSC Code"
+              value={formData.bankDetails.ifsc}
+              onChange={handleChange}
+              placeholder="e.g., SBIN0001234"
+            />
+            <InputField
+              icon={<FaMapMarkerAlt />}
+              name="bankDetails.branch"
+              label="Bank Branch"
+              value={formData.bankDetails.branch}
+              onChange={handleChange}
+              placeholder="e.g., Hyderabad Main"
+            />
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-lg text-lg"
           >
-            Submit
+            Add Employee
           </button>
         </form>
       </div>
+
+      {/* Snackbar */}
+      {snackbar.message && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fadein">
+          {snackbar.message}
+        </div>
+      )}
     </div>
   );
 };
 
+// Reusable Input Field Component
+const InputField = ({ icon, label, isMandatory, ...props }) => (
+  <div className="relative">
+    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+    <label htmlFor={props.name} className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">
+      {label}
+      {isMandatory && (
+        <span className="text-red-600 ml-1 font-bold" title="Required">*</span>
+      )}
+    </label>
+    <input
+      id={props.name}
+      {...props}
+      className={`w-full pl-10 pr-4 pt-5 pb-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 ${isMandatory ? 'border-red-400' : 'border-gray-300'}`}
+    />
+  </div>
+);
+
 export default AddEmployee;
+
