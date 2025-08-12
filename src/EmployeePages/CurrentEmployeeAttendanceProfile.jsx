@@ -87,12 +87,76 @@ const CurrentEmployeeAttendanceProfile = () => {
     monthOptions[monthOptions.length - 1] || ""
   );
 
-  // Filter records for selected month
-  const monthlyRecords = useMemo(
-    () =>
-      employeeRecords.filter((rec) => rec.date.startsWith(selectedMonth)),
-    [employeeRecords, selectedMonth]
-  );
+  // Get approved leave days for selected month (set)
+  const approvedLeaveDaysSet = getApprovedLeaveDaysForMonth(leaveRequests, selectedMonth, employeeId);
+
+  // --- Leave Remaining Calculation (local, using leaveRequests from context) ---
+  function getAllMonthsUpToCurrentYear() {
+    const now = new Date();
+    const months = [];
+    for (let m = 0; m < now.getMonth() + 1; m++) {
+      months.push(`${now.getFullYear()}-${String(m + 1).padStart(2, "0")}`);
+    }
+    return months;
+  }
+
+  function getApprovedLeaveDaysForMonthAll(leaveRequests, month, employeeId) {
+    let leaveDates = new Set();
+    leaveRequests.forEach((req) => {
+      if (req.employeeId !== employeeId) return;
+      if (req.status !== "Approved") return;
+      const from = new Date(req.from);
+      const to = new Date(req.to);
+      for (
+        let d = new Date(from);
+        d <= to;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateStr = d.toISOString().slice(0, 10);
+        if (dateStr.startsWith(month)) {
+          leaveDates.add(dateStr);
+        }
+      }
+    });
+    return leaveDates;
+  }
+
+  // Calculate leave remaining for the current month (with penalty logic)
+  const leaveRemaining = useMemo(() => {
+    const months = getAllMonthsUpToCurrentYear();
+    let carryOver = 0;
+    let penalty = 0;
+    for (let i = 0; i < months.length; i++) {
+      const month = months[i];
+      let earned = Math.max(1 - penalty, 0);
+      let available = earned + carryOver;
+      const used = getApprovedLeaveDaysForMonthAll(leaveRequests, month, employeeId).size;
+      let thisMonthCarry = available - used;
+      if (thisMonthCarry < 0) {
+        penalty = Math.abs(thisMonthCarry);
+        carryOver = 0;
+      } else {
+        penalty = 0;
+        carryOver = thisMonthCarry;
+      }
+      if (i === months.length - 1) {
+        return thisMonthCarry;
+      }
+    }
+    return carryOver;
+  }, [leaveRequests, employeeId]);
+
+  // Filter records for selected month and override status to 'Leave' if date is in approved leave days
+  const monthlyRecords = useMemo(() => {
+    return employeeRecords
+      .filter((rec) => rec.date.startsWith(selectedMonth))
+      .map((rec) => {
+        if (approvedLeaveDaysSet.has(rec.date)) {
+          return { ...rec, status: "Leave", punchIn: undefined, punchOut: undefined, workHours: 0, workedHours: 0 };
+        }
+        return rec;
+      });
+  }, [employeeRecords, selectedMonth, approvedLeaveDaysSet]);
 const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
 const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
 
@@ -119,8 +183,7 @@ const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
     return leaveDates;
   }
 
-  // Get approved leave days for selected month
-  const approvedLeaveDaysSet = getApprovedLeaveDaysForMonth(leaveRequests, selectedMonth, employeeId);
+  // Get approved leave days for selected month (already calculated above)
   const leaveCount = approvedLeaveDaysSet.size;
 
   // Leaves applied in selected month (requests whose from or to is in selected month)
@@ -226,7 +289,7 @@ const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
         />
       </div>
 
-      // Summary boxes
+      {/* Summary boxes */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-green-600 font-bold text-lg">Present</span>
@@ -241,8 +304,8 @@ const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
           <span className="text-2xl font-bold">{leaveCount}</span>
         </div>
         <div className="bg-blue-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-blue-600 font-bold text-lg">Leaves Applied</span>
-          <span className="text-2xl font-bold">{leavesApplied.length}</span>
+          <span className="text-blue-600 font-bold text-lg">Leave Remaining</span>
+          <span className="text-2xl font-bold">{leaveRemaining}</span>
         </div>
       </div>
 

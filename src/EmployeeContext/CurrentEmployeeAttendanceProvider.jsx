@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useContext, useMemo } from "react";
 import { CurrentEmployeeAttendanceContext } from "./CurrentEmployeeAttendanceContext";
+import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const CurrentEmployeeAttendanceProvider = ({ children }) => {
 
   // Generates demo attendance data for all employees for the current month
   const generateMonthlyAttendanceData = () => {
-    // For demo: generate attendance for EMP101 for current month
     const employees = [
       { employeeId: "EMP101", name: "John Doe" },
     ];
@@ -19,7 +19,6 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     for (const emp of employees) {
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        // Randomize status for demo
         let status = "Present";
         if (day % 7 === 0) status = "Leave";
         if (day % 11 === 0) status = "Absent";
@@ -51,21 +50,97 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
   };
 
   const { records, monthlyWorkHours, monthlyIdleHours } = generateMonthlyAttendanceData();
-
   const [attendanceRecords, setAttendanceRecords] = useState(records);
 
-  // Provide monthly working and idle hours as context values
+  // --- Leave Remaining Calculation ---
+  // Each employee gets 12 leaves per year (1 per month), unused leaves carry over
+  const employeeId = "EMP101";
+  const leaveRequests = useContext(CurrentEmployeeLeaveRequestContext)?.leaveRequests || [];
+
+  // Helper: get all months in the current year up to and including the current month in YYYY-MM
+  function getAllMonthsUpToCurrentYear() {
+    const now = new Date();
+    const months = [];
+    for (let m = 0; m < now.getMonth() + 1; m++) {
+      months.push(`${now.getFullYear()}-${String(m + 1).padStart(2, "0")}`);
+    }
+    return months;
+  }
+
+  // Helper: get all approved leave days for EMP101 in a given month (returns a Set of dates)
+  function getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId) {
+    let leaveDates = new Set();
+    leaveRequests.forEach((req) => {
+      if (req.employeeId !== employeeId) return;
+      if (req.status !== "Approved") return;
+      const from = new Date(req.from);
+      const to = new Date(req.to);
+      for (
+        let d = new Date(from);
+        d <= to;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateStr = d.toISOString().slice(0, 10);
+        if (dateStr.startsWith(month)) {
+          leaveDates.add(dateStr);
+        }
+      }
+    });
+    return leaveDates;
+  }
+
+  // Calculate leave remaining for the current month (with penalty logic)
+  // Calculate leave remaining for the current month (with penalty logic)
+const leaveRemaining = useMemo(() => {
+  const months = getAllMonthsUpToCurrentYear();
+  let carryOver = 0;
+  let penalty = 0;
+
+  for (let i = 0; i < months.length; i++) {
+    const month = months[i];
+
+    // Earned this month: 1 - penalty from previous month (min 0)
+    let earned = Math.max(1 - penalty, 0);
+    let available = earned + carryOver;
+
+    // Leaves used this month (only approved ones)
+    const used = getApprovedLeaveDaysForMonth(
+      leaveRequests,
+      month,
+      employeeId
+    ).size;
+
+    let thisMonthCarry = available - used;
+
+    if (thisMonthCarry < 0) {
+      penalty = Math.abs(thisMonthCarry);
+      carryOver = 0;
+    } else {
+      penalty = 0;
+      carryOver = thisMonthCarry;
+    }
+
+    if (i === months.length - 1) {
+      return thisMonthCarry;
+    }
+  }
+  return carryOver;
+}, [leaveRequests, employeeId]);
+
+
+
   return (
     <CurrentEmployeeAttendanceContext.Provider
       value={{
         attendanceRecords,
         monthlyWorkHours,
         monthlyIdleHours,
+        leaveRemaining,
       }}
     >
       {children}
     </CurrentEmployeeAttendanceContext.Provider>
   );
-}
+};
 
 export default CurrentEmployeeAttendanceProvider;
