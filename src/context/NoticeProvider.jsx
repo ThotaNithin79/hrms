@@ -4,53 +4,53 @@ import { NoticeContext } from "./NoticeContext";
 const initialNotices = [
   {
     id: 1,
-    title: "Welcome to HRMS!",
-    message: "This is your new HRMS portal. Please update your profile information.",
-    date: "2025-07-22",
+    title: "Project Alpha Launch Date",
+    message:
+      "The launch date for Project Alpha has been moved to September 15th. All teams must finalize their deliverables by EOD September 10th.",
     author: "Admin",
+    date: "2025-08-11",
+  },
+  {
+    id: 2,
+    title: "Employee Wellness Program",
+    message:
+      "A new wellness program is being introduced starting October. Details will be shared in a company-wide email next week.",
+    author: "Admin",
+    date: "2025-08-08",
   },
 ];
 
 export const NoticeProvider = ({ children }) => {
   const [notices, setNotices] = useState(initialNotices);
 
-  // Always keep notices sorted by date descending (latest first)
-  const getSortedNotices = (arr) => {
-    return [...arr].sort((a, b) => {
-      // Compare by date (ISO string), fallback to id
-      if (a.date && b.date) {
-        return new Date(b.date) - new Date(a.date);
-      }
-      return b.id - a.id;
-    });
-  };
-
+  // Add a new notice
   const addNotice = (title, message, author = "Admin") => {
     const newNotice = {
-      id: Date.now(),
+      id: notices.length > 0 ? Math.max(...notices.map(n => n.id)) + 1 : 1,
       title,
       message,
-      date: new Date().toISOString().slice(0, 10),
       author,
+      date: new Date().toISOString().split("T")[0],
     };
-    setNotices(prev => getSortedNotices([...prev, newNotice]));
+    setNotices([newNotice, ...notices]);
   };
 
-  const editNotice = (id, newTitle, newMessage) => {
-    setNotices(prev => getSortedNotices(
-      prev.map((n) =>
-        n.id === id ? { ...n, title: newTitle, message: newMessage } : n
+  // Update an existing notice
+  const updateNotice = (id, newTitle, newMessage) => {
+    setNotices(
+      notices.map(notice =>
+        notice.id === id ? { ...notice, title: newTitle, message: newMessage } : notice
       )
-    ));
+    );
   };
 
+  // Delete a notice
   const deleteNotice = (id) => {
-    setNotices(prev => getSortedNotices(prev.filter((n) => n.id !== id)));
+    setNotices(notices.filter(notice => notice.id !== id));
   };
 
-  // Provide sorted notices so latest is always first
   return (
-    <NoticeContext.Provider value={{ notices: getSortedNotices(notices), addNotice, editNotice, deleteNotice }}>
+    <NoticeContext.Provider value={{ notices, addNotice, updateNotice, deleteNotice }}>
       {children}
     </NoticeContext.Provider>
   );
