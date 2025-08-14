@@ -50,11 +50,18 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     setLeaveRequests((prev) => [...prev, newRequest]);
   };
 
+  // Add near your existing demo state (e.g. after leaveRequests or after lateLoginRequests)
+const [sandwichLeaves] = useState([
+  { date: "2025-09-11", from: "2025-09-10", to: "2025-09-12" },
+  { date: "2025-09-25", from: "2025-09-24", to: "2025-09-26" },
+]);
+
+
   // Add "from" in the late login dummy data
 const [lateLoginRequests, setLateLoginRequests] = useState([
-  { id: 1, employeeId: "EMP101", name: "John Doe", from: "Hyderabad", date: "2025-08-01", lateTill: "10:00", reason: "Traffic jam", status: "Approved" },
-  { id: 2, employeeId: "EMP101", name: "John Doe", from: "Home", date: "2025-08-05", lateTill: "09:45", reason: "Doctor appointment", status: "Pending" },
-  { id: 3, employeeId: "EMP101", name: "John Doe", from: "Office nearby", date: "2025-07-20", lateTill: "10:15", reason: "Family emergency", status: "Rejected" },
+  { id: 1, employeeId: "EMP101", name: "John Doe", from: "10:00", date: "2025-08-01", lateTill: "12:00", reason: "Traffic jam", status: "Approved" },
+  { id: 2, employeeId: "EMP101", name: "John Doe", from: "12:00", date: "2025-08-05", lateTill: "2:00", reason: "Doctor appointment", status: "Pending" },
+  { id: 3, employeeId: "EMP101", name: "John Doe", from: "2:30", date: "2025-07-20", lateTill: "4:00", reason: "Family emergency", status: "Rejected" },
 ]);
 
 // Update applyLateLogin to accept "from"
@@ -88,6 +95,7 @@ const applyLateLogin = ({ from, date, lateTill, reason }) => {
         applyLeave,
         lateLoginRequests,
         applyLateLogin,
+        sandwichLeaves,
       }}
     >
       {children}
