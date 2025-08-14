@@ -1,24 +1,34 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import { HolidayCalendarContext } from "../context/HolidayCalendarContext";
 import { FaPlus, FaEdit, FaTrash, FaFilter, FaFileImport } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
 const AdminHolidayCalendarPage = () => {
-  const { holidays, addHoliday, editHoliday, deleteHoliday } = useContext(HolidayCalendarContext);
+  const { holidays, addHoliday, editHoliday, deleteHoliday, setAllHolidays } = useContext(HolidayCalendarContext);
+
+  // Default filter: current month and year
+  const now = new Date();
+  const defaultMonth = String(now.getMonth() + 1).padStart(2, "0");
+  const defaultYear = String(now.getFullYear());
 
   const [form, setForm] = useState({ name: "", date: "", description: "" });
   const [editingId, setEditingId] = useState(null);
 
   // Filter state
-  const [filterMonth, setFilterMonth] = useState("");
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterMonth, setFilterMonth] = useState(defaultMonth);
+  const [filterYear, setFilterYear] = useState(defaultYear);
   const [searchTerm, setSearchTerm] = useState("");
   const [importing, setImporting] = useState(false);
 
-  // Get filtered holidays
+  // Modal state for import guidance
+  const [showImportModal, setShowImportModal] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Get filtered holidays, sorted by date ascending
   const filteredHolidays = holidays
     .filter(h => (filterMonth ? h.date.startsWith(`${filterYear}-${filterMonth}`) : h.date.startsWith(filterYear)))
-    .filter(h => h.name.toLowerCase().includes(searchTerm.toLowerCase()) || h.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+    .filter(h => h.name.toLowerCase().includes(searchTerm.toLowerCase()) || h.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,16 +64,34 @@ const AdminHolidayCalendarPage = () => {
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      // Expecting columns: Name, Date, Description
-      rows.slice(1).forEach(row => {
+
+      // Validate header row
+      const headerRow = rows[0] || [];
+      const expectedHeaders = ["Name", "Date", "Description"];
+      const headerValid = expectedHeaders.every((col, idx) =>
+        headerRow[idx] && headerRow[idx].toString().trim().toLowerCase() === col.toLowerCase()
+      );
+      if (!headerValid) {
+        console.error("Excel import failed: Invalid header row. Expected columns: Name, Date, Description.");
+        setImporting(false);
+        e.target.value = "";
+        return;
+      }
+
+      // Collect valid holidays
+      const importedHolidays = [];
+      rows.slice(1).forEach((row, i) => {
         if (row[0] && row[1]) {
-          addHoliday({
+          importedHolidays.push({
+            id: Date.now() + i, // Unique id
             name: row[0],
             date: row[1],
             description: row[2] || ""
           });
         }
       });
+
+      setAllHolidays(importedHolidays);
       setImporting(false);
     };
     reader.readAsArrayBuffer(file);
@@ -77,24 +105,95 @@ const AdminHolidayCalendarPage = () => {
   const currentYear = new Date().getFullYear();
   const yearOptions = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map(String);
 
+  // Show modal instead of file dialog
+  const handleImportClick = () => {
+    setShowImportModal(true);
+  };
+
+  const handleProceedImport = () => {
+    setShowImportModal(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCancelImport = () => {
+    setShowImportModal(false);
+  };
+
   return (
     <div className="p-8 max-w-5xl mx-auto bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-bold text-blue-800 flex items-center gap-3">
           <FaPlus className="text-blue-400" /> Holiday Calendar Management
         </h2>
-        <label className="flex items-center gap-2 cursor-pointer bg-blue-100 hover:bg-blue-200 px-4 py-2 rounded-lg shadow font-semibold text-blue-700 transition">
+        <button
+          type="button"
+          className="flex items-center gap-2 cursor-pointer bg-blue-100 hover:bg-blue-200 px-4 py-2 rounded-lg shadow font-semibold text-blue-700 transition"
+          onClick={handleImportClick}
+          disabled={importing}
+        >
           <FaFileImport className="text-xl" />
           <span>Import Excel</span>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleExcelImport}
-            disabled={importing}
-          />
-        </label>
+        </button>
+        {/* Hidden file input for actual import */}
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleExcelImport}
+          disabled={importing}
+        />
       </div>
+
+      {/* Import Guidance Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full border border-blue-200">
+            <h3 className="text-2xl font-bold text-blue-700 mb-4 flex items-center gap-2">
+              <FaFileImport className="text-blue-400" /> Import Holidays from Excel
+            </h3>
+            <div className="mb-4 text-gray-700">
+              <p className="mb-2">
+                <span className="font-semibold text-red-600">Warning:</span> This process will <span className="font-bold">replace all existing holiday data</span> with the contents of your Excel file.
+              </p>
+              <p className="mb-2">
+                Please ensure your Excel file has the following column headers in the <span className="font-semibold">first row</span>:
+              </p>
+              <ul className="list-disc pl-6 mb-2">
+                <li><span className="font-mono text-blue-700">Name</span></li>
+                <li><span className="font-mono text-blue-700">Date</span> <span className="text-gray-500">(YYYY-MM-DD)</span></li>
+                <li><span className="font-mono text-blue-700">Description</span></li>
+              </ul>
+              <p className="mb-2">
+                <span className="font-semibold">Example:</span>
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded p-2 text-sm font-mono mb-2">
+                Name | Date | Description<br />
+                New Year's Day | 2025-01-01 | First day of the year
+              </div>
+            </div>
+            <div className="flex gap-4 justify-end mt-6">
+              <button
+                className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition font-semibold shadow"
+                onClick={handleProceedImport}
+                disabled={importing}
+              >
+                Proceed with Import
+              </button>
+              <button
+                className="bg-gray-400 text-white px-6 py-2 rounded-lg hover:bg-gray-500 transition font-semibold shadow"
+                onClick={handleCancelImport}
+                disabled={importing}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 mb-10 flex flex-col gap-6 border border-gray-200">
         <div className="flex flex-col md:flex-row gap-6">
           <input

@@ -3,11 +3,9 @@ import { AttendanceContext } from "../context/AttendanceContext";
 import { EmployeeContext } from "../context/EmployeeContext";
 import { useNavigate } from "react-router-dom";
 import { saveAs } from "file-saver";
-import { FaEdit, FaTrash } from "react-icons/fa";
-
 
 const Attendance = () => {
-  const { attendanceRecords, deleteAttendance } = useContext(AttendanceContext);
+  const { attendanceRecords } = useContext(AttendanceContext); // Removed deleteAttendance
   const { employees } = useContext(EmployeeContext);
   const [sortOrder, setSortOrder] = useState("desc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,15 +14,6 @@ const Attendance = () => {
   const [currentWeek, setCurrentWeek] = useState(0); // 0 = current week
 
   const navigate = useNavigate();
-
-  const handleDelete = (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this record?");
-    if (confirmed) {
-      deleteAttendance(id);
-      setSnackbar("Attendance record deleted successfully.");
-      setTimeout(() => setSnackbar(""), 1800);
-    }
-  };
 
   // Week calculation helpers
   const getCurrentWeekDates = (weekOffset = 0) => {
@@ -57,7 +46,7 @@ const Attendance = () => {
     .reduce((acc, record) => {
       const employee = employees.find(emp => String(emp.employeeId) === String(record.employeeId));
       const isActive = employee?.isActive !== false;
-      
+
       if (isActive) {
         acc.active.push(record);
       } else {
@@ -75,7 +64,7 @@ const Attendance = () => {
 
   const activeRecords = sortRecords(separatedRecords.active);
   const inactiveRecords = sortRecords(separatedRecords.inactive);
-  
+
   // Combine for display: active first, then inactive
   const filteredAndSortedRecords = [...activeRecords, ...inactiveRecords];
 
@@ -145,13 +134,7 @@ const Attendance = () => {
               </button>
             )}
           </div>
-          <button
-            onClick={() => navigate("/attendance/add")}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-          >
-            Mark Attendance
-          </button>
-
+          {/* Removed Mark Attendance button */}
           <button
             onClick={handleExportCSV}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -214,7 +197,7 @@ const Attendance = () => {
               filteredAndSortedRecords.map((record, idx) => {
                 const employee = employees.find(emp => String(emp.employeeId) === String(record.employeeId));
                 const isInactive = employee?.isActive === false;
-                
+
                 return (
                   <tr
                     key={record.id}
@@ -236,26 +219,13 @@ const Attendance = () => {
                     <td className="p-4">{record.date}</td>
                     <td className="p-4">{statusBadge(record.status)}</td>
                     <td className="p-4 flex gap-2">
-                      <button
-                        onClick={() => navigate(`/attendance/edit/${record.id}`)}
-                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center gap-1"
-                        title="Edit"
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(record.id)}
-                        className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"
-                        title="Delete"
-                      >
-                        <FaTrash /> Delete
-                      </button>
+                      {/* Removed Delete button */}
                       <button
                         onClick={() => navigate(`/attendance/profile/${record.employeeId}`)}
                         className="bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1"
                         title="View Profile"
                       >
-                        Profile
+                        Summary
                       </button>
                     </td>
                   </tr>
