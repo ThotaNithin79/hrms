@@ -393,24 +393,7 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* Noticeboard */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <div className="flex items-center mb-4 gap-2">
-          <FaBell className="text-yellow-500 text-xl" />
-          <h2 className="text-xl font-bold tracking-tight">Noticeboard</h2>
-        </div>
-        <ul>
-          {recentNotices.map((notice) => (
-            <li key={notice.id} className="mb-4 border-b pb-2 last:border-b-0 last:pb-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-blue-700">{notice.title}</span>
-                <span className="ml-auto text-xs text-gray-400">{new Date(notice.date).toLocaleDateString()}</span>
-              </div>
-              <div className="text-gray-700">{notice.message}</div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      
 
       {/* Analytics Row: Leave Bar Chart & Work Hours Pie Chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
