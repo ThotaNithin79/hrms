@@ -28,7 +28,10 @@ const AdminLeaveSummary = () => {
   } = useContext(LeaveRequestContext);
   const { employees } = useContext(EmployeeContext);
   const [filter, setFilter] = useState("All");
-  const [selectedMonth, setSelectedMonth] = useState("All");
+  // Default to current month (YYYY-MM)
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [filterDept, setFilterDept] = useState("All");
   const [loading, setLoading] = useState(false);
   const [isPdfMode, setIsPdfMode] = useState(false);
   const componentRef = useRef(null);
@@ -47,9 +50,33 @@ const AdminLeaveSummary = () => {
     requests: leaveRequests,
   };
 
-  // Filter by status and separate active/inactive employees
+  // Department list: unique departments from current employment
+  const allDepartments = Array.from(
+    new Set(
+      employees
+        .map(emp => {
+          const currentExp = Array.isArray(emp.experienceDetails)
+            ? emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present")
+            : null;
+          return currentExp?.department || null;
+        })
+        .filter(Boolean)
+    )
+  );
+
+  // Filter by status and department
   const allFilteredRequests = (leaveSummary.requests || []).filter((req) => {
-    return filter === "All" ? true : req.status === filter;
+    // Status filter
+    if (filter !== "All" && req.status !== filter) return false;
+    // Department filter
+    if (filterDept !== "All") {
+      const employee = employees.find(emp => emp.employeeId === req.employeeId);
+      const currentExp = Array.isArray(employee?.experienceDetails)
+        ? employee.experienceDetails.find(exp => exp.lastWorkingDate === "Present")
+        : null;
+      if (!currentExp || currentExp.department !== filterDept) return false;
+    }
+    return true;
   });
 
   // Separate active and inactive employee requests
@@ -336,6 +363,21 @@ const AdminLeaveSummary = () => {
                 <option key={month} value={month}>{monthName} {year}</option>
               );
             })}
+          </select>
+        </div>
+        {/* Department filter */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="deptFilter" className="font-medium text-gray-700">Department:</label>
+          <select
+            id="deptFilter"
+            value={filterDept}
+            onChange={e => setFilterDept(e.target.value)}
+            className="px-3 py-2 rounded border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="All">All</option>
+            {allDepartments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
         </div>
       </div>

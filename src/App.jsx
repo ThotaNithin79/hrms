@@ -13,8 +13,6 @@ import AddEmployee from "./pages/AddEmployee";
 import ReactivateEmployee from "./pages/ReactivateEmployee";
 import EditEmployee from "./pages/EditEmployee";
 import Attendance from "./pages/Attendance";
-import AddAttendance from "./pages/AddAttendance";
-import EditAttendance from "./pages/EditAttendance";
 import LeaveManagement from "./pages/LeaveManagement";
 import AdminLeaveSummary from "./pages/AdminLeaveSummary";
 import AdminProfile from "./pages/AdminProfile";
@@ -64,8 +62,6 @@ function App() {
         <Route path="/employees/edit/:id" element={<EditEmployee />} />
         <Route path="/employee/:id/profile" element={<EmployeeProfile />} />
         <Route path="/attendance" element={<Attendance />} />
-        <Route path="/attendance/add" element={<AddAttendance />} />
-        <Route path="/attendance/edit/:id" element={<EditAttendance />} />
         <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />

@@ -32,35 +32,34 @@ export const AttendanceProvider = ({ children }) => {
     return dates;
   };
 
-    // Helper function to get day of week (0=Sunday, 6=Saturday)
-    const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
+  // Helper function to get day of week (0=Sunday, 6=Saturday)
+  const getDayOfWeek = (dateStr) => new Date(dateStr).getDay();
 
-const FIXED_PUNCH_IN = "09:30";
-const FIXED_PUNCH_OUT = "18:30";
+  const FIXED_PUNCH_IN = "09:30";
+  const FIXED_PUNCH_OUT = "18:30";
 
-const generatePunchTimes = (dateStr, lateCount) => {
-  let punchIn = FIXED_PUNCH_IN;
-  let punchOut = FIXED_PUNCH_OUT;
-  let isHalfDay = false;
-  if (dateStr < new Date().toISOString().slice(0, 10)) {
-    const lateMinutes = Math.floor(Math.random() * 360); // up to 6 hours late
-    punchIn = lateMinutes > 0
-      ? `${String(9 + Math.floor(lateMinutes / 60)).padStart(2, "0")}:${String(30 + lateMinutes % 60).padStart(2, "0")}`
-      : FIXED_PUNCH_IN;
-    if (lateMinutes >= 300 || (lateCount > 0 && lateCount % 3 === 0)) {
-      isHalfDay = true;
+  const generatePunchTimes = (dateStr, lateCount) => {
+    let punchIn = FIXED_PUNCH_IN;
+    let punchOut = FIXED_PUNCH_OUT;
+    let isHalfDay = false;
+    if (dateStr < new Date().toISOString().slice(0, 10)) {
+      const lateMinutes = Math.floor(Math.random() * 360); // up to 6 hours late
+      punchIn = lateMinutes > 0
+        ? `${String(9 + Math.floor(lateMinutes / 60)).padStart(2, "0")}:${String(30 + lateMinutes % 60).padStart(2, "0")}`
+        : FIXED_PUNCH_IN;
+      if (lateMinutes >= 300 || (lateCount > 0 && lateCount % 3 === 0)) {
+        isHalfDay = true;
+      }
     }
-  }
-  return {
-    punchIn,
-    punchOut,
-    workHours: 9,
-    workedHours: isHalfDay ? 4.5 : 8.5,
-    idleTime: 0.5,
-    isHalfDay,
+    return {
+      punchIn,
+      punchOut,
+      workHours: 9,
+      workedHours: isHalfDay ? 4.5 : 8.5,
+      idleTime: 0.5,
+      isHalfDay,
+    };
   };
-};
-
 
   // Generate attendance for multiple months (current and previous months)
   const generateMonthlyAttendanceData = (employees, holidays, leaveRequests) => {
