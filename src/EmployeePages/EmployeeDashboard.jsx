@@ -71,9 +71,8 @@ const EmployeeDashboard = () => {
   const [trackerIdle, setTrackerIdle] = useState(0);
 
   const todayStr = getTodayStr();
+  const empId = currentEmployee.job.employeeId;
 
-  // Get employeeId from currentEmployee context
-  const empId = currentEmployee && currentEmployee.job && currentEmployee.job.employeeId ? currentEmployee.job.employeeId : "";
   // Get today's attendance record (if any)
   const todayAttendance = attendanceRecords.find(
     (rec) => rec.employeeId === empId && rec.date === todayStr
@@ -100,23 +99,81 @@ const EmployeeDashboard = () => {
   };
 
   // Employee Basic Details
-  const { personal, contact, job, profilePhoto } = currentEmployee;
+  const { personal, contact, job } = currentEmployee;
+
+  // --- Edit Profile State ---
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: personal.name,
+    email: contact.email,
+    phone: contact.phone,
+    employeeId: job.employeeId,
+    department: job.department,
+    designation: job.designation,
+  });
+  const [editError, setEditError] = useState("");
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSave = () => {
+  const { name, email, phone, employeeId, department, designation } = editForm;
+
+  // Trim values
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+  const trimmedPhone = phone.trim();
+  const trimmedEmployeeId = employeeId.trim();
+  const trimmedDepartment = department.trim();
+  const trimmedDesignation = designation.trim();
+
+  // Validate empty fields
+  if (!trimmedName || !trimmedEmail || !trimmedPhone || !trimmedEmployeeId || !trimmedDepartment || !trimmedDesignation) {
+    setEditError("All fields are mandatory.");
+    return;
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    setEditError("Please enter a valid email address.");
+    return;
+  }
+
+  // Validate phone number (10 digits)
+  const phoneRegex = /^[0-9]{10}$/;
+  if (!phoneRegex.test(trimmedPhone)) {
+    setEditError("Phone number must be 10 digits.");
+    return;
+  }
+
+  // Save changes to context
+  editCurrentEmployee({
+    personal: { name: trimmedName },
+    contact: { email: trimmedEmail, phone: trimmedPhone },
+    job: { employeeId: trimmedEmployeeId, department: trimmedDepartment, designation: trimmedDesignation },
+  });
+
+  setEditMode(false);
+  setEditError("");
+};
+
 
   // Noticeboard (show 3 most recent)
   const recentNotices = notices.slice(0, 3);
 
-  // --- LEAVE DATA FILTERING FOR DASHBOARD ---
-  // Get current month in YYYY-MM format
-  const currentMonth = todayStr.slice(0, 7);
-  // Filter leaveRequests for current month
-  const leavesThisMonthAll = leaveRequests.filter(req => req.from.startsWith(currentMonth));
-  // For card: count only approved leaves in current month
-  const approvedLeavesThisMonth = leavesThisMonthAll.filter(l => l.status === "Approved").length;
-  // For bar chart: count by status in current month
+  // Leaves (This Month) - fetch from provider, not dummy
+  const leaveMonth = todayStr.slice(0, 7);
+  const leavesThisMonth = leaveRequests.filter(
+    (req) => req.employeeId === empId && req.from.startsWith(leaveMonth)
+  );
+  // Count by status for bar chart
   const leaveStatusCounts = {
-    Approved: leavesThisMonthAll.filter((l) => l.status === "Approved").length,
-    Pending: leavesThisMonthAll.filter((l) => l.status === "Pending").length,
-    Rejected: leavesThisMonthAll.filter((l) => l.status === "Rejected").length,
+    Approved: leavesThisMonth.filter((l) => l.status === "Approved").length,
+    Pending: leavesThisMonth.filter((l) => l.status === "Pending").length,
+    Rejected: leavesThisMonth.filter((l) => l.status === "Rejected").length,
   };
   const leaveBarData = {
     labels: ["Approved", "Pending", "Rejected"],
@@ -136,9 +193,9 @@ const EmployeeDashboard = () => {
   };
 
   // Work Hours & Idle Time (This Month) - fetch from provider, add today's tracker if any
-  // Remove reference to leaveMonth (no longer needed)
   const thisMonthAttendance = attendanceRecords.filter(
-    (rec) => rec.employeeId === empId
+    (rec) =>
+      rec.employeeId === empId && rec.date.startsWith(leaveMonth)
   );
   // Use context monthlyWorkHours/monthlyIdleHours, add today's tracker if punched in/out
   let totalWorkedHours = monthlyWorkHours;
@@ -165,49 +222,7 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
-
-      {/* Employee Profile Card (now first) */}
-      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
-        <div className="flex-shrink-0">
-          {profilePhoto ? (
-            <img
-              src={profilePhoto}
-              alt="Employee"
-              className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
-            />
-          ) : (
-            <div className="w-28 h-28 rounded-full border-4 border-white shadow bg-blue-600 flex items-center justify-center text-white text-4xl font-bold select-none">
-              {personal.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2)}
-            </div>
-          )}
-        </div>
-        <div className="flex-1">
-          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
-            <FaUserCircle className="text-blue-400" /> {personal.name}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
-            <div>
-              <span className="font-semibold">Employee ID:</span> {job.employeeId}
-            </div>
-            <div>
-              <span className="font-semibold">Designation:</span> {job.designation}
-            </div>
-            <div>
-              <span className="font-semibold">Department:</span> {job.department}
-            </div>
-            <div>
-              <span className="font-semibold">Email:</span> {contact.email || "--"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Daily Check-in (now after profile) */}
+      {/* Daily Check-in */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <div className="flex items-center mb-4 gap-2">
           <FaRegClock className="text-blue-600 text-xl" />
@@ -276,13 +291,90 @@ const EmployeeDashboard = () => {
         </p>
       </div>
 
+      {/* Employee Profile Card & Edit Profile */}
+      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
+        <div className="flex-shrink-0">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
+            alt="Employee"
+            className="w-28 h-28 rounded-full border-4 border-white shadow"
+          />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
+            <FaUserCircle className="text-blue-400" /> {personal.name}
+          </h3>
+          {!editMode ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
+                <div>
+                  <span className="font-semibold">Employee ID:</span> {job.employeeId}
+                </div>
+                <div>
+                  <span className="font-semibold">Designation:</span> {job.designation}
+                </div>
+                <div>
+                  <span className="font-semibold">Department:</span> {job.department}
+                </div>
+                <div>
+                  <span className="font-semibold">Email:</span> {contact.email || "--"}
+                </div>
+                <div>
+                  <span className="font-semibold">Phone:</span> {contact.phone || "--"}
+                </div>
+              </div>
+              <button
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                onClick={() => setEditMode(true)}
+              >
+                Edit Profile
+              </button>
+            </>
+          ) : (
+            <form className="mt-2 space-y-3 max-w-lg" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
+                  <input type="text" name="name" value={editForm.name} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
+                  <input type="email" name="email" value={editForm.email} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Phone Number<span className="text-red-500">*</span></label>
+                  <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Employee ID<span className="text-red-500">*</span></label>
+                  <input type="text" name="employeeId" value={editForm.employeeId} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Department<span className="text-red-500">*</span></label>
+                  <input type="text" name="department" value={editForm.department} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Designation<span className="text-red-500">*</span></label>
+                  <input type="text" name="designation" value={editForm.designation} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+              </div>
+              {editError && <div className="text-red-600 font-semibold">{editError}</div>}
+              <div className="flex gap-4 mt-2">
+                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save</button>
+                <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500" onClick={() => { setEditMode(false); setEditError(""); }}>Cancel</button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+
       {/* Dashboard Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
           <FaCalendarAlt className="text-blue-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Leaves (This Month)</div>
-            <div className="font-bold text-lg text-blue-900">{approvedLeavesThisMonth}</div>
+            <div className="font-bold text-lg text-blue-900">{leavesThisMonth.length}</div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
