@@ -220,8 +220,80 @@ const EmployeeDashboard = () => {
     ],
   };
 
+
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+      {/* Employee Profile Card & Edit Profile */}
+      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
+        <div className="flex-shrink-0">
+          <img
+            src={currentEmployee.profilePhoto ? currentEmployee.profilePhoto : `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
+            alt="Employee"
+            className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
+          />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
+            <FaUserCircle className="text-blue-400" /> {personal.name}
+          </h3>
+          {!editMode ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
+                <div>
+                  <span className="font-semibold">Employee ID:</span> {job.employeeId}
+                </div>
+                <div>
+                  <span className="font-semibold">Designation:</span> {job.designation}
+                </div>
+                <div>
+                  <span className="font-semibold">Department:</span> {job.department}
+                </div>
+                <div>
+                  <span className="font-semibold">Email:</span> {contact.email || "--"}
+                </div>
+                <div>
+                  <span className="font-semibold">Phone:</span> {contact.phone || "--"}
+                </div>
+              </div>
+            </>
+          ) : (
+            <form className="mt-2 space-y-3 max-w-lg" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
+                  <input type="text" name="name" value={editForm.name} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
+                  <input type="email" name="email" value={editForm.email} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Phone Number<span className="text-red-500">*</span></label>
+                  <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Employee ID<span className="text-red-500">*</span></label>
+                  <input type="text" name="employeeId" value={editForm.employeeId} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Department<span className="text-red-500">*</span></label>
+                  <input type="text" name="department" value={editForm.department} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Designation<span className="text-red-500">*</span></label>
+                  <input type="text" name="designation" value={editForm.designation} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                </div>
+              </div>
+              {editError && <div className="text-red-600 font-semibold">{editError}</div>}
+              <div className="flex gap-4 mt-2">
+                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save</button>
+                <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500" onClick={() => { setEditMode(false); setEditError(""); }}>Cancel</button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+
       {/* Daily Check-in */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <div className="flex items-center mb-4 gap-2">
@@ -289,83 +361,6 @@ const EmployeeDashboard = () => {
           <FaRegClock className="inline mr-1" />
           Working hours: <span className="font-semibold">09:30 - 18:30</span>. Idle time is calculated for late punch in or early punch out.
         </p>
-      </div>
-
-      {/* Employee Profile Card & Edit Profile */}
-      <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
-        <div className="flex-shrink-0">
-          <img
-            src={currentEmployee.profilePhoto ? currentEmployee.profilePhoto : `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
-            alt="Employee"
-            className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
-          />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-2xl font-bold text-blue-900 mb-1 flex items-center gap-2">
-            <FaUserCircle className="text-blue-400" /> {personal.name}
-          </h3>
-          {!editMode ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
-                <div>
-                  <span className="font-semibold">Employee ID:</span> {job.employeeId}
-                </div>
-                <div>
-                  <span className="font-semibold">Designation:</span> {job.designation}
-                </div>
-                <div>
-                  <span className="font-semibold">Department:</span> {job.department}
-                </div>
-                <div>
-                  <span className="font-semibold">Email:</span> {contact.email || "--"}
-                </div>
-                <div>
-                  <span className="font-semibold">Phone:</span> {contact.phone || "--"}
-                </div>
-              </div>
-              <button
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                onClick={() => setEditMode(true)}
-              >
-                Edit Profile
-              </button>
-            </>
-          ) : (
-            <form className="mt-2 space-y-3 max-w-lg" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
-                  <input type="text" name="name" value={editForm.name} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
-                  <input type="email" name="email" value={editForm.email} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Phone Number<span className="text-red-500">*</span></label>
-                  <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Employee ID<span className="text-red-500">*</span></label>
-                  <input type="text" name="employeeId" value={editForm.employeeId} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Department<span className="text-red-500">*</span></label>
-                  <input type="text" name="department" value={editForm.department} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Designation<span className="text-red-500">*</span></label>
-                  <input type="text" name="designation" value={editForm.designation} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-              </div>
-              {editError && <div className="text-red-600 font-semibold">{editError}</div>}
-              <div className="flex gap-4 mt-2">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save</button>
-                <button type="button" className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500" onClick={() => { setEditMode(false); setEditError(""); }}>Cancel</button>
-              </div>
-            </form>
-          )}
-        </div>
       </div>
 
       {/* Dashboard Summary Cards */}
