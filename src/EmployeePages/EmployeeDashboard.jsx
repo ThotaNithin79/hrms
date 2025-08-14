@@ -295,9 +295,9 @@ const EmployeeDashboard = () => {
       <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
         <div className="flex-shrink-0">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
+            src={currentEmployee.profilePhoto ? currentEmployee.profilePhoto : `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
             alt="Employee"
-            className="w-28 h-28 rounded-full border-4 border-white shadow"
+            className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
           />
         </div>
         <div className="flex-1">
