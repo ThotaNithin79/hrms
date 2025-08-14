@@ -90,7 +90,17 @@ const CurrentEmployeeLeaveManagement = () => {
 
   return (
     <>
+    
       {/* Filters */}
+      <div className="flex items-center mb-[25px]">
+        <h2 className="text-3xl font-bold text-blue-800 flex-1">Leave Request</h2>
+        <button
+          className={`ml-4 bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showForm ? 'bg-blue-900' : ''}`}
+          onClick={() => { setShowForm((v) => !v); setShowLateForm(false); }}
+        >
+          {showForm ? "Cancel" : "Leave Request"}
+        </button>
+      </div>
       <div className="flex gap-4 mb-6">
         <div>
           <label className="mr-2 font-medium text-blue-800">Month:</label>
