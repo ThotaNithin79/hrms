@@ -54,9 +54,11 @@ export const CurrentEmployeeProvider = ({ children }) => {
       },
     ],
     profilePhoto: null, // base64 or url string
+    aadhaar: null, // base64 or url string
+    pan: null, // base64 or url string
   });
 
-  // Edit function for current employee (supports profilePhoto update)
+  // Edit function for current employee (supports profilePhoto, aadhaar, pan update)
   const editCurrentEmployee = (updatedData) => {
     setCurrentEmployee((prev) => ({
       ...prev,
@@ -80,6 +82,8 @@ export const CurrentEmployeeProvider = ({ children }) => {
       },
       experience: updatedData.experience || prev.experience,
       profilePhoto: updatedData.profilePhoto !== undefined ? updatedData.profilePhoto : prev.profilePhoto,
+      aadhaar: updatedData.aadhaar !== undefined ? updatedData.aadhaar : prev.aadhaar,
+      pan: updatedData.pan !== undefined ? updatedData.pan : prev.pan,
     }));
   };
 

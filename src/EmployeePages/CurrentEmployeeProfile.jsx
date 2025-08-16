@@ -15,6 +15,26 @@ const CurrentEmployeeProfile = () => {
 
   const { personal, contact, job, bank, experience, profilePhoto } = editing ? form : currentEmployee;
 
+  const handleFileUpload = (section, field, file) => {
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: {
+            name: file.name,
+            url: reader.result,
+          },
+        },
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+  
   const handleChange = (section, field, value) => {
     setForm((prev) => ({
       ...prev,
@@ -69,6 +89,8 @@ const CurrentEmployeeProfile = () => {
         )}
       </div>
 
+      
+
       {editing ? (
         <form onSubmit={handleSubmit}>
           {/* Profile Photo Upload & Preview */}
@@ -115,25 +137,86 @@ const CurrentEmployeeProfile = () => {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Personal Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-              {Object.entries(form.personal).map(([key, value]) => (
-                <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
-                  <input
-                    type={key === "dob" ? "date" : "text"}
-                    className="border px-2 py-1 rounded w-full"
-                    value={value}
-                    onChange={(e) => handleChange("personal", key, key === "isActive" ? e.target.checked : e.target.value)}
-                    {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
-                  />
-                  {key === "isActive" && (
-                    <span className="ml-2">{value ? "Active" : "Inactive"}</span>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Personal Info */}
+<div className="bg-white p-4 rounded-lg shadow">
+  <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+
+  {/* Render normal fields */}
+  {Object.entries(form.personal).map(([key, value]) => (
+    <div key={key} className="mb-2">
+      <label className="block text-sm font-medium text-gray-600">
+        {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
+      </label>
+      <input
+        type={key === "dob" ? "date" : "text"}
+        className="border px-2 py-1 rounded w-full"
+        value={value}
+        onChange={(e) =>
+          handleChange(
+            "personal",
+            key,
+            key === "isActive" ? e.target.checked : e.target.value
+          )
+        }
+        {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
+      />
+      {key === "isActive" && (
+        <span className="ml-2">{value ? "Active" : "Inactive"}</span>
+      )}
+    </div>
+  ))}
+
+  {/* Aadhaar Upload */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
+    <input
+      type="file"
+      accept="image/*,.pdf"
+      onChange={(e) =>
+        handleFileUpload("personal", "aadhaarCard", e.target.files[0])
+      }
+    />
+    {form.personal.aadhaarCard && (
+      <div className="mt-2">
+        <span className="text-xs text-gray-500">{form.personal.aadhaarCard.name}</span>
+        <a
+          href={form.personal.aadhaarCard.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-2 text-blue-600 underline"
+        >
+          View
+        </a>
+      </div>
+    )}
+  </div>
+
+  {/* PAN Upload */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">PAN Card</label>
+    <input
+      type="file"
+      accept="image/*,.pdf"
+      onChange={(e) =>
+        handleFileUpload("personal", "panCard", e.target.files[0])
+      }
+    />
+    {form.personal.panCard && (
+      <div className="mt-2">
+        <span className="text-xs text-gray-500">{form.personal.panCard.name}</span>
+        <a
+          href={form.personal.panCard.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-2 text-blue-600 underline"
+        >
+          View
+        </a>
+      </div>
+    )}
+  </div>
+</div>
+
             {/* Contact Info */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
@@ -243,16 +326,51 @@ const CurrentEmployeeProfile = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-              <p><strong>Name:</strong> {personal?.name}</p>
-              <p><strong>Father's Name:</strong> {personal?.fatherName}</p>
-              <p><strong>Date of Birth:</strong> {personal?.dob}</p>
-              <p><strong>Gender:</strong> {personal?.gender}</p>
-              <p><strong>Marital Status:</strong> {personal?.maritalStatus}</p>
-              <p><strong>Nationality:</strong> {personal?.nationality}</p>
-              <p><strong>Active:</strong> {personal?.isActive ? "Yes" : "No"}</p>
-            </div>
+<div className="bg-white p-4 rounded-lg shadow">
+  <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+  <p><strong>Name:</strong> {personal?.name}</p>
+  <p><strong>Father's Name:</strong> {personal?.fatherName}</p>
+  <p><strong>Date of Birth:</strong> {personal?.dob}</p>
+  <p><strong>Gender:</strong> {personal?.gender}</p>
+  <p><strong>Marital Status:</strong> {personal?.maritalStatus}</p>
+  <p><strong>Nationality:</strong> {personal?.nationality}</p>
+  <p><strong>Active:</strong> {personal?.isActive ? "Yes" : "No"}</p>
+
+  {/* Aadhaar Display */}
+  <p>
+    <strong>Aadhaar Card:</strong>{" "}
+    {personal?.aadhaarCard ? (
+      <a
+        href={personal.aadhaarCard.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline"
+      >
+        {personal.aadhaarCard.name}
+      </a>
+    ) : (
+      "Not uploaded"
+    )}
+  </p>
+
+  {/* PAN Display */}
+  <p>
+    <strong>PAN Card:</strong>{" "}
+    {personal?.panCard ? (
+      <a
+        href={personal.panCard.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline"
+      >
+        {personal.panCard.name}
+      </a>
+    ) : (
+      "Not uploaded"
+    )}
+  </p>
+</div>
+
             {/* Contact Info */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>

@@ -110,16 +110,35 @@ const EmployeeDashboard = () => {
     employeeId: job.employeeId,
     department: job.department,
     designation: job.designation,
+    aadhaar: null,
+    pan: null,
+    experiences: personal.experiences || [],
+    isActive: job.isActive || false,
   });
+  const [showAddExperience, setShowAddExperience] = useState(false);
+  const [newExperience, setNewExperience] = useState({ company: '', role: '', years: '' });
   const [editError, setEditError] = useState("");
 
   const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, files, checked } = e.target;
+    if (type === 'file') {
+      const file = files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setEditForm((prev) => ({ ...prev, [name]: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
+    } else if (type === 'checkbox') {
+      setEditForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setEditForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleEditSave = () => {
-  const { name, email, phone, employeeId, department, designation } = editForm;
+  const { name, email, phone, employeeId, department, designation, aadhaar, pan, experiences, isActive } = editForm;
 
   // Trim values
   const trimmedName = name.trim();
@@ -149,11 +168,13 @@ const EmployeeDashboard = () => {
     return;
   }
 
-  // Save changes to context
+  // Save changes to context (add Aadhaar, PAN, experiences, isActive)
   editCurrentEmployee({
-    personal: { name: trimmedName },
+    personal: { name: trimmedName, experiences },
     contact: { email: trimmedEmail, phone: trimmedPhone },
-    job: { employeeId: trimmedEmployeeId, department: trimmedDepartment, designation: trimmedDesignation },
+    job: { employeeId: trimmedEmployeeId, department: trimmedDepartment, designation: trimmedDesignation, isActive },
+    aadhaar,
+    pan,
   });
 
   setEditMode(false);
@@ -257,33 +278,116 @@ const EmployeeDashboard = () => {
               </div>
             </>
           ) : (
-            <form className="mt-2 space-y-3 max-w-lg" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
-                  <input type="text" name="name" value={editForm.name} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
-                  <input type="email" name="email" value={editForm.email} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Phone Number<span className="text-red-500">*</span></label>
-                  <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Employee ID<span className="text-red-500">*</span></label>
-                  <input type="text" name="employeeId" value={editForm.employeeId} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Department<span className="text-red-500">*</span></label>
-                  <input type="text" name="department" value={editForm.department} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Designation<span className="text-red-500">*</span></label>
-                  <input type="text" name="designation" value={editForm.designation} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+            <form className="mt-2 space-y-3 max-w-2xl" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
+              {/* Personal Details Section */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <h4 className="font-bold text-blue-700 mb-2">Personal Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
+                    <input type="text" name="name" value={editForm.name} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
+                    <input type="email" name="email" value={editForm.email} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Phone Number<span className="text-red-500">*</span></label>
+                    <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Aadhaar Document</label>
+                    <input type="file" name="aadhaar" accept="application/pdf,image/*" onChange={handleEditChange} className="w-full border px-3 py-2 rounded" />
+                    {editForm.aadhaar && (
+                      <div className="mt-2">
+                        <a href={editForm.aadhaar} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Uploaded Aadhaar</a>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">PAN Document</label>
+                    <input type="file" name="pan" accept="application/pdf,image/*" onChange={handleEditChange} className="w-full border px-3 py-2 rounded" />
+                    {editForm.pan && (
+                      <div className="mt-2">
+                        <a href={editForm.pan} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Uploaded PAN</a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Job Details Section */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <h4 className="font-bold text-blue-700 mb-2">Job Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">Employee ID<span className="text-red-500">*</span></label>
+                    <input type="text" name="employeeId" value={editForm.employeeId} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Department<span className="text-red-500">*</span></label>
+                    <input type="text" name="department" value={editForm.department} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Designation<span className="text-red-500">*</span></label>
+                    <input type="text" name="designation" value={editForm.designation} onChange={handleEditChange} required className="w-full border px-3 py-2 rounded" />
+                  </div>
+                  <div className="flex items-center mt-2">
+                    <input type="checkbox" name="isActive" checked={editForm.isActive} onChange={handleEditChange} className="mr-2 h-5 w-5 accent-blue-600" />
+                    <label className="font-semibold">Is Active</label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Experience Section */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-blue-700">Experience</h4>
+                  <button type="button" className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onClick={() => setShowAddExperience(true)}>Add</button>
+                </div>
+                {/* List existing experiences */}
+                {editForm.experiences && editForm.experiences.length > 0 && (
+                  <div className="space-y-2 mb-2">
+                    {editForm.experiences.map((exp, idx) => (
+                      <div key={idx} className="border rounded p-2 flex flex-col md:flex-row md:items-center md:gap-4 bg-white">
+                        <span className="font-semibold">Company:</span> <span>{exp.company}</span>
+                        <span className="font-semibold ml-2">Role:</span> <span>{exp.role}</span>
+                        <span className="font-semibold ml-2">Years:</span> <span>{exp.years}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Add new experience form */}
+                {showAddExperience && (
+                  <div className="border rounded p-3 bg-white mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block font-semibold mb-1">Company Name</label>
+                        <input type="text" name="company" value={newExperience.company} onChange={e => setNewExperience({ ...newExperience, company: e.target.value })} className="w-full border px-3 py-2 rounded" />
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-1">Role</label>
+                        <input type="text" name="role" value={newExperience.role} onChange={e => setNewExperience({ ...newExperience, role: e.target.value })} className="w-full border px-3 py-2 rounded" />
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-1">Years</label>
+                        <input type="number" name="years" value={newExperience.years} onChange={e => setNewExperience({ ...newExperience, years: e.target.value })} className="w-full border px-3 py-2 rounded" />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-3">
+                      <button type="button" className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700" onClick={() => {
+                        if (newExperience.company && newExperience.role && newExperience.years) {
+                          setEditForm(prev => ({ ...prev, experiences: [...prev.experiences, newExperience] }));
+                          setNewExperience({ company: '', role: '', years: '' });
+                          setShowAddExperience(false);
+                        }
+                      }}>Save</button>
+                      <button type="button" className="bg-gray-400 text-white px-4 py-1 rounded hover:bg-gray-500" onClick={() => { setShowAddExperience(false); setNewExperience({ company: '', role: '', years: '' }); }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {editError && <div className="text-red-600 font-semibold">{editError}</div>}
               <div className="flex gap-4 mt-2">
                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Save</button>
