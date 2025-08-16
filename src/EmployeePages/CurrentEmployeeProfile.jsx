@@ -474,26 +474,38 @@ const CurrentEmployeeProfile = () => {
     <ul className="list-disc pl-5">
       {experience.map((exp, idx) => (
         <li key={idx} className="mb-3">
-          <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
-          <br />
-          <span className="text-sm text-gray-600">
-            {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
-          </span>
+  <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
+  <br />
+  <span className="text-sm text-gray-600">
+    {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
+  </span>
 
-          {/* ✅ Show Experience Letter link if available */}
-          {exp.certificate && (
-            <div className="mt-1">
-              <a
-                href={exp.certificate.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline text-sm"
-              >
-                View Experience Letter
-              </a>
-            </div>
-          )}
-        </li>
+  {/* ✅ Show Experience Letter if available */}
+  {exp.certificate && (
+    <div className="mt-1">
+      {exp.certificate.type === "application/pdf" ? (
+        // If it's a PDF → open in new tab
+        <a
+          href={exp.certificate.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline text-sm"
+        >
+          View Experience Letter (PDF)
+        </a>
+      ) : (
+        // If it's an image → show preview modal
+        <button
+          onClick={() => setPreview(exp.certificate.url)}
+          className="text-blue-600 underline text-sm"
+        >
+          View Experience Letter (Image)
+        </button>
+      )}
+    </div>
+  )}
+</li>
+
       ))}
     </ul>
   ) : (
