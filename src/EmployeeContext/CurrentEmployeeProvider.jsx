@@ -11,6 +11,9 @@ export const CurrentEmployeeProvider = ({ children }) => {
       gender: "Male",
       maritalStatus: "Married",
       nationality: "Indian",
+      profilePhoto: null, // base64 or url string
+      aadhaar: null, // base64 or url string
+      pan: null, // base64 or url string
       isActive: true,
     },
     contact: {
@@ -53,9 +56,7 @@ export const CurrentEmployeeProvider = ({ children }) => {
         salary: 65000,
       },
     ],
-    profilePhoto: null, // base64 or url string
-    aadhaar: null, // base64 or url string
-    pan: null, // base64 or url string
+    
   });
 
   // Edit function for current employee (supports profilePhoto, aadhaar, pan update)
@@ -81,9 +82,6 @@ export const CurrentEmployeeProvider = ({ children }) => {
         ...(updatedData.bank || {}),
       },
       experience: updatedData.experience || prev.experience,
-      profilePhoto: updatedData.profilePhoto !== undefined ? updatedData.profilePhoto : prev.profilePhoto,
-      aadhaar: updatedData.aadhaar !== undefined ? updatedData.aadhaar : prev.aadhaar,
-      pan: updatedData.pan !== undefined ? updatedData.pan : prev.pan,
     }));
   };
 
