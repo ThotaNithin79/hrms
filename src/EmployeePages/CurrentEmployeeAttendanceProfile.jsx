@@ -125,18 +125,16 @@ const CurrentEmployeeAttendanceProfile = () => {
   const leaveRemaining = useMemo(() => {
     const months = getAllMonthsUpToCurrentYear();
     let carryOver = 0;
-    let penalty = 0;
     for (let i = 0; i < months.length; i++) {
       const month = months[i];
-      let earned = Math.max(1 - penalty, 0);
-      let available = earned + carryOver;
+      let available = 1 + carryOver; // 1 leave earned per month + carry over
       const used = getApprovedLeaveDaysForMonthAll(leaveRequests, month, employeeId).size;
       let thisMonthCarry = available - used;
       if (thisMonthCarry < 0) {
-        penalty = Math.abs(thisMonthCarry);
+        // Extra leave is treated as paid leave, balance is 0, no penalty to future months
         carryOver = 0;
+        thisMonthCarry = 0;
       } else {
-        penalty = 0;
         carryOver = thisMonthCarry;
       }
       if (i === months.length - 1) {
