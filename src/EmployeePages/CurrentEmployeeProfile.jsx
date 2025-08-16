@@ -15,6 +15,30 @@ const CurrentEmployeeProfile = () => {
 
   const { personal, contact, job, bank, experience, profilePhoto } = editing ? form : currentEmployee;
 
+  const handleFileChange = (section, field, file, idx) => {
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({
+        ...prev,
+        [section]: prev[section].map((exp, i) =>
+          i === idx
+            ? {
+                ...exp,
+                [field]: {
+                  name: file.name,
+                  url: reader.result,
+                },
+              }
+            : exp
+        ),
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+
   const handleFileUpload = (section, field, file) => {
   if (file) {
     const reader = new FileReader();
@@ -275,20 +299,54 @@ const CurrentEmployeeProfile = () => {
           <div className="mt-8 bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
             {form.experience.map((exp, idx) => (
-              <div key={idx} className="mb-4 border-b pb-2">
-                {Object.entries(exp).map(([key, value]) => (
-                  <div key={key} className="mb-2">
-                    <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
-                    <input
-                      type={key.toLowerCase().includes("date") ? "date" : "text"}
-                      className="border px-2 py-1 rounded w-full"
-                      value={value}
-                      onChange={(e) => handleExperienceChange(idx, key, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+  <div key={idx} className="mb-4 border-b pb-2">
+    {Object.entries(exp).map(([key, value]) => (
+      <div key={key} className="mb-2">
+        <label className="block text-sm font-medium text-gray-600">
+          {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
+        </label>
+        <input
+          type={key.toLowerCase().includes("date") ? "date" : "text"}
+          className="border px-2 py-1 rounded w-full"
+          value={value}
+          onChange={(e) =>
+            handleExperienceChange(idx, key, e.target.value)
+          }
+        />
+      </div>
+    ))}
+
+    {/* ✅ Upload UI for Experience Certificate */}
+    <div className="mb-2">
+      <label className="block text-sm font-medium text-gray-600">
+        Experience Certificate
+      </label>
+      <input
+        type="file"
+        accept="image/*,.pdf"
+        onChange={(e) =>
+          handleFileChange("experience", "certificate", e.target.files[0], idx)
+        }
+      />
+      {exp.certificate && (
+        <div className="mt-2">
+          <span className="text-xs text-gray-500">
+            {exp.certificate.name}
+          </span>
+          <a
+            href={exp.certificate.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-2 text-blue-600 underline"
+          >
+            View
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+))}
+
             
           </div>
           <div className="mt-4 flex gap-4">
@@ -411,23 +469,38 @@ const CurrentEmployeeProfile = () => {
           </div>
           {/* Experience Details */}
           <div className="mt-8 bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
-            {experience && experience.length > 0 ? (
-              <ul className="list-disc pl-5">
-                {experience.map((exp, idx) => (
-                  <li key={idx}>
-                    <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
-                    <br />
-                    <span className="text-sm text-gray-600">
-                      {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No experience details available.</p>
-            )}
-          </div>
+  <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
+  {experience && experience.length > 0 ? (
+    <ul className="list-disc pl-5">
+      {experience.map((exp, idx) => (
+        <li key={idx} className="mb-3">
+          <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
+          <br />
+          <span className="text-sm text-gray-600">
+            {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
+          </span>
+
+          {/* ✅ Show Experience Letter link if available */}
+          {exp.certificate && (
+            <div className="mt-1">
+              <a
+                href={exp.certificate.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline text-sm"
+              >
+                View Experience Letter
+              </a>
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>No experience details available.</p>
+  )}
+</div>
+
         </>
       )}
     </div>
