@@ -8,12 +8,40 @@ const CurrentEmployeeProfile = () => {
   const [form, setForm] = useState(currentEmployee);
   const [photoPreview, setPhotoPreview] = useState(currentEmployee.profilePhoto || null);
   const fileInputRef = useRef();
+  
 
   if (!currentEmployee) {
     return <div className="p-6 text-red-600">Employee data not available.</div>;
   }
 
   const { personal, contact, job, bank, experience, profilePhoto } = editing ? form : currentEmployee;
+
+
+  const handleAddExperience = () => {
+  setForm({
+    ...form,
+    experience: [
+      ...form.experience,
+      {
+        company: "",
+        role: "",
+        years: "",
+        joiningDate: "",
+        lastWorkingDate: "",
+        salary: "",
+        certificate: null, // For experience letter upload
+      },
+    ],
+  });
+};
+
+const handleRemoveExperience = (index) => {
+  setForm({
+    ...form,
+    experience: form.experience.filter((_, i) => i !== index),
+  });
+};
+
 
   const handleFileChange = (section, field, file, idx) => {
   if (file) {
@@ -154,14 +182,13 @@ const CurrentEmployeeProfile = () => {
                 type="button"
                 className="text-blue-700 underline text-sm"
                 onClick={() => {
-  setPhotoPreview(null);
-  setForm((prev) => ({
-    ...prev,
-    personal: { ...prev.personal, profilePhoto: null },
-  }));
-  if (fileInputRef.current) fileInputRef.current.value = "";
-}}
-
+                  setPhotoPreview(null);
+                  setForm((prev) => ({
+                    ...prev,
+                    personal: { ...prev.personal, profilePhoto: null },
+                  }));
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 style={{ display: photoPreview ? "inline" : "none" }}
               >
                 Remove Photo
@@ -169,86 +196,82 @@ const CurrentEmployeeProfile = () => {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Personal Info */}
-<div className="bg-white p-4 rounded-lg shadow">
-  <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-
-  {/* Render normal fields */}
-  {Object.entries(form.personal).map(([key, value]) => (
-    <div key={key} className="mb-2">
-      <label className="block text-sm font-medium text-gray-600">
-        {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
-      </label>
-      <input
-        type={key === "dob" ? "date" : "text"}
-        className="border px-2 py-1 rounded w-full"
-        value={value}
-        onChange={(e) =>
-          handleChange(
-            "personal",
-            key,
-            key === "isActive" ? e.target.checked : e.target.value
-          )
-        }
-        {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
-      />
-      {key === "isActive" && (
-        <span className="ml-2">{value ? "Active" : "Inactive"}</span>
-      )}
-    </div>
-  ))}
-
-  {/* Aadhaar Upload */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
-    <input
-      type="file"
-      accept="image/*,.pdf"
-      onChange={(e) =>
-        handleFileUpload("personal", "aadhaar", e.target.files[0])
-      }
-    />
-    {form.personal.aadhaar && (
-      <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
-        <a
-          href={form.personal.aadhaar.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 text-blue-600 underline"
-        >
-          View
-        </a>
-      </div>
-    )}
-  </div>
-
-  {/* PAN Upload */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">PAN Card</label>
-    <input
-      type="file"
-      accept="image/*,.pdf"
-      onChange={(e) =>
-        handleFileUpload("personal", "pan", e.target.files[0])
-      }
-    />
-    {form.personal.pan && (
-      <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
-        <a
-          href={form.personal.pan.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 text-blue-600 underline"
-        >
-          View
-        </a>
-      </div>
-    )}
-  </div>
-</div>
-
+            {/* Personal Info */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+              {/* Render normal fields */}
+              {Object.entries(form.personal).map(([key, value]) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-sm font-medium text-gray-600">
+                    {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
+                  </label>
+                  <input
+                    type={key === "dob" ? "date" : "text"}
+                    className="border px-2 py-1 rounded w-full"
+                    value={value}
+                    onChange={(e) =>
+                      handleChange(
+                        "personal",
+                        key,
+                        key === "isActive" ? e.target.checked : e.target.value
+                      )
+                    }
+                    {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
+                  />
+                  {key === "isActive" && (
+                    <span className="ml-2">{value ? "Active" : "Inactive"}</span>
+                  )}
+                </div>
+              ))}
+              {/* Aadhaar Upload */}
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) =>
+                    handleFileUpload("personal", "aadhaar", e.target.files[0])
+                  }
+                />
+                {form.personal.aadhaar && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
+                    <a
+                      href={form.personal.aadhaar.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-600 underline"
+                    >
+                      View
+                    </a>
+                  </div>
+                )}
+              </div>
+              {/* PAN Upload */}
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600">PAN Card</label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) =>
+                    handleFileUpload("personal", "pan", e.target.files[0])
+                  }
+                />
+                {form.personal.pan && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
+                    <a
+                      href={form.personal.pan.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-600 underline"
+                    >
+                      View
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
             {/* Contact Info */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
@@ -299,55 +322,48 @@ const CurrentEmployeeProfile = () => {
           <div className="mt-8 bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
             {form.experience.map((exp, idx) => (
-  <div key={idx} className="mb-4 border-b pb-2">
-    {Object.entries(exp).map(([key, value]) => (
-      <div key={key} className="mb-2">
-        <label className="block text-sm font-medium text-gray-600">
-          {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
-        </label>
-        <input
-          type={key.toLowerCase().includes("date") ? "date" : "text"}
-          className="border px-2 py-1 rounded w-full"
-          value={value}
-          onChange={(e) =>
-            handleExperienceChange(idx, key, e.target.value)
-          }
-        />
-      </div>
-    ))}
-
-    {/* ✅ Upload UI for Experience Certificate */}
-    <div className="mb-2">
-      <label className="block text-sm font-medium text-gray-600">
-        Experience Certificate
-      </label>
-      <input
-        type="file"
-        accept="image/*,.pdf"
-        onChange={(e) =>
-          handleFileChange("experience", "certificate", e.target.files[0], idx)
-        }
-      />
-      {exp.certificate && (
-        <div className="mt-2">
-          <span className="text-xs text-gray-500">
-            {exp.certificate.name}
-          </span>
-          <a
-            href={exp.certificate.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 text-blue-600 underline"
-          >
-            View
-          </a>
-        </div>
-      )}
-    </div>
-  </div>
-))}
-
-            
+              <div key={idx} className="mb-4 border-b pb-2">
+                {/* Experience fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Company</label>
+                    <input type="text" className="border px-2 py-1 rounded w-full" value={exp.company} onChange={e => handleExperienceChange(idx, "company", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Role</label>
+                    <input type="text" className="border px-2 py-1 rounded w-full" value={exp.role} onChange={e => handleExperienceChange(idx, "role", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Years</label>
+                    <input type="number" className="border px-2 py-1 rounded w-full" value={exp.years} onChange={e => handleExperienceChange(idx, "years", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Joining Date</label>
+                    <input type="date" className="border px-2 py-1 rounded w-full" value={exp.joiningDate} onChange={e => handleExperienceChange(idx, "joiningDate", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Last Working Date</label>
+                    <input type="date" className="border px-2 py-1 rounded w-full" value={exp.lastWorkingDate} onChange={e => handleExperienceChange(idx, "lastWorkingDate", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Salary</label>
+                    <input type="number" className="border px-2 py-1 rounded w-full" value={exp.salary} onChange={e => handleExperienceChange(idx, "salary", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Experience Certificate</label>
+                    <input type="file" accept="image/*,.pdf" onChange={e => handleFileChange("experience", "certificate", e.target.files[0], idx)} />
+                    {exp.certificate && (
+                      <div className="mt-2">
+                        <span className="text-xs text-gray-500">{exp.certificate.name}</span>
+                        <a href={exp.certificate.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">View</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button type="button" className="mt-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600" onClick={() => handleRemoveExperience(idx)}>Remove</button>
+              </div>
+            ))}
+            <button type="button" className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleAddExperience}>+ Add Experience</button>
           </div>
           <div className="mt-4 flex gap-4">
             <button
@@ -468,50 +484,108 @@ const CurrentEmployeeProfile = () => {
             </div>
           </div>
           {/* Experience Details */}
-          <div className="mt-8 bg-white p-4 rounded-lg shadow">
+          {/* ✅ Read-only Experience Details */}
+<div className="mt-8 bg-white p-4 rounded-lg shadow">
   <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
   {experience && experience.length > 0 ? (
     <ul className="list-disc pl-5">
       {experience.map((exp, idx) => (
         <li key={idx} className="mb-3">
-  <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
-  <br />
-  <span className="text-sm text-gray-600">
-    {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
-  </span>
+          <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
+          <br />
+          <span className="text-sm text-gray-600">
+            {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
+          </span>
 
-  {/* ✅ Show Experience Letter if available */}
-  {exp.certificate && (
-    <div className="mt-1">
-      {exp.certificate.type === "application/pdf" ? (
-        // If it's a PDF → open in new tab
-        <a
-          href={exp.certificate.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline text-sm"
-        >
-          View Experience Letter (PDF)
-        </a>
-      ) : (
-        // If it's an image → show preview modal
-        <button
-          onClick={() => setPreview(exp.certificate.url)}
-          className="text-blue-600 underline text-sm"
-        >
-          View Experience Letter (Image)
-        </button>
-      )}
-    </div>
-  )}
-</li>
-
+          {/* ✅ Show Experience Letter if available */}
+          {exp.certificate && (
+            <div className="mt-1">
+              {exp.certificate.type === "application/pdf" ? (
+                // If it's a PDF → open in new tab
+                <a
+                  href={exp.certificate.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline text-sm"
+                >
+                  View Experience Letter (PDF)
+                </a>
+              ) : (
+                // If it's an image → show preview modal
+                <button
+                  onClick={() => setPreview(exp.certificate.url)}
+                  className="text-blue-600 underline text-sm"
+                >
+                  View Experience Letter (Image)
+                </button>
+              )}
+            </div>
+          )}
+        </li>
       ))}
     </ul>
   ) : (
     <p>No experience details available.</p>
   )}
 </div>
+
+{/* ✅ Edit mode Experience Details */}
+{editing && (
+  <div className="mt-8 bg-white p-4 rounded-lg shadow">
+    <h3 className="text-lg font-bold mb-2 text-gray-700">Edit Experience</h3>
+    {form.experience.map((exp, idx) => (
+      <div key={idx} className="mb-4 border-b pb-3">
+        <label className="block text-sm font-medium text-gray-600">
+          Company
+        </label>
+        <input
+          type="text"
+          className="border px-2 py-1 rounded w-full"
+          value={exp.company}
+          onChange={(e) =>
+            handleExperienceChange(idx, "company", e.target.value)
+          }
+        />
+
+        <label className="block text-sm font-medium text-gray-600 mt-2">
+          Role
+        </label>
+        <input
+          type="text"
+          className="border px-2 py-1 rounded w-full"
+          value={exp.role}
+          onChange={(e) =>
+            handleExperienceChange(idx, "role", e.target.value)
+          }
+        />
+
+        <label className="block text-sm font-medium text-gray-600 mt-2">
+          Years
+        </label>
+        <input
+          type="number"
+          className="border px-2 py-1 rounded w-full"
+          value={exp.years}
+          onChange={(e) =>
+            handleExperienceChange(idx, "years", e.target.value)
+          }
+        />
+
+        {/* Repeat inputs for joiningDate, lastWorkingDate, salary, certificate */}
+      </div>
+    ))}
+
+    {/* ✅ Add Button goes here */}
+    <button
+      type="button"
+      onClick={handleAddExperience}
+      className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      + Add Experience
+    </button>
+  </div>
+)}
+
 
         </>
       )}
