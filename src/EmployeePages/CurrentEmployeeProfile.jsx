@@ -55,16 +55,20 @@ const CurrentEmployeeProfile = () => {
   };
 
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
-        setForm((prev) => ({ ...prev, profilePhoto: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result);
+      setForm((prev) => ({
+        ...prev,
+        personal: { ...prev.personal, profilePhoto: reader.result },
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -126,10 +130,14 @@ const CurrentEmployeeProfile = () => {
                 type="button"
                 className="text-blue-700 underline text-sm"
                 onClick={() => {
-                  setPhotoPreview(null);
-                  setForm((prev) => ({ ...prev, profilePhoto: null }));
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
+  setPhotoPreview(null);
+  setForm((prev) => ({
+    ...prev,
+    personal: { ...prev.personal, profilePhoto: null },
+  }));
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}}
+
                 style={{ display: photoPreview ? "inline" : "none" }}
               >
                 Remove Photo
@@ -173,14 +181,14 @@ const CurrentEmployeeProfile = () => {
       type="file"
       accept="image/*,.pdf"
       onChange={(e) =>
-        handleFileUpload("personal", "aadhaarCard", e.target.files[0])
+        handleFileUpload("personal", "aadhaar", e.target.files[0])
       }
     />
-    {form.personal.aadhaarCard && (
+    {form.personal.aadhaar && (
       <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.aadhaarCard.name}</span>
+        <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
         <a
-          href={form.personal.aadhaarCard.url}
+          href={form.personal.aadhaar.url}
           target="_blank"
           rel="noopener noreferrer"
           className="ml-2 text-blue-600 underline"
@@ -198,14 +206,14 @@ const CurrentEmployeeProfile = () => {
       type="file"
       accept="image/*,.pdf"
       onChange={(e) =>
-        handleFileUpload("personal", "panCard", e.target.files[0])
+        handleFileUpload("personal", "pan", e.target.files[0])
       }
     />
-    {form.personal.panCard && (
+    {form.personal.pan && (
       <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.panCard.name}</span>
+        <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
         <a
-          href={form.personal.panCard.url}
+          href={form.personal.pan.url}
           target="_blank"
           rel="noopener noreferrer"
           className="ml-2 text-blue-600 underline"
@@ -340,14 +348,14 @@ const CurrentEmployeeProfile = () => {
   {/* Aadhaar Display */}
   <p>
     <strong>Aadhaar Card:</strong>{" "}
-    {personal?.aadhaarCard ? (
+    {personal?.aadhaar ? (
       <a
-        href={personal.aadhaarCard.url}
+        href={personal.aadhaar.url}
         target="_blank"
         rel="noopener noreferrer"
         className="text-blue-600 underline"
       >
-        {personal.aadhaarCard.name}
+        {personal.aadhaar.name}
       </a>
     ) : (
       "Not uploaded"
@@ -357,14 +365,14 @@ const CurrentEmployeeProfile = () => {
   {/* PAN Display */}
   <p>
     <strong>PAN Card:</strong>{" "}
-    {personal?.panCard ? (
+    {personal?.pan ? (
       <a
-        href={personal.panCard.url}
+        href={personal.pan.url}
         target="_blank"
         rel="noopener noreferrer"
         className="text-blue-600 underline"
       >
-        {personal.panCard.name}
+        {personal.pan.name}
       </a>
     ) : (
       "Not uploaded"
