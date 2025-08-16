@@ -68,7 +68,7 @@ const CalendarCell = ({ day, record }) => {
 };
 
 const CurrentEmployeeAttendanceProfile = () => {
-  const { attendanceRecords } = useContext(CurrentEmployeeAttendanceContext);
+  const { attendanceRecords, paidLeaves } = useContext(CurrentEmployeeAttendanceContext);
   const {
     leaveRequests,
     filteredRequests,
@@ -288,7 +288,7 @@ const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
       </div>
 
       {/* Summary boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-green-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-green-600 font-bold text-lg">Present</span>
           <span className="text-2xl font-bold">{presentCount}</span>
@@ -304,6 +304,10 @@ const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
         <div className="bg-blue-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-blue-600 font-bold text-lg">Leave Remaining</span>
           <span className="text-2xl font-bold">{leaveRemaining}</span>
+        </div>
+        <div className="bg-pink-50 p-4 rounded shadow flex flex-col items-center">
+          <span className="text-pink-600 font-bold text-lg">Paid Leaves</span>
+          <span className="text-2xl font-bold">{paidLeaves}</span>
         </div>
       </div>
 

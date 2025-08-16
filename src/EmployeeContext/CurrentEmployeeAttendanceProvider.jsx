@@ -89,29 +89,27 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     return leaveDates;
   }
 
-  // Calculate leave remaining for the current month (with penalty logic)
-  // Calculate leave remaining for the current month (with penalty logic)
-const leaveRemaining = useMemo(() => {
-  const months = getAllMonthsUpToCurrentYear();
-  let carryOver = 0; // balance carried into each month
-
-  for (let i = 0; i < months.length; i++) {
-    const month = months[i];
-
-    const available = 1 + carryOver; // earn 1 each month
-    const used = getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId).size;
-
-    if (used > available) {
-      // Extra leaves are treated as PAID; balance cannot go negative.
-      carryOver = 0; // month ends at 0, no penalty carried forward
-    } else {
-      carryOver = available - used; // normal carry forward
+  // Calculate leave remaining and paid leaves for the current month
+  const { leaveRemaining, paidLeaves } = useMemo(() => {
+    const months = getAllMonthsUpToCurrentYear();
+    let carryOver = 0;
+    let paidLeaves = 0;
+    for (let i = 0; i < months.length; i++) {
+      const month = months[i];
+      const available = 1 + carryOver;
+      const used = getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId).size;
+      if (used > available) {
+        paidLeaves += used - available;
+        carryOver = 0;
+      } else {
+        carryOver = available - used;
+      }
+      if (i === months.length - 1) {
+        return { leaveRemaining: carryOver, paidLeaves };
+      }
     }
-
-    if (i === months.length - 1) return carryOver; // current month’s remainder
-  }
-  return carryOver;
-}, [leaveRequests, employeeId]);
+    return { leaveRemaining: carryOver, paidLeaves };
+  }, [leaveRequests, employeeId]);
 
 
 
@@ -123,6 +121,7 @@ const leaveRemaining = useMemo(() => {
         monthlyWorkHours,
         monthlyIdleHours,
         leaveRemaining,
+        paidLeaves
       }}
     >
       {children}
