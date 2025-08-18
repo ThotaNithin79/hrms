@@ -70,7 +70,11 @@ const CurrentEmployeeHolidayCalendar = () => {
                     date.getDate() === today.getDate() &&
                     date.getMonth() === today.getMonth() &&
                     date.getFullYear() === today.getFullYear();
-                  return isToday ? "bg-yellow-200 font-bold" : "";
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  let classes = "";
+                  if (isToday) classes += " bg-yellow-200 font-bold";
+                  if (isWeekend) classes += " text-red-600 font-semibold";
+                  return classes.trim();
                 }}
                 prev2Label={null}
                 next2Label={null}
