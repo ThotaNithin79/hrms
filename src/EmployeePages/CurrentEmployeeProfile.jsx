@@ -195,129 +195,112 @@ const handleRemoveExperience = (index) => {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Personal Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-              {/* Render normal fields */}
-              {Object.entries(form.personal).map(([key, value]) => (
-                <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">
-                    {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
-                  </label>
-                  <input
-                    type={key === "dob" ? "date" : "text"}
-                    className="border px-2 py-1 rounded w-full"
-                    value={value}
-                    onChange={(e) =>
-                      handleChange(
-                        "personal",
-                        key,
-                        key === "isActive" ? e.target.checked : e.target.value
-                      )
-                    }
-                    {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
-                  />
-                  {key === "isActive" && (
-                    <span className="ml-2">{value ? "Active" : "Inactive"}</span>
-                  )}
-                </div>
-              ))}
-              {/* Aadhaar Upload */}
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    handleFileUpload("personal", "aadhaar", e.target.files[0])
-                  }
-                />
-                {form.personal.aadhaar && (
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
-                    <a
-                      href={form.personal.aadhaar.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-600 underline"
-                    >
-                      View
-                    </a>
-                  </div>
-                )}
-              </div>
-              {/* PAN Upload */}
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-600">PAN Card</label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    handleFileUpload("personal", "pan", e.target.files[0])
-                  }
-                />
-                {form.personal.pan && (
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
-                    <a
-                      href={form.personal.pan.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-600 underline"
-                    >
-                      View
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Contact Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Contact Details</h3>
-              {Object.entries(form.contact).map(([key, value]) => (
-                <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
-                  <input
-                    type="text"
-                    className="border px-2 py-1 rounded w-full"
-                    value={value}
-                    onChange={(e) => handleChange("contact", key, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-            {/* Job Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Job Information</h3>
-              {Object.entries(form.job).map(([key, value]) => (
-                <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
-                  <input
-                    type={key === "joiningDate" ? "date" : "text"}
-                    className="border px-2 py-1 rounded w-full"
-                    value={value}
-                    onChange={(e) => handleChange("job", key, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-            {/* Bank Info */}
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-bold mb-2 text-gray-700">Bank Information</h3>
-              {Object.entries(form.bank).map(([key, value]) => (
-                <div key={key} className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600">{key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}</label>
-                  <input
-                    type="text"
-                    className="border px-2 py-1 rounded w-full"
-                    value={value}
-                    onChange={(e) => handleChange("bank", key, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+  <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
+
+  {/* Name, Father Name, DOB, etc. */}
+  {Object.entries(form.personal).map(([key, value]) => {
+    if (key === "aadhaar" || key === "pan" || key === "profilePhoto" || key === "aadhaarNumber" || key === "panNumber") {
+      return null; // skip these, we'll render separately
+    }
+    return (
+      <div key={key} className="mb-2">
+        <label className="block text-sm font-medium text-gray-600">
+          {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
+        </label>
+        <input
+          type={key === "dob" ? "date" : "text"}
+          className="border px-2 py-1 rounded w-full"
+          value={value}
+          onChange={(e) =>
+            handleChange(
+              "personal",
+              key,
+              key === "isActive" ? e.target.checked : e.target.value
+            )
+          }
+          {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
+        />
+        {key === "isActive" && (
+          <span className="ml-2">{value ? "Active" : "Inactive"}</span>
+        )}
+      </div>
+    );
+  })}
+
+  {/* Aadhaar Number */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">Aadhaar Number</label>
+    <input
+      type="text"
+      className="border px-2 py-1 rounded w-full"
+      value={form.personal.aadhaarNumber}
+      onChange={(e) => handleChange("personal", "aadhaarNumber", e.target.value)}
+    />
+  </div>
+
+  {/* PAN Number */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">PAN Number</label>
+    <input
+      type="text"
+      className="border px-2 py-1 rounded w-full"
+      value={form.personal.panNumber}
+      onChange={(e) => handleChange("personal", "panNumber", e.target.value)}
+    />
+  </div>
+
+  {/* Aadhaar Upload */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
+    <input
+      type="file"
+      accept="image/*,.pdf"
+      onChange={(e) =>
+        handleFileUpload("personal", "aadhaar", e.target.files[0])
+      }
+    />
+    {form.personal.aadhaar && (
+      <div className="mt-2">
+        <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
+        <a
+          href={form.personal.aadhaar.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-2 text-blue-600 underline"
+        >
+          View
+        </a>
+      </div>
+    )}
+  </div>
+
+  {/* PAN Upload */}
+  <div className="mb-2">
+    <label className="block text-sm font-medium text-gray-600">PAN Card</label>
+    <input
+      type="file"
+      accept="image/*,.pdf"
+      onChange={(e) =>
+        handleFileUpload("personal", "pan", e.target.files[0])
+      }
+    />
+    {form.personal.pan && (
+      <div className="mt-2">
+        <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
+        <a
+          href={form.personal.pan.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-2 text-blue-600 underline"
+        >
+          View
+        </a>
+      </div>
+    )}
+  </div>
+</div>
+
           {/* Experience Details */}
           <div className="mt-8 bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
@@ -417,6 +400,16 @@ const handleRemoveExperience = (index) => {
   <p><strong>Gender:</strong> {personal?.gender}</p>
   <p><strong>Marital Status:</strong> {personal?.maritalStatus}</p>
   <p><strong>Nationality:</strong> {personal?.nationality}</p>
+  <p><strong>Aadhaar Number:</strong> {personal?.aadhaarNumber}</p>
+  <p><strong>PAN Number:</strong> {personal?.panNumber}</p>
+  {/* Profile Photo Display */}
+  {personal?.profilePhoto && (
+    <img
+      src={personal.profilePhoto}
+      alt="Profile"
+      className="w-24 h-24 rounded-full border-2 border-gray-300 mt-2"
+    />
+  )}
   <p><strong>Active:</strong> {personal?.isActive ? "Yes" : "No"}</p>
 
   {/* Aadhaar Display */}

@@ -11,6 +11,8 @@ export const CurrentEmployeeProvider = ({ children }) => {
       gender: "Male",
       maritalStatus: "Married",
       nationality: "Indian",
+      aadhaarNumber: "1234-5678-9012",
+      panNumber: "ABCDE1234F",
       profilePhoto: null, // base64 or url string
       aadhaar: null, // base64 or url string
       pan: null, // base64 or url string
