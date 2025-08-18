@@ -16,6 +16,20 @@ const CurrentEmployeeProfile = () => {
 
   const { personal, contact, job, bank, experience, profilePhoto } = editing ? form : currentEmployee;
 
+  // --- Validation: Aadhaar & PAN ---
+const AADHAAR_REGEX = /^\d{12}$/;                     // 12 digits
+const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;          // ABCDE1234F
+
+const [errors, setErrors] = useState({
+  aadhaarNumber: "",
+  panNumber: "",
+});
+
+const isIDsValid =
+  AADHAAR_REGEX.test(form?.personal?.aadhaarNumber || "") &&
+  PAN_REGEX.test(form?.personal?.panNumber || "");
+
+
 
   const handleAddExperience = () => {
   setForm({
@@ -88,14 +102,44 @@ const handleRemoveExperience = (index) => {
 
   
   const handleChange = (section, field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  };
+  // Special handling for Aadhaar & PAN (sanitize + live validation)
+  if (section === "personal") {
+    if (field === "aadhaarNumber") {
+      // allow only digits, limit to 12
+      value = String(value || "").replace(/\D/g, "").slice(0, 12);
+      setErrors((prev) => ({
+        ...prev,
+        aadhaarNumber:
+          value.length === 0 || AADHAAR_REGEX.test(value)
+            ? ""
+            : "Aadhaar must be exactly 12 digits.",
+      }));
+    }
+    if (field === "panNumber") {
+      // uppercase, allow only A-Z and 0-9, limit to 10
+      value = String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 10);
+      setErrors((prev) => ({
+        ...prev,
+        panNumber:
+          value.length === 0 || PAN_REGEX.test(value)
+            ? ""
+            : "PAN format invalid (e.g., ABCDE1234F).",
+      }));
+    }
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    [section]: {
+      ...prev[section],
+      [field]: value,
+    },
+  }));
+};
+
 
   const handleExperienceChange = (idx, field, value) => {
     setForm((prev) => ({
@@ -123,10 +167,28 @@ const handleRemoveExperience = (index) => {
 
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    editCurrentEmployee({ ...form, profilePhoto: photoPreview });
-    setEditing(false);
-  };
+  e.preventDefault();
+
+  const aadhaar = form?.personal?.aadhaarNumber || "";
+  const pan = form?.personal?.panNumber || "";
+
+  const aadhaarOk = AADHAAR_REGEX.test(aadhaar);
+  const panOk = PAN_REGEX.test(pan);
+
+  setErrors({
+    aadhaarNumber: aadhaarOk ? "" : "Aadhaar must be exactly 12 digits.",
+    panNumber: panOk ? "" : "PAN format invalid (e.g., ABCDE1234F).",
+  });
+
+  if (!aadhaarOk || !panOk) {
+    // Stop submission if invalid
+    return;
+  }
+
+  editCurrentEmployee({ ...form, profilePhoto: photoPreview });
+  setEditing(false);
+};
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -229,26 +291,48 @@ const handleRemoveExperience = (index) => {
   })}
 
   {/* Aadhaar Number */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">Aadhaar Number</label>
-    <input
-      type="text"
-      className="border px-2 py-1 rounded w-full"
-      value={form.personal.aadhaarNumber}
-      onChange={(e) => handleChange("personal", "aadhaarNumber", e.target.value)}
-    />
-  </div>
+<div className="mb-2">
+  <label className="block text-sm font-medium text-gray-600">Aadhaar Number</label>
+  <input
+    type="text"
+    inputMode="numeric"
+    maxLength={12}
+    pattern="\d{12}"
+    className={`border px-2 py-1 rounded w-full ${
+      errors.aadhaarNumber ? "border-red-500" : ""
+    }`}
+    value={form.personal.aadhaarNumber || ""}
+    onChange={(e) =>
+      handleChange("personal", "aadhaarNumber", e.target.value)
+    }
+    placeholder="Enter 12-digit Aadhaar"
+  />
+  {errors.aadhaarNumber && (
+    <p className="text-red-600 text-xs mt-1">{errors.aadhaarNumber}</p>
+  )}
+</div>
 
-  {/* PAN Number */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">PAN Number</label>
-    <input
-      type="text"
-      className="border px-2 py-1 rounded w-full"
-      value={form.personal.panNumber}
-      onChange={(e) => handleChange("personal", "panNumber", e.target.value)}
-    />
-  </div>
+{/* PAN Number */}
+<div className="mb-2">
+  <label className="block text-sm font-medium text-gray-600">PAN Number</label>
+  <input
+    type="text"
+    maxLength={10}
+    pattern="[A-Z]{5}[0-9]{4}[A-Z]"
+    className={`border px-2 py-1 rounded w-full ${
+      errors.panNumber ? "border-red-500" : ""
+    }`}
+    value={form.personal.panNumber || ""}
+    onChange={(e) =>
+      handleChange("personal", "panNumber", e.target.value)
+    }
+    placeholder="ABCDE1234F"
+  />
+  {errors.panNumber && (
+    <p className="text-red-600 text-xs mt-1">{errors.panNumber}</p>
+  )}
+</div>
+
 
   {/* Aadhaar Upload */}
   <div className="mb-2">
@@ -350,11 +434,17 @@ const handleRemoveExperience = (index) => {
           </div>
           <div className="mt-4 flex gap-4">
             <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Save
-            </button>
+  type="submit"
+  disabled={!isIDsValid}
+  className={`px-4 py-2 rounded text-white ${
+    isIDsValid
+      ? "bg-green-600 hover:bg-green-700"
+      : "bg-gray-400 cursor-not-allowed"
+  }`}
+>
+  Save
+</button>
+
             <button
               type="button"
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
