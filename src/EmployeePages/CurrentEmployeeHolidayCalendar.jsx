@@ -46,7 +46,8 @@ const CurrentEmployeeHolidayCalendar = () => {
     [holidays, todayKey]
   );
 
-  const list = filter === "upcoming" ? upcomingHolidays : previousHolidays;
+  // Always sort the list in ascending order by date before rendering
+  const list = (filter === "upcoming" ? upcomingHolidays : previousHolidays).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2 md:px-6">
