@@ -5,18 +5,31 @@ import { FaUser, FaEdit, FaTrash, FaRedo, FaDownload } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+
+// Centralized department color mapping
+const DEPARTMENT_COLORS = {
+  HR: { bg: "bg-pink-100", text: "text-pink-700" },
+  Engineering: { bg: "bg-blue-100", text: "text-blue-700" },
+  Sales: { bg: "bg-green-100", text: "text-green-700" },
+  Marketing: { bg: "bg-yellow-100", text: "text-yellow-700" },
+  Finance: { bg: "bg-purple-100", text: "text-purple-700" },
+  IT: { bg: "bg-blue-100", text: "text-blue-700" },
+  Admin: { bg: "bg-gray-100", text: "text-gray-700" },
+  Operations: { bg: "bg-orange-100", text: "text-orange-700" },
+};
+
 // Helper: Get current department from last experience entry with lastWorkingDate === "Present"
 const getCurrentDepartment = (employee) => {
   if (employee && Array.isArray(employee.experienceDetails)) {
     const currentExp = employee.experienceDetails.find(
       (exp) => exp.lastWorkingDate === "Present"
     );
-    return currentExp?.department || "N/A";
+    return currentExp?.department || "";
   }
-  return "N/A";
+  return "";
 };
 
-const EmployeeRow = ({ emp, idx, navigate, onDeactivate }) => {
+const EmployeeRow = ({ emp, idx, navigate, onDeactivateClick }) => {
   const isEven = idx % 2 === 0;
   const currentDepartment = getCurrentDepartment(emp);
   return (
@@ -37,20 +50,10 @@ const EmployeeRow = ({ emp, idx, navigate, onDeactivate }) => {
       <td className="p-4">
         <span
           className={`px-2 py-1 rounded text-xs font-bold ${
-            currentDepartment === "HR"
-              ? "bg-pink-100 text-pink-700"
-              : currentDepartment === "Engineering"
-              ? "bg-blue-100 text-blue-700"
-              : currentDepartment === "Sales"
-              ? "bg-green-100 text-green-700"
-              : currentDepartment === "Marketing"
-              ? "bg-yellow-100 text-yellow-700"
-              : currentDepartment === "Finance"
-              ? "bg-purple-100 text-purple-700"
-              : "bg-gray-100 text-gray-700"
-          }`}
+            DEPARTMENT_COLORS[currentDepartment]?.bg || "bg-gray-100"
+          } ${DEPARTMENT_COLORS[currentDepartment]?.text || "text-gray-700"}`}
         >
-          {currentDepartment}
+          {currentDepartment || "Unknown"}
         </span>
       </td>
       <td className="p-4 text-gray-700">{emp.email}</td>
@@ -71,7 +74,7 @@ const EmployeeRow = ({ emp, idx, navigate, onDeactivate }) => {
             <FaEdit /> Edit
           </button>
           <button
-            onClick={() => onDeactivate(emp)}
+            onClick={() => onDeactivateClick(emp)}
             className="bg-gray-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-100 flex items-center gap-1 font-semibold shadow"
             title="Deactivate Employee"
           >
@@ -97,8 +100,8 @@ const InactiveEmployeeRow = ({ emp, navigate }) => {
         <span className="font-semibold text-gray-600">{emp.name} (Inactive)</span>
       </td>
       <td className="p-4">
-        <span className="px-2 py-1 rounded text-xs font-bold bg-gray-400 text-gray-700">
-          {currentDepartment}
+        <span className={`px-2 py-1 rounded text-xs font-bold ${DEPARTMENT_COLORS[currentDepartment]?.bg || "bg-gray-400"} ${DEPARTMENT_COLORS[currentDepartment]?.text || "text-gray-700"}`}>
+          {currentDepartment || "Unknown"}
         </span>
       </td>
       <td className="p-4 text-gray-600">{emp.email}</td>
@@ -124,12 +127,73 @@ const InactiveEmployeeRow = ({ emp, navigate }) => {
   );
 };
 
+
+// Modal form for deactivation
+function DeactivateModal({ open, employee, onClose, onSubmit }) {
+  const [endDate, setEndDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+
+  if (!open || !employee) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!endDate) {
+      setError("End Date is required.");
+      return;
+    }
+    if (!reason.trim()) {
+      setError("Reason is required.");
+      return;
+    }
+    setError("");
+    onSubmit({ endDate, reason });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h3 className="text-xl font-bold mb-4">Deactivate {employee.name}</h3>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block font-semibold mb-1">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="border border-gray-300 px-3 py-2 rounded w-full"
+              required
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Reason</label>
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              className="border border-gray-300 px-3 py-2 rounded w-full"
+              required
+              rows={3}
+            />
+          </div>
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          <div className="flex gap-2 justify-end mt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 font-semibold">Cancel</button>
+            <button type="submit" className="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700 font-semibold">Deactivate</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 const EmployeeManagement = () => {
   const navigate = useNavigate();
-  const { employees, deactivateEmployee } = useContext(EmployeeContext);
+  const { employees, deactivateEmployment } = useContext(EmployeeContext);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("All");
-  const snackbar = useSnackbar();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
   // Excel Report Generation
   const getCurrentDetails = (emp) => {
     if (emp && Array.isArray(emp.experienceDetails)) {
@@ -167,11 +231,11 @@ const EmployeeManagement = () => {
     saveAs(blob, filename);
   };
 
-  // Dynamic department set from current experience (lastWorkingDate === \"Present\")
+  // Dynamic department set from current experience (lastWorkingDate === "Present")
   const departmentSet = useMemo(() => {
     const depts = employees
       .map(emp => getCurrentDepartment(emp))
-      .filter((dept, idx, arr) => dept && arr.indexOf(dept) === idx);
+      .filter((dept, idx, arr) => dept && dept !== "N/A" && arr.indexOf(dept) === idx);
     return depts.sort();
   }, [employees]);
 
@@ -192,10 +256,21 @@ const EmployeeManagement = () => {
     };
   }, [employees, searchQuery, selectedDept]);
 
-  const handleDeactivate = (emp) => {
-    if (window.confirm(`Are you sure you want to deactivate ${emp.name}?`)) {
-      deactivateEmployee(emp.employeeId);
-      snackbar.show(`${emp.name} deactivated successfully.`);
+  // Modal open/close logic
+  const openDeactivateModal = (emp) => {
+    setSelectedEmployee(emp);
+    setModalOpen(true);
+  };
+  const closeDeactivateModal = () => {
+    setSelectedEmployee(null);
+    setModalOpen(false);
+  };
+
+  // Handle modal submit
+  const handleDeactivateSubmit = ({ endDate, reason }) => {
+    if (selectedEmployee) {
+      deactivateEmployment(selectedEmployee.employeeId, endDate, reason);
+      closeDeactivateModal();
     }
   };
 
@@ -248,7 +323,7 @@ const EmployeeManagement = () => {
             className="border border-gray-300 px-4 py-2 rounded-lg w-full max-w-xs shadow focus:outline-none focus:ring focus:ring-blue-200 font-semibold"
           >
             <option value="All">All Departments</option>
-            {departmentSet.map((dept) => (
+            {departmentSet.filter(dept => dept !== "N/A" && dept !== "").map((dept) => (
               <option key={dept} value={dept}>
                 {dept}
               </option>
@@ -277,7 +352,7 @@ const EmployeeManagement = () => {
                       emp={emp}
                       idx={idx}
                       navigate={navigate}
-                      onDeactivate={handleDeactivate}
+                      onDeactivateClick={openDeactivateModal}
                     />
                   ))}
                   {inactiveEmployees.map((emp) => (
@@ -299,25 +374,19 @@ const EmployeeManagement = () => {
           </table>
         </div>
 
-        {/* Snackbar */}
-        {snackbar.message && (
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 animate-fadein">
-            {snackbar.message}
-          </div>
-        )}
+        {/* Deactivate Modal */}
+        <DeactivateModal
+          open={modalOpen}
+          employee={selectedEmployee}
+          onClose={closeDeactivateModal}
+          onSubmit={handleDeactivateSubmit}
+        />
       </div>
     </div>
   );
 };
 
-// Snackbar hook
-function useSnackbar(timeout = 2500) {
-  const [message, setMessage] = useState("");
-  const show = (msg) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(""), timeout);
-  };
-  return { message, show };
-}
+
+
 
 export default EmployeeManagement;
