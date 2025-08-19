@@ -20,15 +20,38 @@ const CurrentEmployeeProfile = () => {
 const AADHAAR_REGEX = /^\d{12}$/;                     // 12 digits
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;          // ABCDE1234F
 
+// Collect all validation errors here (personal, contact, job, bank, experience)
 const [errors, setErrors] = useState({
   aadhaarNumber: "",
   panNumber: "",
+  personal: {},
+  contact: {},
+  job: {},
+  bank: {},
+  experience: [], // array aligned with form.experience indexes
 });
+
 
 const isIDsValid =
   AADHAAR_REGEX.test(form?.personal?.aadhaarNumber || "") &&
   PAN_REGEX.test(form?.personal?.panNumber || "");
 
+// Required field keys by section
+const REQUIRED_PERSONAL = new Set(["name", "aadhaarNumber", "panNumber"]); // 'isActive' removed
+const REQUIRED_CONTACT  = new Set(["email", "phone", "emergency_contact_phone"]);
+const REQUIRED_JOB      = new Set(["employeeId", "department", "department_id", "designation"]);
+const REQUIRED_BANK     = new Set(["bankName", "accountNumber", "ifsc", "branch"]);
+
+// For experience items
+const REQUIRED_EXPERIENCE = new Set([
+  "company",
+  "role",
+  "joiningDate",
+  "lastWorkingDate",
+  "salary",
+  "reason",
+  "certificate",
+]);
 
 
   const handleAddExperience = () => {
@@ -169,25 +192,84 @@ const handleRemoveExperience = (index) => {
   const handleSubmit = (e) => {
   e.preventDefault();
 
-  const aadhaar = form?.personal?.aadhaarNumber || "";
-  const pan = form?.personal?.panNumber || "";
+  const newErrors = { personal: {}, contact: {}, job: {}, bank: {}, experience: [] };
 
-  const aadhaarOk = AADHAAR_REGEX.test(aadhaar);
-  const panOk = PAN_REGEX.test(pan);
+  // --- Personal required checks ---
+  const p = form.personal || {};
+  if (!p.name) newErrors.personal.name = "Name is required.";
+  if (!p.aadhaarNumber) newErrors.personal.aadhaarNumber = "Aadhaar number is required.";
+  if (!p.panNumber) newErrors.personal.panNumber = "PAN number is required.";
+  if (!p.aadhaar) newErrors.personal.aadhaar = "Aadhaar card file is required.";
+  if (!p.pan) newErrors.personal.pan = "PAN card file is required.";
+  // If you keep checkbox for isActive, "required" forces it to be checked by browser.
+  // Custom check if you want to enforce presence:
 
-  setErrors({
-    aadhaarNumber: aadhaarOk ? "" : "Aadhaar must be exactly 12 digits.",
-    panNumber: panOk ? "" : "PAN format invalid (e.g., ABCDE1234F).",
+
+  // --- Aadhaar/PAN format checks (keep your regex validation) ---
+  const aadhaarOk = AADHAAR_REGEX.test(p?.aadhaarNumber || "");
+  const panOk = PAN_REGEX.test(p?.panNumber || "");
+  if (!aadhaarOk && p?.aadhaarNumber) {
+    newErrors.personal.aadhaarNumber = "Aadhaar must be exactly 12 digits.";
+  }
+  if (!panOk && p?.panNumber) {
+    newErrors.personal.panNumber = "PAN format invalid (e.g., ABCDE1234F).";
+  }
+
+  // --- Contact required checks (even though not editable in this form) ---
+  const c = form.contact || {};
+  if (!c.email) newErrors.contact.email = "Email is required.";
+  if (!c.phone) newErrors.contact.phone = "Phone is required.";
+  if (!c.emergency_contact_phone) {
+    newErrors.contact.emergency_contact_phone = "Emergency contact number is required.";
+  }
+
+  // --- Job required checks ---
+  const j = form.job || {};
+  if (!j.employeeId) newErrors.job.employeeId = "Employee ID is required.";
+  if (!j.department) newErrors.job.department = "Department is required.";
+  if (!j.department_id) newErrors.job.department_id = "Department ID is required.";
+  if (!j.designation) newErrors.job.designation = "Designation is required.";
+
+  // --- Bank required checks ---
+  const b = form.bank || {};
+  if (!b.bankName) newErrors.bank.bankName = "Bank name is required.";
+  if (!b.accountNumber) newErrors.bank.accountNumber = "Account number is required.";
+  if (!b.ifsc) newErrors.bank.ifsc = "IFSC code is required.";
+  if (!b.branch) newErrors.bank.branch = "Branch is required.";
+
+  // --- Experience required checks per item ---
+  (form.experience || []).forEach((exp, idx) => {
+    const eErr = {};
+    if (!exp.company) eErr.company = "Company is required.";
+    if (!exp.role) eErr.role = "Role is required.";
+    if (!exp.joiningDate) eErr.joiningDate = "Joining date is required.";
+    if (!exp.lastWorkingDate) eErr.lastWorkingDate = "Last working date is required.";
+    if (!exp.salary) eErr.salary = "Salary is required.";
+    if (!exp.reason) eErr.reason = "Reason is required.";
+    if (!exp.certificate) eErr.certificate = "Experience certificate is required.";
+    newErrors.experience[idx] = eErr;
   });
 
-  if (!aadhaarOk || !panOk) {
-    // Stop submission if invalid
+  setErrors(prev => ({ ...prev, ...newErrors }));
+
+  // Helper to see if any error exists
+  const hasAnyError =
+    Object.values(newErrors.personal).some(Boolean) ||
+    Object.values(newErrors.contact).some(Boolean) ||
+    Object.values(newErrors.job).some(Boolean) ||
+    Object.values(newErrors.bank).some(Boolean) ||
+    (newErrors.experience || []).some(obj => obj && Object.values(obj).some(Boolean));
+
+  if (hasAnyError || !aadhaarOk || !panOk) {
+    // ❌ Stop submission if invalid
     return;
   }
 
+  // ✅ All good → Save
   editCurrentEmployee({ ...form, profilePhoto: photoPreview });
   setEditing(false);
 };
+
 
 
   return (
@@ -257,182 +339,291 @@ const handleRemoveExperience = (index) => {
               </button>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-  <h3 className="text-lg font-bold mb-2 text-gray-700">Personal Information</h3>
-
-  {/* Name, Father Name, DOB, etc. */}
-  {Object.entries(form.personal).map(([key, value]) => {
-    if (key === "aadhaar" || key === "pan" || key === "profilePhoto" || key === "aadhaarNumber" || key === "panNumber") {
-      return null; // skip these, we'll render separately
-    }
-    return (
-      <div key={key} className="mb-2">
-        <label className="block text-sm font-medium text-gray-600">
-          {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
-        </label>
-        <input
-          type={key === "dob" ? "date" : "text"}
-          className="border px-2 py-1 rounded w-full"
-          value={value}
-          onChange={(e) =>
-            handleChange(
-              "personal",
-              key,
-              key === "isActive" ? e.target.checked : e.target.value
-            )
-          }
-          {...(key === "isActive" ? { type: "checkbox", checked: value } : {})}
-        />
-        {key === "isActive" && (
-          <span className="ml-2">{value ? "Active" : "Inactive"}</span>
-        )}
-      </div>
-    );
-  })}
-
-  {/* Aadhaar Number */}
-<div className="mb-2">
-  <label className="block text-sm font-medium text-gray-600">Aadhaar Number</label>
-  <input
-    type="text"
-    inputMode="numeric"
-    maxLength={12}
-    pattern="\d{12}"
-    className={`border px-2 py-1 rounded w-full ${
-      errors.aadhaarNumber ? "border-red-500" : ""
-    }`}
-    value={form.personal.aadhaarNumber || ""}
-    onChange={(e) =>
-      handleChange("personal", "aadhaarNumber", e.target.value)
-    }
-    placeholder="Enter 12-digit Aadhaar"
-  />
-  {errors.aadhaarNumber && (
-    <p className="text-red-600 text-xs mt-1">{errors.aadhaarNumber}</p>
-  )}
-</div>
-
-{/* PAN Number */}
-<div className="mb-2">
-  <label className="block text-sm font-medium text-gray-600">PAN Number</label>
-  <input
-    type="text"
-    maxLength={10}
-    pattern="[A-Z]{5}[0-9]{4}[A-Z]"
-    className={`border px-2 py-1 rounded w-full ${
-      errors.panNumber ? "border-red-500" : ""
-    }`}
-    value={form.personal.panNumber || ""}
-    onChange={(e) =>
-      handleChange("personal", "panNumber", e.target.value)
-    }
-    placeholder="ABCDE1234F"
-  />
-  {errors.panNumber && (
-    <p className="text-red-600 text-xs mt-1">{errors.panNumber}</p>
-  )}
-</div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-4 text-gray-700">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(form.personal).map(([key, value]) => {
+                if (
+                  key === "aadhaar" ||
+                  key === "pan" ||
+                  key === "profilePhoto" ||
+                  key === "aadhaarNumber" ||
+                  key === "panNumber" ||
+                  key === "isActive"
+                ) {
+                  return null;
+                }
+                const isRequired = REQUIRED_PERSONAL.has(key);
+                return (
+                  <div key={key} className="mb-2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      {key.replace(/_/g, " ").replace(/([A-Z])/g, " $1")}
+                      {isRequired && <span className="text-red-600 ml-1">*</span>}
+                    </label>
+                    <input
+                      type={key === "dob" ? "date" : "text"}
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.personal?.[key] ? "border-red-500" : "border-gray-300"}`}
+                      value={value}
+                      onChange={(e) => handleChange("personal", key, e.target.value)}
+                      required={isRequired}
+                    />
+                    {errors.personal?.[key] && (
+                      <p className="text-red-600 text-xs mt-1">{errors.personal[key]}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
 
-  {/* Aadhaar Upload */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">Aadhaar Card</label>
-    <input
-      type="file"
-      accept="image/*,.pdf"
-      onChange={(e) =>
-        handleFileUpload("personal", "aadhaar", e.target.files[0])
-      }
-    />
-    {form.personal.aadhaar && (
-      <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
-        <a
-          href={form.personal.aadhaar.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 text-blue-600 underline"
-        >
-          View
-        </a>
-      </div>
-    )}
-  </div>
-
-  {/* PAN Upload */}
-  <div className="mb-2">
-    <label className="block text-sm font-medium text-gray-600">PAN Card</label>
-    <input
-      type="file"
-      accept="image/*,.pdf"
-      onChange={(e) =>
-        handleFileUpload("personal", "pan", e.target.files[0])
-      }
-    />
-    {form.personal.pan && (
-      <div className="mt-2">
-        <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
-        <a
-          href={form.personal.pan.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 text-blue-600 underline"
-        >
-          View
-        </a>
-      </div>
-    )}
-  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div className="mb-2 col-span-1">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Aadhaar Number <span className="text-red-600">*</span></label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={12}
+                  pattern="\d{12}"
+                  className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.aadhaarNumber ? "border-red-500" : "border-gray-300"}`}
+                  value={form.personal.aadhaarNumber || ""}
+                  onChange={(e) => handleChange("personal", "aadhaarNumber", e.target.value)}
+                  required={!form.personal.aadhaar}
+                  placeholder="Enter 12-digit Aadhaar"
+                />
+                {errors.aadhaarNumber && (
+                  <p className="text-red-600 text-xs mt-1">{errors.aadhaarNumber}</p>
+                )}
+              </div>
+              <div className="mb-2 col-span-1">
+                <label className="block text-sm font-medium text-gray-600 mb-1">PAN Number <span className="text-red-600">*</span></label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  pattern="[A-Z]{5}[0-9]{4}[A-Z]"
+                  className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.panNumber ? "border-red-500" : "border-gray-300"}`}
+                  value={form.personal.panNumber || ""}
+                  onChange={(e) => handleChange("personal", "panNumber", e.target.value)}
+                  required={!form.personal.aadhaar}
+                  placeholder="ABCDE1234F"
+                />
+                {errors.panNumber && (
+                  <p className="text-red-600 text-xs mt-1">{errors.panNumber}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-6 mt-4">
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Aadhaar Card <span className="text-red-600">*</span></label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => handleFileUpload("personal", "aadhaar", e.target.files[0])}
+                  className="border px-3 py-2 rounded-lg w-full"
+                />
+                {form.personal.aadhaar && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-500">{form.personal.aadhaar.name}</span>
+                    <a
+                      href={form.personal.aadhaar.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-600 underline"
+                    >
+                      View
+                    </a>
+                  </div>
+                )}
+                {errors.personal?.aadhaar && (
+                  <p className="text-red-600 text-xs mt-1">{errors.personal.aadhaar}</p>
+                )}
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-1">PAN Card <span className="text-red-600">*</span></label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => handleFileUpload("personal", "pan", e.target.files[0])}
+                  className="border px-3 py-2 rounded-lg w-full"
+                />
+                {form.personal.pan && (
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-500">{form.personal.pan.name}</span>
+                    <a
+                      href={form.personal.pan.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-blue-600 underline"
+                    >
+                      View
+                    </a>
+                  </div>
+                )}
+                {errors.personal?.pan && (
+                  <p className="text-red-600 text-xs mt-1">{errors.personal.pan}</p>
+                )}
+              </div>
+            </div>
 </div>
 
           {/* Experience Details */}
-          <div className="mt-8 bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-bold mb-2 text-gray-700">Experience Details</h3>
+          <div className="mt-8 bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-4 text-gray-700">Experience Details</h3>
             {form.experience.map((exp, idx) => (
-              <div key={idx} className="mb-4 border-b pb-2">
-                {/* Experience fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div key={idx} className="mb-6 border-b pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">Company</label>
-                    <input type="text" className="border px-2 py-1 rounded w-full" value={exp.company} onChange={e => handleExperienceChange(idx, "company", e.target.value)} />
+                    <label htmlFor={`exp-${idx}-company`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Company <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      id={`exp-${idx}-company`}
+                      type="text"
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.company ? "border-red-500" : "border-gray-300"}`}
+                      value={exp.company}
+                      onChange={(e) => handleExperienceChange(idx, "company", e.target.value)}
+                      required
+                    />
+                    {errors.experience?.[idx]?.company && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].company}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">Role</label>
-                    <input type="text" className="border px-2 py-1 rounded w-full" value={exp.role} onChange={e => handleExperienceChange(idx, "role", e.target.value)} />
+                    <label htmlFor={`exp-${idx}-role`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Role <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      id={`exp-${idx}-role`}
+                      type="text"
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.role ? "border-red-500" : "border-gray-300"}`}
+                      value={exp.role}
+                      onChange={(e) => handleExperienceChange(idx, "role", e.target.value)}
+                      required
+                    />
+                    {errors.experience?.[idx]?.role && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].role}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">Years</label>
-                    <input type="number" className="border px-2 py-1 rounded w-full" value={exp.years} onChange={e => handleExperienceChange(idx, "years", e.target.value)} />
+                    <label htmlFor={`exp-${idx}-years`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Years
+                    </label>
+                    <input
+                      id={`exp-${idx}-years`}
+                      type="number"
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.years ? "border-red-500" : "border-gray-300"}`}
+                      value={exp.years}
+                      onChange={(e) => handleExperienceChange(idx, "years", e.target.value)}
+                    />
+                    {errors.experience?.[idx]?.years && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].years}</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Joining Date <span className="text-red-600">*</span></label>
+                      <input
+                        type="date"
+                        className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.joiningDate ? "border-red-500" : "border-gray-300"}`}
+                        value={exp.joiningDate}
+                        onChange={e => handleExperienceChange(idx, "joiningDate", e.target.value)}
+                        required
+                      />
+                      {errors.experience?.[idx]?.joiningDate && (
+                        <p className="text-red-600 text-xs mt-1">{errors.experience[idx].joiningDate}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Last Working Date <span className="text-red-600">*</span></label>
+                      <input
+                        type="date"
+                        className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.lastWorkingDate ? "border-red-500" : "border-gray-300"}`}
+                        value={exp.lastWorkingDate}
+                        onChange={e => handleExperienceChange(idx, "lastWorkingDate", e.target.value)}
+                        required
+                      />
+                      {errors.experience?.[idx]?.lastWorkingDate && (
+                        <p className="text-red-600 text-xs mt-1">{errors.experience[idx].lastWorkingDate}</p>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600">Joining Date</label>
-                    <input type="date" className="border px-2 py-1 rounded w-full" value={exp.joiningDate} onChange={e => handleExperienceChange(idx, "joiningDate", e.target.value)} />
+                    <label htmlFor={`exp-${idx}-salary`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Salary <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      id={`exp-${idx}-salary`}
+                      type="number"
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.salary ? "border-red-500" : "border-gray-300"}`}
+                      value={exp.salary}
+                      onChange={(e) => handleExperienceChange(idx, "salary", e.target.value)}
+                      required
+                    />
+                    {errors.experience?.[idx]?.salary && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].salary}</p>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Last Working Date</label>
-                    <input type="date" className="border px-2 py-1 rounded w-full" value={exp.lastWorkingDate} onChange={e => handleExperienceChange(idx, "lastWorkingDate", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Salary</label>
-                    <input type="number" className="border px-2 py-1 rounded w-full" value={exp.salary} onChange={e => handleExperienceChange(idx, "salary", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Experience Certificate</label>
-                    <input type="file" accept="image/*,.pdf" onChange={e => handleFileChange("experience", "certificate", e.target.files[0], idx)} />
+                  <div className="col-span-2">
+                    <label htmlFor={`exp-${idx}-cert`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Experience Certificate <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      id={`exp-${idx}-cert`}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => handleFileChange("experience", "certificate", e.target.files[0], idx)}
+                      className="border px-3 py-2 rounded-lg w-full"
+                      required={!exp.certificate}
+                    />
+                    {errors.experience?.[idx]?.certificate && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].certificate}</p>
+                    )}
                     {exp.certificate && (
                       <div className="mt-2">
                         <span className="text-xs text-gray-500">{exp.certificate.name}</span>
-                        <a href={exp.certificate.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">View</a>
+                        <a
+                          href={exp.certificate.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 underline"
+                        >
+                          View
+                        </a>
                       </div>
                     )}
                   </div>
+                  <div className="col-span-2">
+                    <label htmlFor={`exp-${idx}-reason`} className="block text-sm font-medium text-gray-600 mb-1">
+                      Reason for Leaving <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      id={`exp-${idx}-reason`}
+                      type="text"
+                      className={`border px-3 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-200 ${errors.experience?.[idx]?.reason ? "border-red-500" : "border-gray-300"}`}
+                      value={exp.reason || ""}
+                      onChange={(e) => handleExperienceChange(idx, "reason", e.target.value)}
+                      required
+                      placeholder="Enter reason (e.g., better opportunity, relocation)"
+                    />
+                    {errors.experience?.[idx]?.reason && (
+                      <p className="text-red-600 text-xs mt-1">{errors.experience[idx].reason}</p>
+                    )}
+                  </div>
                 </div>
-                <button type="button" className="mt-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600" onClick={() => handleRemoveExperience(idx)}>Remove</button>
+                <button type="button" className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600" onClick={() => handleRemoveExperience(idx)}>Remove</button>
               </div>
             ))}
-            <button type="button" className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleAddExperience}>+ Add Experience</button>
+            <button type="button" className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleAddExperience}>+ Add Experience</button>
           </div>
           <div className="mt-4 flex gap-4">
+            {/* Error summary for non-editable sections */}
+{(Object.keys(errors.contact || {}).length > 0 ||
+  Object.keys(errors.job || {}).length > 0 ||
+  Object.keys(errors.bank || {}).length > 0) && (
+  <div className="mt-4 p-3 rounded bg-red-50 text-red-700 text-sm">
+    Some required details in Contact/Job/Bank are missing. Please complete them in the respective section or make them editable here.
+  </div>
+)}
+
             <button
   type="submit"
   disabled={!isIDsValid}
@@ -500,7 +691,7 @@ const handleRemoveExperience = (index) => {
       className="w-24 h-24 rounded-full border-2 border-gray-300 mt-2"
     />
   )}
-  <p><strong>Active:</strong> {personal?.isActive ? "Yes" : "No"}</p>
+  {/* 'isActive' removed from display */}
 
   {/* Aadhaar Display */}
   <p>
@@ -576,9 +767,10 @@ const handleRemoveExperience = (index) => {
         <li key={idx} className="mb-3">
           <strong>{exp.company}</strong> - {exp.role} ({exp.years} years)
           <br />
-          <span className="text-sm text-gray-600">
-            {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary}
-          </span>
+          <span className="text-sm text-gray-600 block">
+  {exp.joiningDate} to {exp.lastWorkingDate} | Salary: ₹{exp.salary} | Reason: {exp.reason || "N/A"}
+</span>
+
 
           {/* ✅ Show Experience Letter if available */}
           {exp.certificate && (
@@ -612,62 +804,11 @@ const handleRemoveExperience = (index) => {
   )}
 </div>
 
-{/* ✅ Edit mode Experience Details */}
-{editing && (
-  <div className="mt-8 bg-white p-4 rounded-lg shadow">
-    <h3 className="text-lg font-bold mb-2 text-gray-700">Edit Experience</h3>
-    {form.experience.map((exp, idx) => (
-      <div key={idx} className="mb-4 border-b pb-3">
-        <label className="block text-sm font-medium text-gray-600">
-          Company
-        </label>
-        <input
-          type="text"
-          className="border px-2 py-1 rounded w-full"
-          value={exp.company}
-          onChange={(e) =>
-            handleExperienceChange(idx, "company", e.target.value)
-          }
-        />
 
-        <label className="block text-sm font-medium text-gray-600 mt-2">
-          Role
-        </label>
-        <input
-          type="text"
-          className="border px-2 py-1 rounded w-full"
-          value={exp.role}
-          onChange={(e) =>
-            handleExperienceChange(idx, "role", e.target.value)
-          }
-        />
 
-        <label className="block text-sm font-medium text-gray-600 mt-2">
-          Years
-        </label>
-        <input
-          type="number"
-          className="border px-2 py-1 rounded w-full"
-          value={exp.years}
-          onChange={(e) =>
-            handleExperienceChange(idx, "years", e.target.value)
-          }
-        />
 
-        {/* Repeat inputs for joiningDate, lastWorkingDate, salary, certificate */}
-      </div>
-    ))}
 
-    {/* ✅ Add Button goes here */}
-    <button
-      type="button"
-      onClick={handleAddExperience}
-      className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-    >
-      + Add Experience
-    </button>
-  </div>
-)}
+        
 
 
         </>

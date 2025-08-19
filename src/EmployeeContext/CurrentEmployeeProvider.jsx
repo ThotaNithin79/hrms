@@ -48,6 +48,7 @@ export const CurrentEmployeeProvider = ({ children }) => {
         joiningDate: "2019-01-15",
         lastWorkingDate: "2021-01-14",
         salary: 45000,
+        reason: "", 
       },
       {
         company: "XYZ Ltd",
@@ -56,6 +57,7 @@ export const CurrentEmployeeProvider = ({ children }) => {
         joiningDate: "2021-02-01",
         lastWorkingDate: "2023-05-09",
         salary: 65000,
+        reason: "", 
       },
     ],
     
