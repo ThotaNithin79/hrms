@@ -17,6 +17,7 @@ export const CurrentEmployeeProvider = ({ children }) => {
       aadhaar: null, // base64 or url string
       pan: null, // base64 or url string
       isActive: true,
+      resume: null,
     },
     contact: {
       email: "john@example.com",
