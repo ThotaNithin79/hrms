@@ -3,12 +3,9 @@ import { CurrentEmployeeAttendanceContext } from "./CurrentEmployeeAttendanceCon
 import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const CurrentEmployeeAttendanceProvider = ({ children }) => {
-
   // Generates demo attendance data for all employees for the current month
   const generateMonthlyAttendanceData = () => {
-    const employees = [
-      { employeeId: "EMP101", name: "John Doe" },
-    ];
+    const employees = [{ employeeId: "EMP101", name: "John Doe" }];
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
@@ -16,6 +13,7 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     const records = [];
     let monthlyWorkHours = 0;
     let monthlyIdleHours = 0;
+
     for (const emp of employees) {
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -50,14 +48,12 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
   };
 
   const { records, monthlyWorkHours, monthlyIdleHours } = generateMonthlyAttendanceData();
-  const [attendanceRecords, setAttendanceRecords] = useState(records);
+  const [attendanceRecords] = useState(records);
 
-  // --- Leave Remaining Calculation ---
-  // Each employee gets 12 leaves per year (1 per month), unused leaves carry over
+  // --- Leave Remaining Calculation (uses leaveRequests from leave context) ---
   const employeeId = "EMP101";
   const leaveRequests = useContext(CurrentEmployeeLeaveRequestContext)?.leaveRequests || [];
 
-  // Helper: get all months in the current year up to and including the current month in YYYY-MM
   function getAllMonthsUpToCurrentYear() {
     const now = new Date();
     const months = [];
@@ -67,19 +63,14 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     return months;
   }
 
-  // Helper: get all approved leave days for EMP101 in a given month (returns a Set of dates)
-  function getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId) {
+  function getApprovedLeaveDaysForMonth(reqs, month, empId) {
     let leaveDates = new Set();
-    leaveRequests.forEach((req) => {
-      if (req.employeeId !== employeeId) return;
+    reqs.forEach((req) => {
+      if (req.employeeId !== empId) return;
       if (req.status !== "Approved") return;
       const from = new Date(req.from);
       const to = new Date(req.to);
-      for (
-        let d = new Date(from);
-        d <= to;
-        d.setDate(d.getDate() + 1)
-      ) {
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().slice(0, 10);
         if (dateStr.startsWith(month)) {
           leaveDates.add(dateStr);
@@ -89,7 +80,6 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     return leaveDates;
   }
 
-  // Calculate leave remaining and paid leaves for the current month
   const { leaveRemaining, paidLeaves } = useMemo(() => {
     const months = getAllMonthsUpToCurrentYear();
     let carryOver = 0;
@@ -111,8 +101,29 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     return { leaveRemaining: carryOver, paidLeaves };
   }, [leaveRequests, employeeId]);
 
+  // ====== LATE PERMISSIONS (moved here from LeaveRequestProvider) ======
+  // Dummy data preserved exactly as in your old provider
+  const [lateLoginRequests, setLateLoginRequests] = useState([
+    { id: 1, employeeId: "EMP101", name: "John Doe", from: "10:00", date: "2025-08-01", lateTill: "12:00", reason: "Traffic jam", status: "Approved" },
+    { id: 2, employeeId: "EMP101", name: "John Doe", from: "12:00", date: "2025-08-05", lateTill: "2:00",  reason: "Doctor appointment", status: "Pending" },
+    { id: 3, employeeId: "EMP101", name: "John Doe", from: "2:30",  date: "2025-07-20", lateTill: "4:00",  reason: "Family emergency", status: "Rejected" },
+  ]);
 
-
+  // keep the same signature you used originally (from, date, lateTill, reason)
+  const applyLateLogin = ({ from, date, lateTill, reason }) => {
+    const newRequest = {
+      id: lateLoginRequests.length + 1 + Math.floor(Math.random() * 10000),
+      employeeId: "EMP101",
+      name: "John Doe",
+      from,
+      date,
+      lateTill,
+      reason,
+      status: "Pending",
+    };
+    setLateLoginRequests((prev) => [newRequest, ...prev]);
+  };
+  // ================================================================
 
   return (
     <CurrentEmployeeAttendanceContext.Provider
@@ -121,7 +132,10 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
         monthlyWorkHours,
         monthlyIdleHours,
         leaveRemaining,
-        paidLeaves
+        paidLeaves,
+        // expose Late Permissions from here now
+        lateLoginRequests,
+        applyLateLogin,
       }}
     >
       {children}
