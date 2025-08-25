@@ -22,7 +22,7 @@ const CurrentEmployeeLeaveManagement = () => {
   } = useContext(CurrentEmployeeLeaveRequestContext);
 
   // Leave form state
-  const [form, setForm] = useState({ from: "", to: "", reason: "" });
+  const [form, setForm] = useState({ from: "", to: "", reason: "",halfDay: "" });
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -33,19 +33,38 @@ const CurrentEmployeeLeaveManagement = () => {
     setSuccess("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!form.from || !form.to || !form.reason) {
-      setError("All fields are required.");
-      setSuccess("");
-      return;
-    }
-    applyLeave(form);
-    setForm({ from: "", to: "", reason: "" });
-    setError("");
-    setSuccess("Leave request submitted successfully!");
-    setTimeout(() => setSuccess(""), 3000);
+  const handleSubmit = () => {
+  if (!fromDate || !toDate || !reason) return;
+
+  const appliedMonth = new Date(fromDate).getMonth();
+  const appliedYear = new Date(fromDate).getFullYear();
+
+  // check if a paid leave already exists in that month
+  const hasPaidLeave = leaveRequests.some(
+    (req) =>
+      new Date(req.fromDate).getMonth() === appliedMonth &&
+      new Date(req.fromDate).getFullYear() === appliedYear &&
+      req.leaveType === "Paid"
+  );
+
+  const newLeave = {
+    fromDate,
+    toDate,
+    leaveCategory: leaveCategory,
+    reason,
+    appliedDate: new Date().toISOString().split("T")[0],
+    status: "Pending",
+    leaveType: hasPaidLeave ? "Unpaid" : "Paid", // ✅ auto assign Paid/Unpaid
   };
+
+  setLeaveRequests([...leaveRequests, newLeave]);
+
+  // reset form
+  setFromDate("");
+  setToDate("");
+  setReason("");
+};
+
 
   return (
     <>
@@ -92,51 +111,6 @@ const CurrentEmployeeLeaveManagement = () => {
         </div>
       </div>
 
-      {/* Leave Requests Table */}
-      <div className="mb-10">
-        <table className="min-w-full bg-white rounded shadow border border-blue-100">
-          <thead className="bg-blue-100">
-            <tr>
-              <th className="px-4 py-2 text-blue-900">From</th>
-              <th className="px-4 py-2 text-blue-900">To</th>
-              <th className="px-4 py-2 text-blue-900">Reason</th>
-              <th className="px-4 py-2 text-blue-900">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRequests.length > 0 ? (
-              filteredRequests.map((req) => (
-                <tr key={req.id} className="hover:bg-blue-50 transition">
-                  <td className="px-4 py-2">{req.from}</td>
-                  <td className="px-4 py-2">{req.to}</td>
-                  <td className="px-4 py-2">{req.reason}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        req.status === "Pending"
-                          ? "bg-yellow-200 text-yellow-800"
-                          : req.status === "Approved"
-                          ? "bg-green-200 text-green-800"
-                          : req.status === "Rejected"
-                          ? "bg-red-200 text-red-800"
-                          : "bg-gray-200 text-gray-800"
-                      }`}
-                    >
-                      {req.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="px-4 py-2 text-center text-gray-400">
-                  No leave requests found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
 
       {/* Apply Leave Form */}
       {showForm && (
@@ -144,28 +118,46 @@ const CurrentEmployeeLeaveManagement = () => {
           onSubmit={handleSubmit}
           className="mb-8 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 border border-blue-100 max-w-xl"
         >
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block mb-1 font-medium text-blue-800">From Date</label>
-              <input
-                type="date"
-                name="from"
-                value={form.from}
-                onChange={handleChange}
-                className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block mb-1 font-medium text-blue-800">To Date</label>
-              <input
-                type="date"
-                name="to"
-                value={form.to}
-                onChange={handleChange}
-                className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
-              />
-            </div>
-          </div>
+          <div className="flex gap-4 items-end">
+  <div className="flex-1">
+    <label className="block mb-1 font-medium text-blue-800">From Date</label>
+    <input
+      type="date"
+      name="from"
+      value={form.from}
+      onChange={handleChange}
+      className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
+    />
+  </div>
+  <div className="flex-1">
+    <label className="block mb-1 font-medium text-blue-800">To Date</label>
+    <input
+      type="date"
+      name="to"
+      value={form.to}
+      onChange={handleChange}
+      className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
+    />
+  </div>
+
+  {/* Half Day Option only if same date */}
+  {form.from && form.to && form.from === form.to && (
+    <div className="flex-1">
+      <label className="block mb-1 font-medium text-blue-800">Half Day</label>
+      <select
+        name="halfDay"
+        value={form.halfDay}
+        onChange={handleChange}
+        className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
+      >
+        <option value="">-- Select --</option>
+        <option value="Morning Half">Morning</option>
+        <option value="Afternoon Half">Afternoon</option>
+      </select>
+    </div>
+  )}
+</div>
+
           <div>
             <label className="block mb-1 font-medium text-blue-800">Reason</label>
             <input
@@ -187,6 +179,69 @@ const CurrentEmployeeLeaveManagement = () => {
           </button>
         </form>
       )}
+
+      {/* Leave Requests Table */}
+      {/* Leave Requests Table */}
+<div className="mb-10 overflow-x-auto">
+  <table className="min-w-full table-fixed bg-white rounded shadow border border-blue-100">
+    <thead className="bg-blue-100">
+      <tr>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">From Date</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">To Date</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Leave Category</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[20%]">Reason</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Approved Date</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Applied Date</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Status</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Paid/Unpaid</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredRequests.length > 0 ? (
+        filteredRequests.map((req) => (
+          <tr key={req.id} className="hover:bg-blue-50 transition">
+            <td className="px-4 py-2 text-left">{req.from}</td>
+            <td className="px-4 py-2 text-left">{req.to}</td>
+            {/* ✅ Correct Leave Category */}
+            <td className="px-4 py-2 text-left">{req.leaveType || "-"}</td>
+            <td className="px-4 py-2 text-left">{req.reason}</td>
+            <td className="px-4 py-2 text-left">{req.responseDate || "-"}</td>
+            <td className="px-4 py-2 text-left">{req.date}</td>
+            <td className="px-4 py-2 text-left">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  req.status === "Pending"
+                    ? "bg-yellow-200 text-yellow-800"
+                    : req.status === "Approved"
+                    ? "bg-green-200 text-green-800"
+                    : req.status === "Rejected"
+                    ? "bg-red-200 text-red-800"
+                    : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                {req.status}
+              </span>
+            </td>
+            {/* ✅ Correct Paid/Unpaid */}
+            <td className="px-4 py-2 text-left">{req.leavecategory || "-"}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={8} className="px-4 py-2 text-center text-gray-400">
+            No leave requests found.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+      
 
       {/* Sandwich Leaves Section */}
       <div className="mt-10 p-6 bg-white rounded-lg shadow border border-purple-100">
