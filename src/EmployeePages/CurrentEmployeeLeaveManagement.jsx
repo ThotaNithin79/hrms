@@ -33,36 +33,43 @@ const CurrentEmployeeLeaveManagement = () => {
     setSuccess("");
   };
 
-  const handleSubmit = () => {
-  if (!fromDate || !toDate || !reason) return;
+  const handleSubmit = (e) => {
+  e.preventDefault(); // ✅ prevent page refresh
 
-  const appliedMonth = new Date(fromDate).getMonth();
-  const appliedYear = new Date(fromDate).getFullYear();
+  const { from, to, reason, halfDay } = form;
+  if (!from || !to || !reason) {
+    setError("All fields are required");
+    return;
+  }
+
+  const appliedMonth = new Date(from).getMonth();
+  const appliedYear = new Date(from).getFullYear();
 
   // check if a paid leave already exists in that month
-  const hasPaidLeave = leaveRequests.some(
+  const hasPaidLeave = filteredRequests.some(
     (req) =>
-      new Date(req.fromDate).getMonth() === appliedMonth &&
-      new Date(req.fromDate).getFullYear() === appliedYear &&
-      req.leaveType === "Paid"
+      new Date(req.from).getMonth() === appliedMonth &&
+      new Date(req.from).getFullYear() === appliedYear &&
+      req.leavecategory === "Paid"
   );
 
   const newLeave = {
-    fromDate,
-    toDate,
-    leaveCategory: leaveCategory,
+    id: Date.now(),
+    from,
+    to,
     reason,
-    appliedDate: new Date().toISOString().split("T")[0],
+    halfDay: halfDay || null,
+    date: new Date().toISOString().split("T")[0],
     status: "Pending",
-    leaveType: hasPaidLeave ? "Unpaid" : "Paid", // ✅ auto assign Paid/Unpaid
+    leavecategory: hasPaidLeave ? "Unpaid" : "Paid",
+    leaveType: halfDay ? "Half Day" : "Full Day",
   };
 
-  setLeaveRequests([...leaveRequests, newLeave]);
+  // ✅ push new leave into context method
+  applyLeave(newLeave);
 
-  // reset form
-  setFromDate("");
-  setToDate("");
-  setReason("");
+  setForm({ from: "", to: "", reason: "", halfDay: "" });
+  setSuccess("Leave request submitted successfully!");
 };
 
 
