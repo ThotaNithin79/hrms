@@ -34,7 +34,7 @@ const CurrentEmployeeLeaveManagement = () => {
   };
 
   const handleSubmit = (e) => {
-  e.preventDefault(); // ✅ prevent page refresh
+  e.preventDefault();
 
   const { from, to, reason, halfDay } = form;
   if (!from || !to || !reason) {
@@ -45,13 +45,15 @@ const CurrentEmployeeLeaveManagement = () => {
   const appliedMonth = new Date(from).getMonth();
   const appliedYear = new Date(from).getFullYear();
 
-  // check if a paid leave already exists in that month
-  const hasPaidLeave = filteredRequests.some(
+  // Find all leave requests for this employee in the same month/year
+  const leavesThisMonth = filteredRequests.filter(
     (req) =>
       new Date(req.from).getMonth() === appliedMonth &&
-      new Date(req.from).getFullYear() === appliedYear &&
-      req.leavecategory === "Paid"
+      new Date(req.from).getFullYear() === appliedYear
   );
+
+  // First leave in month is Paid, subsequent are UnPaid
+  const leavecategory = leavesThisMonth.length === 0 ? "Paid" : "UnPaid";
 
   const newLeave = {
     id: Date.now(),
@@ -61,11 +63,10 @@ const CurrentEmployeeLeaveManagement = () => {
     halfDay: halfDay || null,
     date: new Date().toISOString().split("T")[0],
     status: "Pending",
-    leavecategory: hasPaidLeave ? "Unpaid" : "Paid",
+    leavecategory, // <-- always set
     leaveType: halfDay ? "Half Day" : "Full Day",
   };
 
-  // ✅ push new leave into context method
   applyLeave(newLeave);
 
   setForm({ from: "", to: "", reason: "", halfDay: "" });
@@ -230,7 +231,9 @@ const CurrentEmployeeLeaveManagement = () => {
               </span>
             </td>
             {/* ✅ Correct Paid/Unpaid */}
-            <td className="px-4 py-2 text-left">{req.leavecategory || "-"}</td>
+<td className="px-4 py-2 text-left">
+  {req.leavecategory ? req.leavecategory : "-"}
+</td>
           </tr>
         ))
       ) : (

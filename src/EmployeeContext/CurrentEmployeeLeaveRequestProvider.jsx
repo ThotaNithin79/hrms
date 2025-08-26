@@ -36,8 +36,8 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       date: "2025-07-18",
       status: "Pending",
       leaveType: "Full Day",
-      responseDate: null,          // No response yet
-      leaveResponds: [],            // Empty since admin has not responded
+      responseDate: null,
+      leaveResponds: [],
       leavecategory: "UnPaid",
     },
     { 
@@ -116,21 +116,35 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     [leaveRequests, selectedMonth, selectedStatus, selectedLeaveType]
   );
 
-const applyLeave = ({ from, to, reason, leaveType, halfDay }) => {
-  const newRequest = {
-    id: leaveRequests.length + 1,
-    employeeId: "EMP101",
-    name: "John Doe",
-    from,
-    to,
-    reason,
-    leaveType: from === to && halfDay ? halfDay : leaveType, // ✅ Half-day stored in leaveType
-    date: new Date().toISOString().slice(0, 10),
-    status: "Pending",
-  };
-  setLeaveRequests((prev) => [...prev, newRequest]);
-};
+  // ✅ Apply Leave with Auto Paid/Unpaid logic
+  const applyLeave = ({ from, to, reason, leaveType, halfDay }) => {
+    const leaveMonth = new Date(from).getMonth();
+    const leaveYear = new Date(from).getFullYear();
 
+    // Check if this month already has a Paid leave
+    const hasPaidLeaveThisMonth = leaveRequests.some((req) => {
+      const reqMonth = new Date(req.from).getMonth();
+      const reqYear = new Date(req.from).getFullYear();
+      return reqMonth === leaveMonth && reqYear === leaveYear && req.leavecategory === "Paid";
+    });
+
+    const newRequest = {
+      id: leaveRequests.length + 1,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from,
+      to,
+      reason,
+      leaveType: from === to && halfDay ? halfDay : leaveType, // ✅ Half-day stored in leaveType
+      date: new Date().toISOString().slice(0, 10),
+      status: "Pending",
+      leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid", // ✅ Auto assign
+      responseDate: null,
+      leaveResponds: [],
+    };
+
+    setLeaveRequests((prev) => [...prev, newRequest]);
+  };
 
   const [sandwichLeaves] = useState([
     { date: "2025-09-11", from: "2025-09-10", to: "2025-09-12" },
