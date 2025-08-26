@@ -196,12 +196,12 @@ const CurrentEmployeeLeaveManagement = () => {
       <tr>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">From Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">To Date</th>
-        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Leave Category</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Leave Day Type</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[20%]">Reason</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Approved Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Applied Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Status</th>
-        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Paid/Unpaid</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Leave Category</th>
       </tr>
     </thead>
     <tbody>
