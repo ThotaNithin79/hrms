@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const getMonthOptions = (requests) => {
@@ -12,7 +12,7 @@ const getLeaveTypeOptions = () => ["Sick Leave", "Casual Leave", "Emergency Leav
 
 const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   const [leaveRequests, setLeaveRequests] = useState([
-    { 
+    {
       id: 1,
       employeeId: "EMP101",
       name: "John Doe",
@@ -22,11 +22,11 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       date: "2025-07-08",
       status: "Approved",
       leaveType: "Full Day",
-      responseDate: "2025-07-09",  
+      responseDate: "2025-07-09",
       leaveResponds: ["2025-07-09"],
       leavecategory: "Paid",
     },
-    { 
+    {
       id: 2,
       employeeId: "EMP101",
       name: "John Doe",
@@ -40,63 +40,25 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       leaveResponds: [],
       leavecategory: "UnPaid",
     },
-    { 
-      id: 3,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-08-05",
-      to: "2025-08-07",
-      reason: "Conference",
-      date: "2025-08-01",
-      status: "Approved",
-      leaveType: "Full Day",
-      responseDate: "2025-08-03",
-      leaveResponds: ["2025-08-03"],
-      leavecategory: "Paid",
-    },
-    { 
-      id: 4,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-08-15",
-      to: "2025-08-15",
-      reason: "Personal",
-      date: "2025-08-13",
-      status: "Rejected",
-      leaveType: "Morning Half",
-      responseDate: "2025-08-14",
-      leaveResponds: ["2025-08-14"],
-      leavecategory: "UnPaid",
-    },
-    { 
-      id: 5,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-09-10",
-      to: "2025-09-12",
-      reason: "Family Event",
-      date: "2025-09-08",
-      status: "Pending",
-      leaveType: "Full Day",
-      responseDate: null,
-      leaveResponds: [],
-      leavecategory: "Paid",
-    },
-    { 
-      id: 6,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from: "2025-06-10",
-      to: "2025-06-12",
-      reason: "Family Event",
-      date: "2025-09-08",
-      status: "Pending",
-      leaveType: "Full Day",
-      responseDate: null,
-      leaveResponds: [],
-      leavecategory: "UnPaid",
-    },
+    // ...rest of your dummy data
   ]);
+
+  // ✅ fetch backend data on mount
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const response = await fetch("/api/leaves/EMP101"); // ✅ Replace with real API
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        setLeaveRequests(data); // ✅ backend data replaces dummy
+      } catch (error) {
+        console.error("Backend not available, using dummy data", error);
+        // keep dummy data
+      }
+    };
+
+    fetchLeaves();
+  }, []);
 
   const monthOptions = useMemo(() => getMonthOptions(leaveRequests), [leaveRequests]);
   const statusOptions = useMemo(() => getStatusOptions(), []);
@@ -117,11 +79,10 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   );
 
   // ✅ Apply Leave with Auto Paid/Unpaid logic
-  const applyLeave = ({ from, to, reason, leaveType, halfDay }) => {
+  const applyLeave = async ({ from, to, reason, leaveType, halfDay }) => {
     const leaveMonth = new Date(from).getMonth();
     const leaveYear = new Date(from).getFullYear();
 
-    // Check if this month already has a Paid leave
     const hasPaidLeaveThisMonth = leaveRequests.some((req) => {
       const reqMonth = new Date(req.from).getMonth();
       const reqYear = new Date(req.from).getFullYear();
@@ -135,15 +96,29 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       from,
       to,
       reason,
-      leaveType: from === to && halfDay ? halfDay : leaveType, // ✅ Half-day stored in leaveType
+      leaveType: from === to && halfDay ? halfDay : leaveType,
       date: new Date().toISOString().slice(0, 10),
       status: "Pending",
-      leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid", // ✅ Auto assign
+      leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid",
       responseDate: null,
       leaveResponds: [],
     };
 
-    setLeaveRequests((prev) => [...prev, newRequest]);
+    try {
+      const response = await fetch("/api/leaves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newRequest),
+      });
+
+      if (!response.ok) throw new Error("Failed to save leave request");
+
+      const savedRequest = await response.json();
+      setLeaveRequests((prev) => [...prev, savedRequest]); // ✅ backend data
+    } catch (error) {
+      console.error("Backend save failed, falling back to local state", error);
+      setLeaveRequests((prev) => [...prev, newRequest]); // ✅ fallback
+    }
   };
 
   const [sandwichLeaves] = useState([
