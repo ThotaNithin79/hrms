@@ -28,52 +28,46 @@ const CurrentEmployeeLeaveManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const REASON_LIMIT = 50;
+
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
-    setSuccess("");
-  };
+  const { name, value } = e.target;
+  setForm((prev) => ({
+    ...prev,
+    [name]: name === "reason" ? value.slice(0, REASON_LIMIT) : value,
+  }));
+  setError("");
+  setSuccess("");
+};
 
-  const handleSubmit = (e) => {
+
+const handleSubmit = async (e) => {
   e.preventDefault();
-
   const { from, to, reason, halfDay } = form;
+
   if (!from || !to || !reason) {
     setError("All fields are required");
     return;
   }
 
-  const appliedMonth = new Date(from).getMonth();
-  const appliedYear = new Date(from).getFullYear();
-
-  // Find all leave requests for this employee in the same month/year
-  const leavesThisMonth = filteredRequests.filter(
-    (req) =>
-      new Date(req.from).getMonth() === appliedMonth &&
-      new Date(req.from).getFullYear() === appliedYear
-  );
-
-  // First leave in month is Paid, subsequent are UnPaid
-  const leavecategory = leavesThisMonth.length === 0 ? "Paid" : "UnPaid";
-
-  const newLeave = {
-    id: Date.now(),
-    from,
-    to,
-    reason,
-    halfDay: halfDay || null,
-    date: new Date().toISOString().split("T")[0],
-    status: "Pending",
-    leavecategory, // <-- always set
-    leaveType: halfDay ? "Half Day" : "Full Day",
-  };
-
-  applyLeave(newLeave);
-
-  setForm({ from: "", to: "", reason: "", halfDay: "" });
-  setSuccess("Leave request submitted successfully!");
+  try {
+    await applyLeave({
+      from,
+      to,
+      reason,
+      halfDay,
+      leaveType: from === to && halfDay ? halfDay : "Full Day", // default
+    });
+    setSuccess("Leave request submitted successfully!");
+    setForm({ from: "", to: "", reason: "", halfDay: "" });
+    setShowForm(false);
+  } catch (err) {
+    setError("Failed to submit leave request");
+  }
 };
+
+
 
 
   return (
@@ -169,16 +163,26 @@ const CurrentEmployeeLeaveManagement = () => {
 </div>
 
           <div>
-            <label className="block mb-1 font-medium text-blue-800">Reason</label>
-            <input
-              type="text"
-              name="reason"
-              value={form.reason}
-              onChange={handleChange}
-              className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
-              placeholder="Enter reason for leave"
-            />
-          </div>
+  <label className="block mb-1 font-medium text-blue-800">Reason</label>
+  <input
+    type="text"
+    name="reason"
+    value={form.reason}
+    onChange={handleChange}
+    maxLength={REASON_LIMIT}
+    className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
+    placeholder="Enter reason for leave"
+  />
+  <p>{form.reason.length}/{REASON_LIMIT}</p>
+  <div
+    className={`mt-1 text-xs ${
+      form.reason.length >= REASON_LIMIT ? "text-red-600" : "text-gray-500"
+    }`}
+  >
+    {form.reason.length}/{REASON_LIMIT}
+  </div>
+</div>
+
           {error && <div className="text-red-600 font-semibold">{error}</div>}
           {success && <div className="text-green-600 font-semibold">{success}</div>}
           <button
