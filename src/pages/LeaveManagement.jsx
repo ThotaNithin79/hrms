@@ -5,15 +5,34 @@ import { useLocation } from "react-router-dom";
 import { FaCheck, FaTimes, FaFilter } from "react-icons/fa";
 
 const LeaveManagement = () => {
-  const { leaveRequests, setLeaveRequests } = useContext(LeaveRequestContext);
+  const {
+    getWeeklyFilteredRequests,
+    getDepartments,
+    goToPreviousWeek,
+    goToNextWeek,
+    resetToCurrentWeek,
+    currentWeek,
+    filterStatus,
+    setFilterStatus,
+    searchQuery,
+    setSearchQuery,
+    filterDept,
+    setFilterDept,
+    leaveRequests,
+    setLeaveRequests,
+    isSandwichLeave,
+  } = useContext(LeaveRequestContext);
   const { employees } = useContext(EmployeeContext);
-  const location = useLocation(); 
+  const location = useLocation();
   const initialStatus = location.state?.defaultStatus || "All";
-  const [filterStatus, setFilterStatus] = useState(initialStatus);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterDept, setFilterDept] = useState("All");
+
+  // Set initial status filter only once
+  React.useEffect(() => {
+    setFilterStatus(initialStatus);
+    // eslint-disable-next-line
+  }, []);
+
   const [snackbar, setSnackbar] = useState("");
-  const [currentWeek, setCurrentWeek] = useState(0); // 0 = current week
 
   // Status badge color
   const statusBadge = (status) => {
@@ -39,73 +58,16 @@ const LeaveManagement = () => {
     showSnackbar(`Leave request ${status.toLowerCase()} successfully.`);
   };
 
-  // Week calculation helpers
-  const getCurrentWeekDates = (weekOffset = 0) => {
-    const today = new Date();
-    const currentDay = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - currentDay + 1 + (weekOffset * 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return {
-      start: monday.toISOString().split('T')[0],
-      end: sunday.toISOString().split('T')[0],
-      monday,
-      sunday
-    };
-  };
+  // Get departments for filter dropdown
+  const allDepartments = getDepartments(employees);
 
-  const weekDates = getCurrentWeekDates(currentWeek);
+  // Get filtered leave requests for current week
+  const { weekDates, filteredRequests } = getWeeklyFilteredRequests(employees);
 
-  // Get all departments from active employees' current experience only
-  const allDepartments = Array.from(new Set(
-    employees
-      .filter(emp => emp.isActive !== false)
-      .map(emp => {
-        if (Array.isArray(emp.experienceDetails)) {
-          const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
-          return currentExp?.department || null;
-        }
-        return null;
-      })
-      .filter(dept => dept)
-  )).sort();
+  // Sandwich leave flag
+  const sandwichLeaveRowId = isSandwichLeave(filteredRequests);
 
-  // Filter leave requests by week, status, search, and department, then separate active/inactive
-  const allFilteredRequests = leaveRequests.filter((req) => {
-    const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
-    const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-    // Get current department for this employee
-    const emp = employees.find(e => e.employeeId === req.employeeId);
-    let currentDept = null;
-    if (emp && Array.isArray(emp.experienceDetails)) {
-      const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
-      currentDept = currentExp?.department || null;
-    }
-    const matchesDept = filterDept === "All" ? true : currentDept === filterDept;
-    // Check if leave falls within the week
-    const fromDate = req.from;
-    const toDate = req.to;
-    const inWeek = (fromDate >= weekDates.start && fromDate <= weekDates.end) || (toDate >= weekDates.start && toDate <= weekDates.end);
-    return matchesStatus && matchesSearch && matchesDept && inWeek;
-  });
-
-  // Separate active and inactive employee requests
-  const separatedRequests = allFilteredRequests.reduce((acc, req) => {
-    const emp = employees.find(e => e.employeeId === req.employeeId);
-    const isActiveEmployee = emp?.isActive !== false;
-    
-    if (isActiveEmployee) {
-      acc.active.push(req);
-    } else {
-      acc.inactive.push(req);
-    }
-    return acc;
-  }, { active: [], inactive: [] });
-
-  // Combine for display: active first, then inactive
-  const filteredRequests = [...separatedRequests.active, ...separatedRequests.inactive];
-
+  // Week range formatter
   const formatWeekRange = (start, end) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -126,7 +88,7 @@ const LeaveManagement = () => {
       <div className="mb-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex gap-2 items-center">
           <button
-            onClick={() => setCurrentWeek(currentWeek - 1)}
+            onClick={goToPreviousWeek}
             className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
           >
             ← Previous Week
@@ -135,14 +97,14 @@ const LeaveManagement = () => {
             {formatWeekRange(weekDates.start, weekDates.end)}
           </span>
           <button
-            onClick={() => setCurrentWeek(currentWeek + 1)}
+            onClick={goToNextWeek}
             className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
           >
             Next Week →
           </button>
           {currentWeek !== 0 && (
             <button
-              onClick={() => setCurrentWeek(0)}
+              onClick={resetToCurrentWeek}
               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
             >
               Current Week
@@ -203,84 +165,71 @@ const LeaveManagement = () => {
               <th className="p-4">Name</th>
               <th className="p-4">From</th>
               <th className="p-4">To</th>
+              <th className="p-4">Leave Type</th>
+              <th className="p-4">Leave Days</th> {/* NEW */}
               <th className="p-4">Reason</th>
               <th className="p-4">Status</th>
               <th className="p-4">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              let sandwichLeaveRowId = null;
-              filteredRequests.forEach((req) => {
-                if (req.employeeId === "EMP101") {
-                  const fromDate = new Date(req.from);
-                  const toDate = new Date(req.to);
-                  if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
-                    const day1 = fromDate.getDay();
-                    const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
-                    const day3 = toDate.getDay();
-                    if (day1 === 6 && day2 === 0 && day3 === 1) {
-                      if (!sandwichLeaveRowId) sandwichLeaveRowId = req.id;
-                    }
-                  }
-                }
-              });
-              return filteredRequests.map((req, idx) => {
-                const isSandwichLeave = req.id === sandwichLeaveRowId;
-                const emp = employees.find(e => e.employeeId === req.employeeId);
-                const isInactive = emp?.isActive === false;
-                
-                return (
-                  <tr
-                    key={req.id}
-                    className={`border-t transition duration-150 ${
-                      isInactive
-                        ? "bg-gray-300 text-gray-600 opacity-75"
-                        : idx % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    } hover:bg-blue-50`}
-                  >
-                    <td className="p-4">{req.employeeId}</td>
-                    <td className="p-4">
-                      {req.name}
-                      {isInactive && (
-                        <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4">{req.from}</td>
-                    <td className="p-4">{req.to}</td>
-                    <td className="p-4 flex items-center gap-2">
-                      {req.reason}
-                      {isSandwichLeave && (
-                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold ml-2" title="Sandwich Leave">
-                          Sandwich Leave
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
-                    <td className="p-4 flex gap-2">
-                      <button
-                        onClick={() => updateStatus(req.id, "Approved")}
-                        disabled={req.status !== "Pending"}
-                        className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
-                        title="Approve"
-                      >
-                        <FaCheck /> Approve
-                      </button>
-                      <button
-                        onClick={() => updateStatus(req.id, "Rejected")}
-                        disabled={req.status !== "Pending"}
-                        className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
-                        title="Reject"
-                      >
-                        <FaTimes /> Reject
-                      </button>
-                    </td>
-                  </tr>
-                );
-              });
-            })()}
+            {filteredRequests.map((req, idx) => {
+              const emp = employees.find(e => e.employeeId === req.employeeId);
+              const isInactive = emp?.isActive === false;
+              const isSandwich = req.id === sandwichLeaveRowId;
+
+              return (
+                <tr
+                  key={req.id}
+                  className={`border-t transition duration-150 ${
+                    isInactive
+                      ? "bg-gray-300 text-gray-600 opacity-75"
+                      : idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  } hover:bg-blue-50`}
+                >
+                  <td className="p-4">{req.employeeId}</td>
+                  <td className="p-4">
+                    {req.name}
+                    {isInactive && (
+                      <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
+                        Inactive
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4">{req.from}</td>
+                  <td className="p-4">{req.to}</td>
+                  <td className="p-4">{req.leaveDayType}</td>
+                  <td className="p-4">{req.leaveDays}</td> {/* NEW */}
+                  <td className="p-4 flex items-center gap-2">
+                    {req.reason}
+                    {isSandwich && (
+                      <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold ml-2" title="Sandwich Leave">
+                        Sandwich Leave
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 font-semibold">{statusBadge(req.status)}</td>
+                  <td className="p-4 flex gap-2">
+                    <button
+                      onClick={() => updateStatus(req.id, "Approved")}
+                      disabled={req.status !== "Pending"}
+                      className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 flex items-center gap-1 disabled:opacity-50"
+                      title="Approve"
+                    >
+                      <FaCheck /> Approve
+                    </button>
+                    <button
+                      onClick={() => updateStatus(req.id, "Rejected")}
+                      disabled={req.status !== "Pending"}
+                      className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1 disabled:opacity-50"
+                      title="Reject"
+                    >
+                      <FaTimes /> Reject
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
             {filteredRequests.length === 0 && (
               <tr>
                 <td colSpan="7" className="p-4 text-center text-gray-500">
