@@ -7,6 +7,28 @@ const getMonthOptions = (requests) => {
   return uniqueMonths.sort();
 };
 
+// --- helpers ---
+const parseYMD = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const ymd = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+const monthKeyFromYMD = (s) => s.slice(0, 7); // "YYYY-MM"
+const eachDateInclusive = (fromStr, toStr) => {
+  const out = [];
+  let d = parseYMD(fromStr);
+  const end = parseYMD(toStr);
+  while (d <= end) {
+    out.push(ymd(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+};
+
+
 const getStatusOptions = () => ["All", "Pending", "Approved", "Rejected"];
 const getLeaveTypeOptions = () => ["Sick Leave", "Casual Leave", "Emergency Leave"];
 
@@ -83,66 +105,77 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   );
 
   // ✅ Apply Leave with Auto Paid/Unpaid logic
+// ✅ Apply Leave: expand into per-day entries; one Paid day per month
 const applyLeave = async ({ from, to, reason, leaveType, halfDaySession }) => {
-  const leaveMonth = new Date(from).getMonth();
-  const leaveYear = new Date(from).getFullYear();
+  const days = eachDateInclusive(from, to);
 
-  const hasPaidLeaveThisMonth = leaveRequests.some((req) => {
-    const reqMonth = new Date(req.from).getMonth();
-    const reqYear = new Date(req.from).getFullYear();
-    return (
-      req.employeeId === "EMP101" &&
-      reqMonth === leaveMonth &&
-      reqYear === leaveYear &&
-      req.leavecategory === "Paid"
-    );
-  });
+  // Months that already have a Paid day (from existing requests)
+  const paidUsedMonths = new Set(
+    leaveRequests
+      .filter((r) => r.leavecategory === "Paid")
+      .map((r) => monthKeyFromYMD(r.from))
+  );
 
-  // 👇 build request without status
-  const newRequest = {
-    id: leaveRequests.length + 1,
-    employeeId: "EMP101",
-    name: "John Doe",
-    from,
-    to,
-    reason,
-    leaveType,
-    leaveDayType: from === to && halfDaySession ? "Half Day" : "Full Day",
-    halfDaySession: from === to ? halfDaySession || null : null,
-    requestDate: new Date().toISOString().slice(0, 10),
-    leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid",
-    actionDate: null,
-    approvedBy: null,
-    // ❌ no status here (backend should decide)
-  };
+  // We’ll collect new entries first, then set state once.
+  const newEntries = [];
 
-  try {
-    const response = await fetch("/api/leaves", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newRequest),
-    });
+  // Base id to keep unique ids in local fallback
+  let nextId = leaveRequests.length + 1;
 
-    if (response.ok) {
-      const savedRequest = await response.json();
-      // ✅ backend decides status
-      setLeaveRequests((prev) => [...prev, savedRequest]);
-    } else {
-      // ❌ backend failed → fallback with Pending
-      setLeaveRequests((prev) => [
-        ...prev,
-        { ...newRequest, status: "Pending" },
-      ]);
+  // Only single-day requests can be Half Day
+  const isSingleDay = days.length === 1;
+  const wantHalfDay = isSingleDay && !!halfDaySession;
+
+  // Build one entry per day
+  for (const dateStr of days) {
+    const mk = monthKeyFromYMD(dateStr);
+    const leavecategory = paidUsedMonths.has(mk) ? "UnPaid" : "Paid";
+    if (leavecategory === "Paid") {
+      // consume the month's paid slot
+      paidUsedMonths.add(mk);
     }
-  } catch (error) {
-    console.error("Backend save failed, using local state", error);
-    // ❌ network error → fallback with Pending
-    setLeaveRequests((prev) => [
-      ...prev,
-      { ...newRequest, status: "Pending" },
-    ]);
+
+    const perDayRequest = {
+      id: nextId++,
+      employeeId: "EMP101",
+      name: "John Doe",
+      from: dateStr,
+      to: dateStr, // single-day row
+      reason,
+      leaveType,
+      leaveDayType: wantHalfDay ? "Half Day" : "Full Day",
+      halfDaySession: wantHalfDay ? halfDaySession : null,
+      requestDate: new Date().toISOString().slice(0, 10),
+      leavecategory, // 👈 Paid for the first unused month day; otherwise UnPaid
+      actionDate: null,
+      approvedBy: null,
+      // status decided by backend; fallback to Pending below
+    };
+
+    // Try to persist each day (simple loop; backend may not exist)
+    try {
+      const response = await fetch("/api/leaves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(perDayRequest),
+      });
+
+      if (response.ok) {
+        const saved = await response.json(); // backend supplies status
+        newEntries.push(saved);
+      } else {
+        newEntries.push({ ...perDayRequest, status: "Pending" });
+      }
+    } catch (err) {
+      console.error("Backend save failed, using local state", err);
+      newEntries.push({ ...perDayRequest, status: "Pending" });
+    }
   }
+
+  // Add all new daily rows in one state update
+  setLeaveRequests((prev) => [...prev, ...newEntries]);
 };
+
 
 
 
