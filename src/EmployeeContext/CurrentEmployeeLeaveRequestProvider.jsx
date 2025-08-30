@@ -125,46 +125,51 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   );
 
   // --- UPDATED applyLeave: add aggregated leave only, remove Paid/UnPaid assignment logic
-  const applyLeave = async ({ from, to, reason, leaveType, halfDaySession, leaveDayType }) => {
-    // IDs for local fallback
-    let nextId = leaveRequests.length + 1;
+  // inside CurrentEmployeeLeaveRequestProvider.jsx
+const applyLeave = async ({ from, to, reason, leaveType, halfDaySession, leaveDayType }) => {
+  const days = eachDateInclusive(from, to);
+  const leaveDays = days.length === 1 && leaveDayType === "Half Day" ? 0.5 : days.length;
 
-    const newAggregatedLeave = {
-      id: nextId,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from,
-      to,
-      reason,
-      requestDate: new Date().toISOString().slice(0, 10),
-      status: "Pending",
-      leaveDayType: leaveDayType || "Full Day",
-      halfDaySession: leaveDayType === "Half Day" ? halfDaySession : null,
-      leaveType,
-      actionDate: null,
-      approvedBy: null,
-      leavecategory: null, // do NOT compute Paid/UnPaid here; details are resolved via backend or leaveDetailsDummy when needed
-    };
+  let nextId = leaveRequests.length + 1;
 
-    try {
-      const response = await fetch("/api/leaves", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAggregatedLeave),
-      });
+  const newAggregatedLeave = {
+    id: nextId,
+    employeeId: "EMP101",
+    name: "John Doe",
+    from,
+    to,
+    reason,
+    requestDate: new Date().toISOString().slice(0, 10),
+    status: "Pending",
+    leaveDayType: leaveDayType || "Full Day",
+    halfDaySession: leaveDayType === "Half Day" ? halfDaySession : null,
+    leaveType,
+    actionDate: null,
+    approvedBy: null,
+    leavecategory: null,
+    leaveDays, // <-- now includes 0.5 for half-day
+  };
 
-      if (response.ok) {
-        const saved = await response.json();
-        setLeaveRequests((prev) => [...prev, saved]);
-      } else {
-        // fallback to local aggregated row
-        setLeaveRequests((prev) => [...prev, newAggregatedLeave]);
-      }
-    } catch (err) {
-      console.error("Backend save failed; adding aggregated leave locally", err);
+  try {
+    const response = await fetch("/api/leaves", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newAggregatedLeave),
+    });
+
+    if (response.ok) {
+      const saved = await response.json();
+      setLeaveRequests((prev) => [...prev, saved]);
+    } else {
       setLeaveRequests((prev) => [...prev, newAggregatedLeave]);
     }
-  };
+  } catch (err) {
+    console.error("Backend save failed; adding aggregated leave locally", err);
+    setLeaveRequests((prev) => [...prev, newAggregatedLeave]);
+  }
+};
+
+
 
   // --- NEW: fetch per-day details for a leave (tries backend, falls back to leaveDetailsDummy)
   const fetchLeaveDetails = async (leaveId) => {
