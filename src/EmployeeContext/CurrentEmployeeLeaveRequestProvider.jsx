@@ -19,12 +19,14 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       from: "2025-07-10",
       to: "2025-07-15",
       reason: "Vacation",
-      date: "2025-07-08",
+      requestDate: "2025-07-08",
       status: "Approved",
-      leaveType: "Full Day",
-      responseDate: "2025-07-09",
-      leaveResponds: ["2025-07-09"],
+      leaveDayType: "Full Day",
+      halfDaySession: null,
+      leaveType: "CASUAL",
+      actionDate: "2025-07-09",
       leavecategory: "Paid",
+      approvedBy: "Manager1",
     },
     {
       id: 2,
@@ -33,12 +35,14 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       from: "2025-07-20",
       to: "2025-07-22",
       reason: "Medical Leave",
-      date: "2025-07-18",
+      requestDate: "2025-07-18",
       status: "Pending",
-      leaveType: "Full Day",
-      responseDate: null,
-      leaveResponds: [],
+      leaveDayType: "Full Day",
+      leaveType: "SICK",
+      halfDaySession: null,
+      actionDate: null,
       leavecategory: "UnPaid",
+      approvedBy: null,
     },
     // ...rest of your dummy data
   ]);
@@ -79,47 +83,69 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   );
 
   // ✅ Apply Leave with Auto Paid/Unpaid logic
-  const applyLeave = async ({ from, to, reason, leaveType, halfDay }) => {
-    const leaveMonth = new Date(from).getMonth();
-    const leaveYear = new Date(from).getFullYear();
+const applyLeave = async ({ from, to, reason, leaveType, halfDaySession }) => {
+  const leaveMonth = new Date(from).getMonth();
+  const leaveYear = new Date(from).getFullYear();
 
-    const hasPaidLeaveThisMonth = leaveRequests.some((req) => {
-      const reqMonth = new Date(req.from).getMonth();
-      const reqYear = new Date(req.from).getFullYear();
-      return reqMonth === leaveMonth && reqYear === leaveYear && req.leavecategory === "Paid";
+  const hasPaidLeaveThisMonth = leaveRequests.some((req) => {
+    const reqMonth = new Date(req.from).getMonth();
+    const reqYear = new Date(req.from).getFullYear();
+    return (
+      req.employeeId === "EMP101" &&
+      reqMonth === leaveMonth &&
+      reqYear === leaveYear &&
+      req.leavecategory === "Paid"
+    );
+  });
+
+  // 👇 build request without status
+  const newRequest = {
+    id: leaveRequests.length + 1,
+    employeeId: "EMP101",
+    name: "John Doe",
+    from,
+    to,
+    reason,
+    leaveType,
+    leaveDayType: from === to && halfDaySession ? "Half Day" : "Full Day",
+    halfDaySession: from === to ? halfDaySession || null : null,
+    requestDate: new Date().toISOString().slice(0, 10),
+    leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid",
+    actionDate: null,
+    approvedBy: null,
+    // ❌ no status here (backend should decide)
+  };
+
+  try {
+    const response = await fetch("/api/leaves", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRequest),
     });
 
-    const newRequest = {
-      id: leaveRequests.length + 1,
-      employeeId: "EMP101",
-      name: "John Doe",
-      from,
-      to,
-      reason,
-      leaveType: from === to && halfDay ? halfDay : leaveType,
-      date: new Date().toISOString().slice(0, 10),
-      status: "Pending",
-      leavecategory: hasPaidLeaveThisMonth ? "UnPaid" : "Paid",
-      responseDate: null,
-      leaveResponds: [],
-    };
-
-    try {
-      const response = await fetch("/api/leaves", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newRequest),
-      });
-
-      if (!response.ok) throw new Error("Failed to save leave request");
-
+    if (response.ok) {
       const savedRequest = await response.json();
-      setLeaveRequests((prev) => [...prev, savedRequest]); // ✅ backend data
-    } catch (error) {
-      console.error("Backend save failed, falling back to local state", error);
-      setLeaveRequests((prev) => [...prev, newRequest]); // ✅ fallback
+      // ✅ backend decides status
+      setLeaveRequests((prev) => [...prev, savedRequest]);
+    } else {
+      // ❌ backend failed → fallback with Pending
+      setLeaveRequests((prev) => [
+        ...prev,
+        { ...newRequest, status: "Pending" },
+      ]);
     }
-  };
+  } catch (error) {
+    console.error("Backend save failed, using local state", error);
+    // ❌ network error → fallback with Pending
+    setLeaveRequests((prev) => [
+      ...prev,
+      { ...newRequest, status: "Pending" },
+    ]);
+  }
+};
+
+
+
 
   const [sandwichLeaves] = useState([
     { date: "2025-09-11", from: "2025-09-10", to: "2025-09-12" },

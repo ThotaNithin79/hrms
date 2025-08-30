@@ -24,7 +24,7 @@ const CurrentEmployeeLeaveManagement = () => {
   } = useContext(CurrentEmployeeLeaveRequestContext);
 
   // Leave form state
-  const [form, setForm] = useState({ from: "", to: "", reason: "",halfDay: "" });
+  const [form, setForm] = useState({ from: "", to: "", reason: "",halfDaySession: "", leaveType: "" });
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -44,9 +44,9 @@ const CurrentEmployeeLeaveManagement = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  const { from, to, reason, halfDay } = form;
+  const { from, to, reason, halfDaySession, leaveType } = form;
 
-  if (!from || !to || !reason) {
+  if (!from || !to || !reason || !leaveType) {
     setError("All fields are required");
     return;
   }
@@ -56,16 +56,22 @@ const handleSubmit = async (e) => {
       from,
       to,
       reason,
-      halfDay,
-      leaveType: from === to && halfDay ? halfDay : "Full Day", // default
+      leaveType,
+      leaveDayType: from === to && halfDaySession ? "Half Day" : "Full Day",
+      halfDaySession: from === to ? halfDaySession || null : null,
     });
+
+    // ✅ Only reset AFTER applyLeave updates table
     setSuccess("Leave request submitted successfully!");
-    setForm({ from: "", to: "", reason: "", halfDay: "" });
-    setShowForm(false);
+    setForm({ from: "", to: "", reason: "", halfDaySession: "", leaveType: "" });
+
   } catch (err) {
     setError("Failed to submit leave request");
   }
 };
+
+
+
 
 
 
@@ -76,29 +82,39 @@ const handleSubmit = async (e) => {
       <div className="flex items-center mb-[25px]">
         <h2 className="text-3xl font-bold text-blue-800 flex-1">Leave Request</h2>
         <button
-          className={`ml-4 bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showForm ? 'bg-blue-900' : ''}`}
-          onClick={() => setShowForm((v) => !v)}
-        >
-          {showForm ? "Cancel" : "Leave Request"}
-        </button>
+  className={`ml-4 bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showForm ? 'bg-blue-900' : ''}`}
+  onClick={() => {
+    if (!showForm) {
+      // ✅ only when opening the form, reset fields
+      setForm({ from: "", to: "", reason: "", halfDaySession: "", leaveType: "" });
+      setError("");
+      setSuccess("");
+    }
+    setShowForm((v) => !v);
+  }}
+>
+  {showForm ? "Cancel" : "Leave Request"}
+</button>
+
       </div>
 
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <div>
-          <label className="mr-2 font-medium text-blue-800">Month:</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="border border-blue-300 rounded px-3 py-2 bg-white focus:outline-blue-500"
-          >
-            {monthOptions.map((month) => (
-              <option key={month} value={month}>
-                {formatMonth(month)}
-              </option>
-            ))}
-          </select>
-        </div>
+  <label className="mr-2 font-medium text-blue-800">Month:</label>
+  <select
+    value={selectedMonth}
+    onChange={(e) => setSelectedMonth(e.target.value)}
+    className="border border-blue-300 rounded px-3 py-2 bg-white focus:outline-blue-500"
+  >
+    {monthOptions.map((month) => (
+      <option key={month} value={month}>
+        {formatMonth(month)}
+      </option>
+    ))}
+  </select>
+</div>
+
         <div>
           <label className="mr-2 font-medium text-blue-800">Status:</label>
           <select
@@ -149,8 +165,8 @@ const handleSubmit = async (e) => {
     <div className="flex-1">
       <label className="block mb-1 font-medium text-blue-800">Half Day</label>
       <select
-        name="halfDay"
-        value={form.halfDay}
+        name="halfDaySession"
+        value={form.halfDaySession}
         onChange={handleChange}
         className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
       >
@@ -183,14 +199,42 @@ const handleSubmit = async (e) => {
   </div>
 </div>
 
+<div>
+  <label className="block mb-1 font-medium text-blue-800">Leave Type</label>
+  <select
+    name="leaveType"
+    value={form.leaveType || ""}
+    onChange={handleChange}
+    className="w-full border border-blue-300 rounded px-3 py-2 focus:outline-blue-500"
+  >
+    <option value="">-- Select Leave Type --</option>
+    <option value="CASUAL">Casual Leave</option>
+    <option value="SICK">Sick Leave</option>
+    <option value="EMERGENCY">Emergency Leave</option>
+  </select>
+</div>
+
+
           {error && <div className="text-red-600 font-semibold">{error}</div>}
           {success && <div className="text-green-600 font-semibold">{success}</div>}
-          <button
-            type="submit"
-            className="bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition mt-2"
-          >
-            Submit Request
-          </button>
+          <div className="flex gap-4">
+  <button
+    type="submit"
+    className="bg-green-600 hover:bg-green-800 text-white font-semibold px-6 py-2 rounded-lg shadow transition"
+  >
+    Submit
+  </button>
+  <button
+    type="button"
+    onClick={() => setShowForm(false)}
+    className="bg-gray-500 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition"
+  >
+    Cancel
+  </button>
+</div>
+
+
+
         </form>
       )}
 
@@ -203,11 +247,13 @@ const handleSubmit = async (e) => {
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">From Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">To Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Leave Day Type</th>
-        <th className="px-4 py-2 text-left text-blue-900 w-[20%]">Reason</th>
-        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Approved Date</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">halfDaySession</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[20%]">leaveType</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[14%]">actionDate</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[14%]">Applied Date</th>
         <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Status</th>
-        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">Leave Category</th>
+        <th className="px-4 py-2 text-left text-blue-900 w-[10%]">approvedBy</th>
+
       </tr>
     </thead>
     <tbody>
@@ -217,10 +263,11 @@ const handleSubmit = async (e) => {
             <td className="px-4 py-2 text-left">{req.from}</td>
             <td className="px-4 py-2 text-left">{req.to}</td>
             {/* ✅ Correct Leave Category */}
-            <td className="px-4 py-2 text-left">{req.leaveType || "-"}</td>
-            <td className="px-4 py-2 text-left">{req.reason}</td>
-            <td className="px-4 py-2 text-left">{req.responseDate || "-"}</td>
-            <td className="px-4 py-2 text-left">{req.date}</td>
+            <td className="px-4 py-2 text-left">{req.leaveDayType || "-"}</td>
+            <td className="px-4 py-2 text-left">{req.halfDaySession || "-"}</td>
+            <td className="px-4 py-2 text-left">{req.leaveType}</td>
+            <td className="px-4 py-2 text-left">{req.actionDate}</td>
+            <td className="px-4 py-2 text-left">{req.requestDate}</td>
             <td className="px-4 py-2 text-left">
               <span
                 className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -236,10 +283,7 @@ const handleSubmit = async (e) => {
                 {req.status}
               </span>
             </td>
-            {/* ✅ Correct Paid/Unpaid */}
-<td className="px-4 py-2 text-left">
-  {req.leavecategory ? req.leavecategory : "-"}
-</td>
+           <td className="px-4 py-2 text-left">{req.approvedBy || "-"}</td>
           </tr>
         ))
       ) : (
