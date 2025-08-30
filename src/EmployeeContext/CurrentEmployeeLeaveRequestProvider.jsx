@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const getMonthOptions = (requests) => {
-  const months = requests.map((req) => req.from.slice(0, 7)); // "YYYY-MM"
+  const months = requests.map((req) => (req.from ? req.from.slice(0, 7) : null)).filter(Boolean); // "YYYY-MM"
   const uniqueMonths = Array.from(new Set(months));
   return uniqueMonths.sort();
 };
@@ -16,7 +16,7 @@ const ymd = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
-const monthKeyFromYMD = (s) => s.slice(0, 7); // "YYYY-MM"
+const monthKeyFromYMD = (s) => (s ? s.slice(0, 7) : "");
 const eachDateInclusive = (fromStr, toStr) => {
   const out = [];
   let d = parseYMD(fromStr);
@@ -28,11 +28,11 @@ const eachDateInclusive = (fromStr, toStr) => {
   return out;
 };
 
-
 const getStatusOptions = () => ["All", "Pending", "Approved", "Rejected"];
 const getLeaveTypeOptions = () => ["Sick Leave", "Casual Leave", "Emergency Leave"];
 
 const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
+  // --- aggregated leaveRequests (keep this as-is; do not change the shape) ---
   const [leaveRequests, setLeaveRequests] = useState([
     {
       id: 1,
@@ -66,20 +66,40 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
       leavecategory: "UnPaid",
       approvedBy: null,
     },
-    // ...rest of your dummy data
+    // ...rest of your aggregated dummy data (unchanged)...
   ]);
 
-  // ✅ fetch backend data on mount
+  // --- NEW: per-day dummy details (used only as fallback when fetching "show more" details fails)
+  // Each entry references parentId (the aggregated leave id).
+  // DO NOT modify the above aggregated dummy; this is a separate dataset.
+  const leaveDetailsDummy = [
+    // entries for aggregated leave id 1 (2025-07-10 -> 2025-07-15)
+    { id: 101, parentId: 1, date: "2025-07-10", leavecategory: "Paid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+    { id: 102, parentId: 1, date: "2025-07-11", leavecategory: "UnPaid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+    { id: 103, parentId: 1, date: "2025-07-12", leavecategory: "UnPaid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+    { id: 104, parentId: 1, date: "2025-07-13", leavecategory: "UnPaid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+    { id: 105, parentId: 1, date: "2025-07-14", leavecategory: "UnPaid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+    { id: 106, parentId: 1, date: "2025-07-15", leavecategory: "UnPaid", leaveType: "CASUAL", leaveDayType: "Full Day" },
+
+    // entries for aggregated leave id 2 (2025-07-20 -> 2025-07-22)
+    { id: 201, parentId: 2, date: "2025-07-20", leavecategory: "UnPaid", leaveType: "SICK", leaveDayType: "Full Day" },
+    { id: 202, parentId: 2, date: "2025-07-21", leavecategory: "UnPaid", leaveType: "SICK", leaveDayType: "Full Day" },
+    { id: 203, parentId: 2, date: "2025-07-22", leavecategory: "UnPaid", leaveType: "SICK", leaveDayType: "Full Day" },
+
+    // (You can add additional per-day dummy entries here for other aggregated leaves.)
+  ];
+
+  // ✅ fetch aggregated leaves on mount (unchanged behavior)
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const response = await fetch("/api/leaves/EMP101"); // ✅ Replace with real API
+        const response = await fetch("/api/leaves/EMP101"); // Replace with real API
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
-        setLeaveRequests(data); // ✅ backend data replaces dummy
+        setLeaveRequests(data); // backend aggregated data replaces dummy aggregated data
       } catch (error) {
-        console.error("Backend not available, using dummy data", error);
-        // keep dummy data
+        console.error("Backend not available, using aggregated dummy data", error);
+        // keep aggregated dummy data (leaveRequests) as fallback
       }
     };
 
@@ -96,7 +116,7 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
   const filteredRequests = useMemo(
     () =>
       leaveRequests.filter((req) => {
-        const matchMonth = selectedMonth ? req.from.startsWith(selectedMonth) : true;
+        const matchMonth = selectedMonth ? req.from && req.from.startsWith(selectedMonth) : true;
         const matchStatus = selectedStatus === "All" ? true : req.status === selectedStatus;
         const matchLeaveType = selectedLeaveType === "All" ? true : req.leaveType === selectedLeaveType;
         return matchMonth && matchStatus && matchLeaveType;
@@ -104,81 +124,71 @@ const CurrentEmployeeLeaveRequestProvider = ({ children }) => {
     [leaveRequests, selectedMonth, selectedStatus, selectedLeaveType]
   );
 
-  // ✅ Apply Leave with Auto Paid/Unpaid logic
-// ✅ Apply Leave: expand into per-day entries; one Paid day per month
-const applyLeave = async ({ from, to, reason, leaveType, halfDaySession }) => {
-  const days = eachDateInclusive(from, to);
+  // --- UPDATED applyLeave: add aggregated leave only, remove Paid/UnPaid assignment logic
+  const applyLeave = async ({ from, to, reason, leaveType, halfDaySession, leaveDayType }) => {
+    // IDs for local fallback
+    let nextId = leaveRequests.length + 1;
 
-  // Months that already have a Paid day (from existing requests)
-  const paidUsedMonths = new Set(
-    leaveRequests
-      .filter((r) => r.leavecategory === "Paid")
-      .map((r) => monthKeyFromYMD(r.from))
-  );
-
-  // We’ll collect new entries first, then set state once.
-  const newEntries = [];
-
-  // Base id to keep unique ids in local fallback
-  let nextId = leaveRequests.length + 1;
-
-  // Only single-day requests can be Half Day
-  const isSingleDay = days.length === 1;
-  const wantHalfDay = isSingleDay && !!halfDaySession;
-
-  // Build one entry per day
-  for (const dateStr of days) {
-    const mk = monthKeyFromYMD(dateStr);
-    const leavecategory = paidUsedMonths.has(mk) ? "UnPaid" : "Paid";
-    if (leavecategory === "Paid") {
-      // consume the month's paid slot
-      paidUsedMonths.add(mk);
-    }
-
-    const perDayRequest = {
-      id: nextId++,
+    const newAggregatedLeave = {
+      id: nextId,
       employeeId: "EMP101",
       name: "John Doe",
-      from: dateStr,
-      to: dateStr, // single-day row
+      from,
+      to,
       reason,
-      leaveType,
-      leaveDayType: wantHalfDay ? "Half Day" : "Full Day",
-      halfDaySession: wantHalfDay ? halfDaySession : null,
       requestDate: new Date().toISOString().slice(0, 10),
-      leavecategory, // 👈 Paid for the first unused month day; otherwise UnPaid
+      status: "Pending",
+      leaveDayType: leaveDayType || "Full Day",
+      halfDaySession: leaveDayType === "Half Day" ? halfDaySession : null,
+      leaveType,
       actionDate: null,
       approvedBy: null,
-      // status decided by backend; fallback to Pending below
+      leavecategory: null, // do NOT compute Paid/UnPaid here; details are resolved via backend or leaveDetailsDummy when needed
     };
 
-    // Try to persist each day (simple loop; backend may not exist)
     try {
       const response = await fetch("/api/leaves", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(perDayRequest),
+        body: JSON.stringify(newAggregatedLeave),
       });
 
       if (response.ok) {
-        const saved = await response.json(); // backend supplies status
-        newEntries.push(saved);
+        const saved = await response.json();
+        setLeaveRequests((prev) => [...prev, saved]);
       } else {
-        newEntries.push({ ...perDayRequest, status: "Pending" });
+        // fallback to local aggregated row
+        setLeaveRequests((prev) => [...prev, newAggregatedLeave]);
       }
     } catch (err) {
-      console.error("Backend save failed, using local state", err);
-      newEntries.push({ ...perDayRequest, status: "Pending" });
+      console.error("Backend save failed; adding aggregated leave locally", err);
+      setLeaveRequests((prev) => [...prev, newAggregatedLeave]);
     }
-  }
+  };
 
-  // Add all new daily rows in one state update
-  setLeaveRequests((prev) => [...prev, ...newEntries]);
-};
-
-
-
-
+  // --- NEW: fetch per-day details for a leave (tries backend, falls back to leaveDetailsDummy)
+  const fetchLeaveDetails = async (leaveId) => {
+    try {
+      // try backend endpoint (adjust path to your API)
+      const res = await fetch(`/api/leaves/${leaveId}/details`);
+      if (!res.ok) throw new Error("No details from backend");
+      const data = await res.json();
+      // Expecting data to be an array of per-day objects like [{date: "2025-07-10", leavecategory: "Paid"}, ...]
+      return data;
+    } catch (err) {
+      console.warn(`Failed to fetch details for leaveId ${leaveId}, using dummy`, err);
+      // fallback to per-day dummy entries for this parentId
+      return leaveDetailsDummy
+        .filter((d) => d.parentId === leaveId)
+        .map(({ id, date, leavecategory, leaveType, leaveDayType }) => ({
+          id,
+          date,
+          leavecategory,
+          leaveType,
+          leaveDayType,
+        }));
+    }
+  };
 
   const [sandwichLeaves] = useState([
     { date: "2025-09-11", from: "2025-09-10", to: "2025-09-12" },
@@ -202,6 +212,8 @@ const applyLeave = async ({ from, to, reason, leaveType, halfDaySession }) => {
         leaveTypeOptions,
         selectedLeaveType,
         setSelectedLeaveType,
+        // NEW export:
+        fetchLeaveDetails,
       }}
     >
       {children}
