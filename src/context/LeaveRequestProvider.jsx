@@ -38,11 +38,18 @@ export const LeaveRequestProvider = ({ children }) => {
     "from": "2025-07-10",
     "to": "2025-07-15",
     "leaveDays": 6,
-    "leaveDayType": "FULL_DAY",
     "reason": "Vacation",
     "requestDate": "2025-07-08",
     "actionDate": "2025-07-09",
-    "status": "Approved"
+    "status": "Approved",
+    "leaveRequestDays": [
+      { "id": 1, "leaveDate": "2025-07-10", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 2, "leaveDate": "2025-07-11", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 3, "leaveDate": "2025-07-12", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 4, "leaveDate": "2025-07-13", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 5, "leaveDate": "2025-07-14", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 6, "leaveDate": "2025-07-15", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
+    ]
   },
   {
     "id": 2,
@@ -51,11 +58,15 @@ export const LeaveRequestProvider = ({ children }) => {
     "from": "2025-07-12",
     "to": "2025-07-14",
     "leaveDays": 3,
-    "leaveDayType": "FULL_DAY",
     "reason": "Medical Leave",
     "requestDate": "2025-07-09",
     "actionDate": null,
-    "status": "Pending"
+    "status": "Pending",
+    "leaveRequestDays": [
+      { "id": 7, "leaveDate": "2025-07-12", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 8, "leaveDate": "2025-07-13", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 9, "leaveDate": "2025-07-14", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
+    ]
   },
   {
     "id": 3,
@@ -64,11 +75,15 @@ export const LeaveRequestProvider = ({ children }) => {
     "from": "2025-07-20",
     "to": "2025-07-22",
     "leaveDays": 3,
-    "leaveDayType": "FULL_DAY",
     "reason": "Personal Work",
     "requestDate": "2025-07-10",
     "actionDate": "2025-07-12",
-    "status": "Rejected"
+    "status": "Rejected",
+    "leaveRequestDays": [
+      { "id": 10, "leaveDate": "2025-07-20", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 11, "leaveDate": "2025-07-21", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 12, "leaveDate": "2025-07-22", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
+    ]
   },
   {
     "id": 4,
@@ -77,225 +92,15 @@ export const LeaveRequestProvider = ({ children }) => {
     "from": "2025-07-18",
     "to": "2025-07-20",
     "leaveDays": 3,
-    "leaveDayType": "FULL_DAY",
     "reason": "Family Function",
     "requestDate": "2025-07-11",
     "actionDate": "2025-07-13",
-    "status": "Approved"
-  },
-  {
-    "id": 5,
-    "employeeId": "EMP105",
-    "name": "Amit Kumar",
-    "from": "2025-07-25",
-    "to": "2025-07-28",
-    "leaveDays": 4,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Travel",
-    "requestDate": "2025-07-13",
-    "actionDate": null,
-    "status": "Pending"
-  },
-  {
-    "id": 6,
-    "employeeId": "EMP106",
-    "name": "Sara Lee",
-    "from": "2025-07-15",
-    "to": "2025-07-16",
-    "leaveDays": 2,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Sick Leave",
-    "requestDate": "2025-07-10",
-    "actionDate": "2025-07-11",
-    "status": "Approved"
-  },
-  {
-    "id": 7,
-    "employeeId": "EMP107",
-    "name": "Rohan Mehta",
-    "from": "2025-07-22",
-    "to": "2025-07-24",
-    "leaveDays": 3,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Marriage Function",
-    "requestDate": "2025-07-12",
-    "actionDate": "2025-07-14",
-    "status": "Approved"
-  },
-  {
-    "id": 8,
-    "employeeId": "EMP108",
-    "name": "Anjali Nair",
-    "from": "2025-07-17",
-    "to": "2025-07-18",
-    "leaveDays": 2,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Health Checkup",
-    "requestDate": "2025-07-09",
-    "actionDate": "2025-07-10",
-    "status": "Rejected"
-  },
-  {
-    "id": 9,
-    "employeeId": "EMP109",
-    "name": "David Wilson",
-    "from": "2025-07-21",
-    "to": "2025-07-23",
-    "leaveDays": 3,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Relocation Support",
-    "requestDate": "2025-07-11",
-    "actionDate": null,
-    "status": "Pending"
-  },
-  {
-    "id": 10,
-    "employeeId": "EMP110",
-    "name": "Meera Raj",
-    "from": "2025-07-14",
-    "to": "2025-07-15",
-    "leaveDays": 2,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Personal",
-    "requestDate": "2025-07-08",
-    "actionDate": "2025-07-09",
-    "status": "Approved"
-  },
-
-  // Sandwich leave examples
-  {
-    "id": 11,
-    "employeeId": "EMP101",
-    "name": "John Doe",
-    "from": "2025-07-12",
-    "to": "2025-07-12",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Personal Work",
-    "requestDate": "2025-07-10",
-    "actionDate": "2025-07-11",
-    "status": "Approved"
-  },
-  {
-    "id": 12,
-    "employeeId": "EMP101",
-    "name": "John Doe",
-    "from": "2025-07-14",
-    "to": "2025-07-14",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Personal Work",
-    "requestDate": "2025-07-10",
-    "actionDate": "2025-07-11",
-    "status": "Approved"
-  },
-
-  {
-    "id": 13,
-    "employeeId": "EMP102",
-    "name": "Alice Johnson",
-    "from": "2025-08-12",
-    "to": "2025-08-12",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Family Event",
-    "requestDate": "2025-08-08",
-    "actionDate": "2025-08-09",
-    "status": "Approved"
-  },
-  {
-    "id": 14,
-    "employeeId": "EMP102",
-    "name": "Alice Johnson",
-    "from": "2025-08-14",
-    "to": "2025-08-14",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Family Event",
-    "requestDate": "2025-08-08",
-    "actionDate": "2025-08-09",
-    "status": "Approved"
-  },
-
-  {
-    "id": 15,
-    "employeeId": "EMP103",
-    "name": "Michael Smith",
-    "from": "2025-09-16",
-    "to": "2025-09-16",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Medical Appointment",
-    "requestDate": "2025-09-12",
-    "actionDate": "2025-09-13",
-    "status": "Approved"
-  },
-  {
-    "id": 16,
-    "employeeId": "EMP103",
-    "name": "Michael Smith",
-    "from": "2025-09-18",
-    "to": "2025-09-18",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Medical Follow-up",
-    "requestDate": "2025-09-12",
-    "actionDate": "2025-09-13",
-    "status": "Approved"
-  },
-
-  {
-    "id": 17,
-    "employeeId": "EMP104",
-    "name": "Priya Sharma",
-    "from": "2025-11-11",
-    "to": "2025-11-11",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Wedding Preparation",
-    "requestDate": "2025-11-05",
-    "actionDate": "2025-11-06",
-    "status": "Approved"
-  },
-  {
-    "id": 18,
-    "employeeId": "EMP104",
-    "name": "Priya Sharma",
-    "from": "2025-11-13",
-    "to": "2025-11-13",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Wedding Preparation",
-    "requestDate": "2025-11-05",
-    "actionDate": "2025-11-06",
-    "status": "Approved"
-  },
-
-  {
-    "id": 19,
-    "employeeId": "EMP105",
-    "name": "Amit Kumar",
-    "from": "2025-12-09",
-    "to": "2025-12-09",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Travel",
-    "requestDate": "2025-12-05",
-    "actionDate": "2025-12-06",
-    "status": "Approved"
-  },
-  {
-    "id": 20,
-    "employeeId": "EMP105",
-    "name": "Amit Kumar",
-    "from": "2025-12-11",
-    "to": "2025-12-11",
-    "leaveDays": 1,
-    "leaveDayType": "FULL_DAY",
-    "reason": "Travel",
-    "requestDate": "2025-12-05",
-    "actionDate": "2025-12-06",
-    "status": "Approved"
+    "status": "Approved",
+    "leaveRequestDays": [
+      { "id": 13, "leaveDate": "2025-07-18", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 14, "leaveDate": "2025-07-19", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
+      { "id": 15, "leaveDate": "2025-07-20", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
+    ]
   }
 ]
 );
