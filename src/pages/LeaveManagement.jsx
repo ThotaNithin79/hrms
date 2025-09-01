@@ -18,9 +18,9 @@ const LeaveManagement = () => {
     setSearchQuery,
     filterDept,
     setFilterDept,
-    leaveRequests,
-    setLeaveRequests,
     isSandwichLeave,
+    approveLeave, // <-- add
+    rejectLeave,
   } = useContext(LeaveRequestContext);
   const { employees } = useContext(EmployeeContext);
   const location = useLocation();
@@ -55,11 +55,13 @@ const LeaveManagement = () => {
 
   // Approve/Reject
   const updateStatus = (id, status) => {
-    const updated = leaveRequests.map((req) =>
-      req.id === id ? { ...req, status } : req
-    );
-    setLeaveRequests(updated);
-    showSnackbar(`Leave request ${status.toLowerCase()} successfully.`);
+    if (status === "Approved") {
+      approveLeave(id);
+      showSnackbar("Leave request approved successfully.");
+    } else if (status === "Rejected") {
+      rejectLeave(id);
+      showSnackbar("Leave request rejected successfully.");
+    }
   };
 
   // Get departments for filter dropdown
@@ -265,6 +267,7 @@ const LeaveManagement = () => {
                       >
                         <FaCheck /> Approve
                       </button>
+
                       <button
                         onClick={() => updateStatus(req.id, "Rejected")}
                         disabled={req.status !== "Pending"}
@@ -320,7 +323,13 @@ const LeaveManagement = () => {
           </tbody>
         </table>
         {snackbar && (
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 animate-fadein">
+          <div
+            className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded shadow-lg z-50 animate-fadein ${
+              snackbar.toLowerCase().includes("rejected")
+                ? "bg-red-600"
+                : "bg-green-600"
+            } text-white`}
+          >
             {snackbar}
           </div>
         )}

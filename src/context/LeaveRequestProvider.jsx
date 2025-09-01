@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { LeaveRequestContext } from "./LeaveRequestContext";
 
+
+
+
+
 // --- Date Utilities ---
 const getWeekDates = (baseDate = new Date(), weekOffset = 0) => {
   const today = new Date(baseDate);
@@ -28,9 +32,10 @@ const expandLeaveRange = (from, to) => {
   return dates;
 };
 
+
 // --- Provider ---
 export const LeaveRequestProvider = ({ children }) => {
-  const [leaveRequests, setLeaveRequests] = useState([
+    const [leaveRequests, setLeaveRequests] = useState([
   {
     "id": 1,
     "employeeId": "EMP101",
@@ -165,6 +170,8 @@ export const LeaveRequestProvider = ({ children }) => {
     // Combine for display: active first, then inactive
     const filteredRequests = [...separatedRequests.active, ...separatedRequests.inactive];
 
+    
+
     return {
       weekDates,
       filteredRequests,
@@ -259,6 +266,29 @@ export const LeaveRequestProvider = ({ children }) => {
   const goToNextWeek = useCallback(() => setCurrentWeek((w) => w + 1), []);
   const resetToCurrentWeek = useCallback(() => setCurrentWeek(0), []);
 
+ // --- Approve / Reject Leave ---
+const approveLeave = useCallback((id) => {
+  setLeaveRequests((prev) =>
+    prev.map((req) =>
+      req.id === id
+        ? { ...req, status: "Approved", actionDate: new Date().toISOString() }
+        : req
+    )
+  );
+}, []);
+
+const rejectLeave = useCallback((id) => {
+  setLeaveRequests((prev) =>
+    prev.map((req) =>
+      req.id === id
+        ? { ...req, status: "Rejected", actionDate: new Date().toISOString() }
+        : req
+    )
+  );
+}, []);
+
+
+
   // --- Expose Context ---
   return (
     <LeaveRequestContext.Provider
@@ -268,6 +298,8 @@ export const LeaveRequestProvider = ({ children }) => {
         addLeaveRequest,
         updateLeaveRequest,
         deleteLeaveRequest,
+        approveLeave,    // new
+         rejectLeave,
         getApprovedLeaveDatesByEmployee,
         allMonths,
         getMonthlyLeaveSummaryForAll,
