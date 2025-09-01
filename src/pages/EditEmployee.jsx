@@ -27,10 +27,6 @@ const EditEmployee = () => {
       gender: employee?.personalDetails?.gender || "Male",
       maritalStatus: employee?.personalDetails?.maritalStatus || "Single",
       nationality: employee?.personalDetails?.nationality || "",
-      panNumber: employee?.personalDetails?.panNumber || "",
-      aadharNumber: employee?.personalDetails?.aadharNumber || "",
-      aadharFileUrl: employee?.personalDetails?.aadharFileUrl || "",
-      panFileUrl: employee?.personalDetails?.panFileUrl || "",
     },
     bankDetails: {
       accountNumber: employee?.bankDetails?.accountNumber || "",
@@ -43,14 +39,6 @@ const EditEmployee = () => {
     currentRole: currentExp?.role || "",
     currentSalary: currentExp?.salary || "",
     joiningDate: currentExp?.joiningDate || "",
-    // For document links
-    experienceLetterUrl: (() => {
-      if (Array.isArray(employee?.experienceDetails)) {
-        const current = employee.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
-        return current?.experienceLetterUrl || "";
-      }
-      return "";
-    })(),
   });
 
   const [snackbar, setSnackbar] = useState("");
@@ -71,10 +59,6 @@ const EditEmployee = () => {
           gender: employee.personalDetails?.gender || "Male",
           maritalStatus: employee.personalDetails?.maritalStatus || "Single",
           nationality: employee.personalDetails?.nationality || "",
-          panNumber: employee.personalDetails?.panNumber || "",
-          aadharNumber: employee.personalDetails?.aadharNumber || "",
-          aadharFileUrl: employee.personalDetails?.aadharFileUrl || "",
-          panFileUrl: employee.personalDetails?.panFileUrl || "",
         },
         bankDetails: {
           accountNumber: employee.bankDetails?.accountNumber || "",
@@ -87,7 +71,6 @@ const EditEmployee = () => {
         currentRole: currentExp?.role || "",
         currentSalary: currentExp?.salary || "",
         joiningDate: currentExp?.joiningDate || "",
-        experienceLetterUrl: currentExp?.experienceLetterUrl || "",
       });
     }
   }, [employee]);
@@ -150,7 +133,6 @@ const EditEmployee = () => {
               role: formData.currentRole,
               salary: parseFloat(formData.currentSalary) || 0,
               joiningDate: formData.joiningDate,
-              experienceLetterUrl: formData.experienceLetterUrl || exp.experienceLetterUrl,
             };
           }
           return exp;
@@ -237,7 +219,6 @@ const EditEmployee = () => {
           <div className="border rounded-xl p-6 bg-green-50/50 shadow-inner">
             <h3 className="text-xl font-bold text-green-700 mb-4">Job Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               <InputField
                 icon={<FaBuilding />}
                 name="currentDepartment"
@@ -293,20 +274,6 @@ const EditEmployee = () => {
                 value={formData.personalDetails.nationality}
                 onChange={handleChange}
               />
-              <InputField
-                icon={<FaAddressCard />}
-                name="personalDetails.panNumber"
-                label="PAN Number"
-                value={formData.personalDetails.panNumber}
-                onChange={handleChange}
-              />
-              <InputField
-                icon={<FaAddressCard />}
-                name="personalDetails.aadharNumber"
-                label="Aadhaar Number"
-                value={formData.personalDetails.aadharNumber}
-                onChange={handleChange}
-              />
               <div className="relative">
                 <FaTransgender className="absolute left-3 top-4 text-gray-400" />
                 <label htmlFor="gender-select" className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">Gender</label>
@@ -338,15 +305,6 @@ const EditEmployee = () => {
                   <option value="Widowed">Widowed</option>
                 </select>
               </div>
-            </div>
-          </div>
-          {/* Document Details */}
-          <div className="border rounded-xl p-6 bg-blue-50/50 shadow-inner">
-            <h3 className="text-xl font-bold text-blue-700 mb-4">Document Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FileLink url={formData.personalDetails.aadharFileUrl} label="Aadhaar File" />
-              <FileLink url={formData.personalDetails.panFileUrl} label="PAN File" />
-              <FileLink url={formData.experienceLetterUrl} label="Experience Letter" />
             </div>
           </div>
           {/* Bank Details */}
@@ -416,27 +374,5 @@ const InputField = ({ icon, label, ...props }) => (
     />
   </div>
 );
-
-// Reusable FileLink Component
-import { FaDownload } from 'react-icons/fa';
-const FileLink = ({ url, label }) => {
-  if (!url) return (
-    <div className="flex items-center gap-2 text-gray-400">
-      <FaDownload />
-      <span className="text-sm">{label}: Not Available</span>
-    </div>
-  );
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-2 text-blue-700 hover:underline font-semibold"
-    >
-      <FaDownload />
-      <span className="text-sm">{label}</span>
-    </a>
-  );
-};
 
 export default EditEmployee;

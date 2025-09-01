@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CurrentEmployeeContext } from "./CurrentEmployeeContext";
 
 export const CurrentEmployeeProvider = ({ children }) => {
-  // Store current employee as an object
+  // Store current employee as an object, add profilePhoto (null by default)
   const [currentEmployee, setCurrentEmployee] = useState({
     personal: {
       name: "John Doe",
@@ -11,7 +11,13 @@ export const CurrentEmployeeProvider = ({ children }) => {
       gender: "Male",
       maritalStatus: "Married",
       nationality: "Indian",
+      aadhaarNumber: "1234-5678-9012",
+      panNumber: "ABCDE1234F",
+      profilePhoto: null, // base64 or url string
+      aadhaar: null, // base64 or url string
+      pan: null, // base64 or url string
       isActive: true,
+      resume: null,
     },
     contact: {
       email: "john@example.com",
@@ -43,6 +49,7 @@ export const CurrentEmployeeProvider = ({ children }) => {
         joiningDate: "2019-01-15",
         lastWorkingDate: "2021-01-14",
         salary: 45000,
+        reason: "", 
       },
       {
         company: "XYZ Ltd",
@@ -51,15 +58,35 @@ export const CurrentEmployeeProvider = ({ children }) => {
         joiningDate: "2021-02-01",
         lastWorkingDate: "2023-05-09",
         salary: 65000,
+        reason: "", 
       },
     ],
+    
   });
 
-  // Edit function for current employee
+  // Edit function for current employee (supports profilePhoto, aadhaar, pan update)
   const editCurrentEmployee = (updatedData) => {
     setCurrentEmployee((prev) => ({
       ...prev,
       ...updatedData,
+      // If updating nested fields, merge them
+      personal: {
+        ...prev.personal,
+        ...(updatedData.personal || {}),
+      },
+      contact: {
+        ...prev.contact,
+        ...(updatedData.contact || {}),
+      },
+      job: {
+        ...prev.job,
+        ...(updatedData.job || {}),
+      },
+      bank: {
+        ...prev.bank,
+        ...(updatedData.bank || {}),
+      },
+      experience: updatedData.experience || prev.experience,
     }));
   };
 

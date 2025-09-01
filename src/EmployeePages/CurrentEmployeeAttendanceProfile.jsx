@@ -1,3 +1,4 @@
+// ...existing imports...
 import React, { useContext, useMemo, useState } from "react";
 import { CurrentEmployeeAttendanceContext } from "../EmployeeContext/CurrentEmployeeAttendanceContext";
 import { CurrentEmployeeLeaveRequestContext } from "../EmployeeContext/CurrentEmployeeLeaveRequestContext";
@@ -40,24 +41,14 @@ const CalendarCell = ({ day, record }) => {
     text = "text-yellow-700";
   }
   return (
-<td className={`h-28 w-40 align-top ${bg} ${text} border rounded-lg text-base`}>
-    <div className="font-bold">{day}</div>
+    <td className={`h-28 w-40 align-top ${bg} ${text} border rounded-lg text-base`}>
+      <div className="font-bold">{day}</div>
       {record && (
         <div className="text-xs">
           {record.status}
           <br />
-          {record.punchIn && (
-            <>
-              In: {record.punchIn}
-              <br />
-            </>
-          )}
-          {record.punchOut && (
-            <>
-              Out: {record.punchOut}
-              <br />
-            </>
-          )}
+          {record.punchIn && <>In: {record.punchIn}<br /></>}
+          {record.punchOut && <>Out: {record.punchOut}<br /></>}
         </div>
       )}
     </td>
@@ -65,45 +56,64 @@ const CalendarCell = ({ day, record }) => {
 };
 
 const CurrentEmployeeAttendanceProfile = () => {
-  const { attendanceRecords } = useContext(CurrentEmployeeAttendanceContext);
+  const { attendanceRecords, paidLeaves, leaveRemaining, lateLoginRequests, applyLateLogin } =
+    useContext(CurrentEmployeeAttendanceContext);
+
   const {
     leaveRequests,
-    filteredRequests,
-    monthOptions: leaveMonthOptions,
   } = useContext(CurrentEmployeeLeaveRequestContext);
 
   // Only for EMP101 (demo)
   const employeeId = "EMP101";
-  const employeeRecords = attendanceRecords.filter(
-    (rec) => rec.employeeId === employeeId
-  );
+  const employeeRecords = attendanceRecords.filter((rec) => rec.employeeId === employeeId);
 
-  // Monthly filter
+  // Monthly filter for attendance
   const monthOptions = getMonthOptions(employeeRecords);
   const [selectedMonth, setSelectedMonth] = useState(
     monthOptions[monthOptions.length - 1] || ""
   );
 
-  // Filter records for selected month
-  const monthlyRecords = useMemo(
-    () =>
-      employeeRecords.filter((rec) => rec.date.startsWith(selectedMonth)),
-    [employeeRecords, selectedMonth]
-  );
+  // Approved leave days for selected month
+  function getApprovedLeaveDaysForMonth(reqs, month, empId) {
+    let leaveDates = new Set();
+    reqs.forEach((req) => {
+      if (req.employeeId !== empId) return;
+      if (req.status !== "Approved") return;
+      const from = new Date(req.from);
+      const to = new Date(req.to);
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().slice(0, 10);
+        if (dateStr.startsWith(month)) leaveDates.add(dateStr);
+      }
+    });
+    return leaveDates;
+  }
+  const approvedLeaveDaysSet = getApprovedLeaveDaysForMonth(leaveRequests, selectedMonth, employeeId);
 
-  // Monthly summary
+  // Build monthly attendance rows (override approved days to Leave)
+  const monthlyRecords = useMemo(() => {
+    return employeeRecords
+      .filter((rec) => rec.date.startsWith(selectedMonth))
+      .map((rec) => {
+        if (approvedLeaveDaysSet.has(rec.date)) {
+          return { ...rec, status: "Leave", punchIn: undefined, punchOut: undefined, workHours: 0, workedHours: 0 };
+        }
+        return rec;
+      });
+  }, [employeeRecords, selectedMonth, approvedLeaveDaysSet]);
+
   const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
   const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
-  const leaveCount = monthlyRecords.filter((r) => r.status === "Leave").length;
+  const leaveCount = approvedLeaveDaysSet.size;
 
-  // Leaves applied in selected month
+  // Leaves applied in selected month (not displayed; retained if you need)
   const leavesApplied = leaveRequests.filter(
     (req) =>
       req.employeeId === employeeId &&
-      req.from.startsWith(selectedMonth)
+      (req.from.startsWith(selectedMonth) || req.to.startsWith(selectedMonth))
   );
 
-  // Work hours summary
+  // Work hour summary
   const totalWorkHours = monthlyRecords.reduce((sum, r) => sum + (r.workHours || 0), 0);
   const totalWorkedHours = monthlyRecords.reduce((sum, r) => sum + (r.workedHours || 0), 0);
   const totalIdleTime = monthlyRecords.reduce((sum, r) => sum + ((r.workHours || 0) - (r.workedHours || 0)), 0);
@@ -125,21 +135,13 @@ const CurrentEmployeeAttendanceProfile = () => {
 
   // Calendar grid
   const daysInMonth = selectedMonth
-    ? new Date(
-        Number(selectedMonth.slice(0, 4)),
-        Number(selectedMonth.slice(5, 7)),
-        0
-      ).getDate()
+    ? new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)), 0).getDate()
     : 0;
   const firstDayOfWeek = selectedMonth
-    ? new Date(
-        Number(selectedMonth.slice(0, 4)),
-        Number(selectedMonth.slice(5, 7)) - 1,
-        1
-      ).getDay()
+    ? new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)) - 1, 1).getDay()
     : 0;
 
-  // Build calendar cells
+  // Build calendar rows
   const calendarRows = [];
   let day = 1 - firstDayOfWeek;
   while (day <= daysInMonth) {
@@ -157,9 +159,50 @@ const CurrentEmployeeAttendanceProfile = () => {
     calendarRows.push(<tr key={day}>{row}</tr>);
   }
 
+  // ===================== PERMISSION HOURS (Late Permissions UI) =====================
+  // Local UI state (moved from Leave Management)
+  const [showLateForm, setShowLateForm] = useState(false);
+  const [lateForm, setLateForm] = useState({ date: "", from: "", lateTill: "", reason: "" });
+  const [lateError, setLateError] = useState("");
+  const [lateSuccess, setLateSuccess] = useState("");
+
+  // Filters (re-using monthOptions from attendance, and local status options)
+  const [lateMonth, setLateMonth] = useState("");
+  const [lateStatus, setLateStatus] = useState("");
+  const statusOptions = ["All", "Pending", "Approved", "Rejected"];
+
+  const filteredLateLogins = lateLoginRequests.filter((req) => {
+    const matchesMonth = lateMonth ? req.date.startsWith(lateMonth) : true;
+    const matchesStatus = lateStatus && lateStatus !== "All" ? req.status === lateStatus : true;
+    return matchesMonth && matchesStatus;
+  });
+
+  const handleLateChange = (e) => {
+    setLateForm({ ...lateForm, [e.target.name]: e.target.value });
+    setLateError("");
+    setLateSuccess("");
+  };
+
+  const handleLateSubmit = (e) => {
+    e.preventDefault();
+    const { date, from, lateTill, reason } = lateForm;
+    if (!date || !from || !lateTill || !reason) {
+      setLateError("All fields are required.");
+      setLateSuccess("");
+      return;
+    }
+    applyLateLogin({ date, from, lateTill, reason });
+    setLateForm({ date: "", from: "", lateTill: "", reason: "" });
+    setLateError("");
+    setLateSuccess("Late login request submitted successfully!");
+    setTimeout(() => setLateSuccess(""), 3000);
+  };
+  // =========================================================================
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Current Employee Attendance Profile</h1>
+
       {/* Month filter */}
       <div className="mb-4 flex flex-wrap gap-4 items-center">
         <label className="font-semibold">Select Month:</label>
@@ -200,7 +243,7 @@ const CurrentEmployeeAttendanceProfile = () => {
       </div>
 
       {/* Summary boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-green-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-green-600 font-bold text-lg">Present</span>
           <span className="text-2xl font-bold">{presentCount}</span>
@@ -214,27 +257,171 @@ const CurrentEmployeeAttendanceProfile = () => {
           <span className="text-2xl font-bold">{leaveCount}</span>
         </div>
         <div className="bg-blue-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-blue-600 font-bold text-lg">Leaves Applied</span>
-          <span className="text-2xl font-bold">{leavesApplied.length}</span>
+          <span className="text-blue-600 font-bold text-lg">Leave Remaining</span>
+          <span className="text-2xl font-bold">{leaveRemaining}</span>
+        </div>
+        <div className="bg-pink-50 p-4 rounded shadow flex flex-col items-center">
+          <span className="text-pink-600 font-bold text-lg">Paid Leaves</span>
+          <span className="text-2xl font-bold">{paidLeaves}</span>
         </div>
       </div>
 
-      {/* Work hours summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-indigo-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-indigo-600 font-bold text-lg">Total Work Hours</span>
-          <span className="text-2xl font-bold">{totalWorkHours.toFixed(2)}</span>
-        </div>
-        <div className="bg-indigo-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-indigo-600 font-bold text-lg">Total Worked Hours</span>
-          <span className="text-2xl font-bold">{totalWorkedHours.toFixed(2)}</span>
-        </div>
-        <div className="bg-indigo-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-indigo-600 font-bold text-lg">Total Idle Time</span>
-          <span className="text-2xl font-bold">{totalIdleTime.toFixed(2)}</span>
-        </div>
-      </div>
+      
 
+      {/* ================= Permission Hours Section (moved here) ================= */}
+      <div className="mb-10 mt-10">
+        <div className="flex flex-wrap gap-6 items-center mb-6">
+          <h2 className="text-3xl font-bold text-yellow-800 flex-1">Permission Hours</h2>
+          <button
+            className={`bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showLateForm ? 'bg-blue-900' : ''}`}
+            onClick={() => setShowLateForm((v) => !v)}
+          >
+            {showLateForm ? "Cancel" : "Permission Hours"}
+          </button>
+        </div>
+
+        {showLateForm && (
+          <form
+            onSubmit={handleLateSubmit}
+            className="mb-8 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 border border-blue-100 max-w-xl"
+          >
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">Date of Late Login</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={lateForm.date}
+                  onChange={handleLateChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">From (Time)</label>
+                <input
+                  type="time"
+                  name="from"
+                  value={lateForm.from}
+                  onChange={handleLateChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">To (Time)</label>
+                <input
+                  type="time"
+                  name="lateTill"
+                  value={lateForm.lateTill}
+                  onChange={handleLateChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-yellow-800">Reason</label>
+              <input
+                type="text"
+                name="reason"
+                value={lateForm.reason}
+                onChange={handleLateChange}
+                className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                placeholder="Enter reason for late login"
+              />
+            </div>
+            {lateError && <div className="text-red-600 font-semibold">{lateError}</div>}
+            {lateSuccess && <div className="text-green-600 font-semibold">{lateSuccess}</div>}
+            <button
+              type="submit"
+              className="bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition mt-2"
+            >
+              Submit Late Login Request
+            </button>
+          </form>
+        )}
+
+        {/* Filters for late permissions */}
+        <div className="flex flex-wrap gap-6 items-center mb-4">
+          <div>
+            <label className="mr-2 font-medium text-yellow-800">Filter by Month:</label>
+            <select
+              value={lateMonth}
+              onChange={(e) => setLateMonth(e.target.value)}
+              className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
+            >
+              <option value="">All</option>
+              {monthOptions.map((month) => (
+                <option key={month} value={month}>
+                  {getMonthName(month)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mr-2 font-medium text-yellow-800">Status:</label>
+            <select
+              value={lateStatus}
+              onChange={(e) => setLateStatus(e.target.value)}
+              className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
+            >
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Late permissions table */}
+        <table className="min-w-full bg-white rounded shadow border border-yellow-200">
+          <thead className="bg-yellow-100">
+            <tr>
+              <th className="w-32 px-4 py-2 text-yellow-900">Date</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">From</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">To</th>
+              <th className="w-48 px-4 py-2 text-yellow-900">Reason</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredLateLogins.length > 0 ? (
+              filteredLateLogins.map((req) => (
+                <tr key={req.id} className="hover:bg-yellow-50 transition">
+                  <td className="w-32 px-4 py-2">{req.date}</td>
+                  <td className="w-32 px-4 py-2">{req.from}</td>
+                  <td className="w-32 px-4 py-2">{req.lateTill || "-"}</td>
+                  <td className="w-48 px-4 py-2">{req.reason}</td>
+                  <td className="w-32 px-4 py-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        req.status === "Pending"
+                          ? "bg-yellow-200 text-yellow-800"
+                          : req.status === "Approved"
+                          ? "bg-green-200 text-green-800"
+                          : req.status === "Rejected"
+                          ? "bg-red-200 text-red-800"
+                          : "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {req.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="px-4 py-2 text-center text-gray-400">
+                  No late login requests found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* ================= End Permission Hours ================= */}    
+
+
+      {/* Calendar view */}
       {/* Calendar/Table view */}
       {calendarView ? (
         <div className="overflow-x-auto mb-8">
@@ -271,16 +458,15 @@ const CurrentEmployeeAttendanceProfile = () => {
               {monthlyRecords.length > 0 ? (
                 monthlyRecords.map((record) => (
                   <tr
-  key={record.id}
-  className={
-    record.status === "Leave"
-      ? "bg-yellow-100"
-      : record.status === "Absent"
-      ? "bg-red-100"
-      : ""
-  }
->
-
+                    key={record.id}
+                    className={
+                      record.status === "Leave"
+                        ? "bg-yellow-100"
+                        : record.status === "Absent"
+                        ? "bg-red-100"
+                        : ""
+                    }
+                  >
                     <td className="border px-4 py-2">{record.date}</td>
                     <td className="border px-4 py-2">{record.status}</td>
                     <td className="border px-4 py-2">{record.punchIn}</td>
