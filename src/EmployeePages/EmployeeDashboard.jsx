@@ -1,6 +1,5 @@
 import React, { useContext, useState } from "react";
 import { CurrentEmployeeContext } from "../EmployeeContext/CurrentEmployeeContext";
-import { CurrentEmployeeAttendanceContext } from "../EmployeeContext/CurrentEmployeeAttendanceContext";
 import { CurrentEmployeeLeaveRequestContext } from "../EmployeeContext/CurrentEmployeeLeaveRequestContext";
 import { NoticeContext } from "../context/NoticeContext";
 import { Bar, Pie } from "react-chartjs-2";
@@ -17,6 +16,14 @@ import {
 import { FaRegClock, FaUserCircle, FaBell, FaCalendarAlt, FaChartPie } from "react-icons/fa";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
+
+const attendanceRecords = []; // empty or dummy array for now
+let monthlyWorkHours = 0;
+let monthlyIdleHours = 0;
+
+
+
+
 
 const SCHEDULE_IN = "09:30";
 const SCHEDULE_OUT = "18:30";
@@ -60,7 +67,6 @@ function calculateIdleTime(punchIn, punchOut) {
 
 const EmployeeDashboard = () => {
   const { currentEmployee } = useContext(CurrentEmployeeContext);
-  const { attendanceRecords, monthlyWorkHours, monthlyIdleHours } = useContext(CurrentEmployeeAttendanceContext);
   const { leaveRequests } = useContext(CurrentEmployeeLeaveRequestContext);
   const { notices } = useContext(NoticeContext);
 
@@ -229,6 +235,9 @@ const EmployeeDashboard = () => {
       totalIdleTime += trackerIdle;
     }
   }
+
+  const safeWorkedHours = Number(totalWorkedHours || 0).toFixed(2);
+const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
 
   const workPieData = {
     labels: ["Worked Hours", "Idle Time"],
@@ -480,14 +489,14 @@ const EmployeeDashboard = () => {
           <FaRegClock className="text-green-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Worked Hours (This Month)</div>
-            <div className="font-bold text-lg text-green-900">{totalWorkedHours.toFixed(2)}</div>
+            <div className="font-bold text-lg text-green-900">{safeWorkedHours}</div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
           <FaChartPie className="text-yellow-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Idle Time (This Month)</div>
-            <div className="font-bold text-lg text-yellow-900">{totalIdleTime.toFixed(2)}</div>
+            <div className="font-bold text-lg text-yellow-900">{safeIdleTime}</div>
           </div>
         </div>
       </div>
@@ -541,8 +550,8 @@ const EmployeeDashboard = () => {
             />
           </div>
           <div className="flex justify-between w-full mt-2 text-xs text-gray-600">
-            <span>Worked: <span className="font-semibold">{totalWorkedHours.toFixed(2)}</span></span>
-            <span>Idle: <span className="font-semibold">{totalIdleTime.toFixed(2)}</span></span>
+            <span>Worked: <span className="font-semibold">{safeWorkedHours}</span></span>
+            <span>Idle: <span className="font-semibold">{safeIdleTime}</span></span>
           </div>
         </div>
       </div>
