@@ -1,7 +1,6 @@
 // CurrentEmployeeAttendanceProvider.jsx
 import { useState, useMemo } from "react";
 import { CurrentEmployeeAttendanceContext } from "./CurrentEmployeeAttendanceContext";
-import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const CurrentEmployeeAttendanceProvider = ({ children }) => {
   // --- MANUAL ATTENDANCE DATA: September 2025 (30 days) ---
@@ -183,15 +182,16 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
   
 
   // ====== LATE PERMISSIONS (same as before) ======
-  const [lateLoginRequests, setLateLoginRequests] = useState([
+  const [PermissionRequests,setPermissionRequests] = useState([
     { id: 1, employeeId: "EMP101", name: "John Doe", from: "10:00", date: "2025-08-01", lateTill: "12:00", reason: "Traffic jam", status: "Approved" },
     { id: 2, employeeId: "EMP101", name: "John Doe", from: "12:00", date: "2025-08-05", lateTill: "2:00",  reason: "Doctor appointment", status: "Pending" },
     { id: 3, employeeId: "EMP101", name: "John Doe", from: "2:30",  date: "2025-07-20", lateTill: "4:00",  reason: "Family emergency", status: "Rejected" },
   ]);
 
-  const applyLateLogin = ({ from, date, lateTill, reason }) => {
+  const applyPermission = ({ from, date, lateTill, reason }) => {
     const newRequest = {
-      id: lateLoginRequests.length + 1 + Math.floor(Math.random() * 10000),
+      id: 
+      PermissionRequests.length + 1 + Math.floor(Math.random() * 10000),
       employeeId: "EMP101",
       name: "John Doe",
       from,
@@ -200,7 +200,7 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
       reason,
       status: "Pending",
     };
-    setLateLoginRequests((prev) => [newRequest, ...prev]);
+    setPermissionRequests((prev) => [newRequest, ...prev]);
   };
 
   return (
@@ -209,8 +209,8 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
         attendanceRecords,
         setAttendanceRecords, // exposed in case you need direct set
         updateAttendanceRecord, // helper to update a single record
-        lateLoginRequests,
-        applyLateLogin,
+        PermissionRequests,
+        applyPermission,
       }}
     >
       {children}

@@ -1,7 +1,6 @@
 // ...existing imports...
 import React, { useContext, useMemo, useState } from "react";
 import { CurrentEmployeeAttendanceContext } from "../EmployeeContext/CurrentEmployeeAttendanceContext";
-import { CurrentEmployeeLeaveRequestContext } from "../EmployeeContext/CurrentEmployeeLeaveRequestContext";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -59,12 +58,9 @@ const CalendarCell = ({ day, record }) => {
 };
 
 const CurrentEmployeeAttendanceProfile = () => {
-  const { attendanceRecords,lateLoginRequests, applyLateLogin } =
+  const { attendanceRecords,PermissionRequests, applyPermission } =
     useContext(CurrentEmployeeAttendanceContext);
 
-  const {
-    leaveRequests,
-  } = useContext(CurrentEmployeeLeaveRequestContext);
 
   // Only for EMP101 (demo)
   const employeeId = "EMP101";
@@ -91,19 +87,10 @@ const CurrentEmployeeAttendanceProfile = () => {
     });
     return leaveDates;
   }
-  const approvedLeaveDaysSet = getApprovedLeaveDaysForMonth(leaveRequests, selectedMonth, employeeId);
-
-  // Build monthly attendance rows (override approved days to Leave)
   const monthlyRecords = useMemo(() => {
-    return employeeRecords
-      .filter((rec) => rec.date.startsWith(selectedMonth))
-      .map((rec) => {
-        if (approvedLeaveDaysSet.has(rec.date)) {
-          return { ...rec, status: "Leave", punchIn: undefined, punchOut: undefined, workHours: 0, workedHours: 0 };
-        }
-        return rec;
-      });
-  }, [employeeRecords, selectedMonth, approvedLeaveDaysSet]);
+  return employeeRecords.filter((rec) => rec.date.startsWith(selectedMonth));
+}, [employeeRecords, selectedMonth]);
+
 
   const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
   const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
@@ -155,42 +142,47 @@ const CurrentEmployeeAttendanceProfile = () => {
 
   // ===================== PERMISSION HOURS (Late Permissions UI) =====================
   // Local UI state (moved from Leave Management)
-  const [showLateForm, setShowLateForm] = useState(false);
-  const [lateForm, setLateForm] = useState({ date: "", from: "", lateTill: "", reason: "" });
-  const [lateError, setLateError] = useState("");
-  const [lateSuccess, setLateSuccess] = useState("");
+  const [showPermissionForm, setshowPermissionForm] = useState(false);
+  const [PermissionFrom, setPermissionFrom] = useState({ date: "", from: "", lateTill: "", reason: "" });
+  const [PermissionError, setPermissionError] = useState("");
+  const [permissionSuccess, setpermissionSuccess] = useState("");
 
   // Filters (re-using monthOptions from attendance, and local status options)
-  const [lateMonth, setLateMonth] = useState("");
-  const [lateStatus, setLateStatus] = useState("");
+  const [PermissionMonth, setPermissionMonth] = useState("");
+  const [PermissionStatus, setPermissionStatus] = useState("");
   const statusOptions = ["All", "Pending", "Approved", "Rejected"];
 
-  const filteredLateLogins = lateLoginRequests.filter((req) => {
-    const matchesMonth = lateMonth ? req.date.startsWith(lateMonth) : true;
-    const matchesStatus = lateStatus && lateStatus !== "All" ? req.status === lateStatus : true;
+  const filteredLateLogins = PermissionRequests.filter((req) => {
+    const matchesMonth = PermissionMonth ? req.date.startsWith(PermissionMonth) : true;
+    const matchesStatus = PermissionStatus && PermissionStatus !== "All" ? req.status === PermissionStatus : true;
     return matchesMonth && matchesStatus;
   });
 
-  const handleLateChange = (e) => {
-    setLateForm({ ...lateForm, [e.target.name]: e.target.value });
-    setLateError("");
-    setLateSuccess("");
+  const handlePermissionChange = (e) => {
+    setPermissionFrom({ ...PermissionFrom, [e.target.name]: e.target.value });
+    setPermissionError("");
+    setpermissionSuccess("");
   };
 
-  const handleLateSubmit = (e) => {
-    e.preventDefault();
-    const { date, from, lateTill, reason } = lateForm;
-    if (!date || !from || !lateTill || !reason) {
-      setLateError("All fields are required.");
-      setLateSuccess("");
-      return;
-    }
-    applyLateLogin({ date, from, lateTill, reason });
-    setLateForm({ date: "", from: "", lateTill: "", reason: "" });
-    setLateError("");
-    setLateSuccess("Late login request submitted successfully!");
-    setTimeout(() => setLateSuccess(""), 3000);
-  };
+  const handlePermissionSubmit = (e) => {
+  e.preventDefault();
+  const { date, from, lateTill, reason } = PermissionFrom;
+
+  console.log("Form submitted:", { date, from, lateTill, reason });
+
+  if (!date || !from || !lateTill || !reason) {
+    setPermissionError("All fields are required.");
+    setpermissionSuccess("");
+    return;
+  }
+
+  applyPermission({ date, from, lateTill, reason });
+  setPermissionFrom({ date: "", from: "", lateTill: "", reason: "" });
+  setPermissionError("");
+  setpermissionSuccess("Late login request submitted successfully!");
+  setTimeout(() => setpermissionSuccess(""), 3000);
+};
+
   // =========================================================================
 
   return (
@@ -263,16 +255,16 @@ const CurrentEmployeeAttendanceProfile = () => {
         <div className="flex flex-wrap gap-6 items-center mb-6">
           <h2 className="text-3xl font-bold text-yellow-800 flex-1">Permission Hours</h2>
           <button
-            className={`bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showLateForm ? 'bg-blue-900' : ''}`}
-            onClick={() => setShowLateForm((v) => !v)}
+            className={`bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showPermissionForm ? 'bg-blue-900' : ''}`}
+            onClick={() => setshowPermissionForm((v) => !v)}
           >
-            {showLateForm ? "Cancel" : "Permission Hours"}
+            {showPermissionForm ? "Cancel" : "Permission Hours"}
           </button>
         </div>
 
-        {showLateForm && (
+        {showPermissionForm && (
           <form
-            onSubmit={handleLateSubmit}
+            onSubmit={handlePermissionSubmit}
             className="mb-8 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 border border-blue-100 max-w-xl"
           >
             <div className="flex gap-4">
@@ -281,8 +273,8 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <input
                   type="date"
                   name="date"
-                  value={lateForm.date}
-                  onChange={handleLateChange}
+                  value={PermissionFrom.date}
+                  onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
               </div>
@@ -291,8 +283,8 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <input
                   type="time"
                   name="from"
-                  value={lateForm.from}
-                  onChange={handleLateChange}
+                  value={PermissionFrom.from}
+                  onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
               </div>
@@ -301,8 +293,8 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <input
                   type="time"
                   name="lateTill"
-                  value={lateForm.lateTill}
-                  onChange={handleLateChange}
+                  value={PermissionFrom.lateTill}
+                  onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
               </div>
@@ -312,19 +304,19 @@ const CurrentEmployeeAttendanceProfile = () => {
               <input
                 type="text"
                 name="reason"
-                value={lateForm.reason}
-                onChange={handleLateChange}
+                value={PermissionFrom.reason}
+                onChange={handlePermissionChange}
                 className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 placeholder="Enter reason for late login"
               />
             </div>
-            {lateError && <div className="text-red-600 font-semibold">{lateError}</div>}
-            {lateSuccess && <div className="text-green-600 font-semibold">{lateSuccess}</div>}
+            {PermissionError && <div className="text-red-600 font-semibold">{PermissionError}</div>}
+            {permissionSuccess && <div className="text-green-600 font-semibold">{permissionSuccess}</div>}
             <button
               type="submit"
               className="bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition mt-2"
             >
-              Submit Late Login Request
+              Submit Permission Hours
             </button>
           </form>
         )}
@@ -334,8 +326,8 @@ const CurrentEmployeeAttendanceProfile = () => {
           <div>
             <label className="mr-2 font-medium text-yellow-800">Filter by Month:</label>
             <select
-              value={lateMonth}
-              onChange={(e) => setLateMonth(e.target.value)}
+              value={PermissionMonth}
+              onChange={(e) => setPermissionMonth(e.target.value)}
               className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
             >
               <option value="">All</option>
@@ -349,8 +341,8 @@ const CurrentEmployeeAttendanceProfile = () => {
           <div>
             <label className="mr-2 font-medium text-yellow-800">Status:</label>
             <select
-              value={lateStatus}
-              onChange={(e) => setLateStatus(e.target.value)}
+              value={PermissionStatus}
+              onChange={(e) => setPermissionStatus(e.target.value)}
               className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
             >
               {statusOptions.map((s) => (
