@@ -72,21 +72,7 @@ const CurrentEmployeeAttendanceProfile = () => {
     monthOptions[monthOptions.length - 1] || ""
   );
 
-  // Approved leave days for selected month
-  function getApprovedLeaveDaysForMonth(reqs, month, empId) {
-    let leaveDates = new Set();
-    reqs.forEach((req) => {
-      if (req.employeeId !== empId) return;
-      if (req.status !== "Approved") return;
-      const from = new Date(req.from);
-      const to = new Date(req.to);
-      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().slice(0, 10);
-        if (dateStr.startsWith(month)) leaveDates.add(dateStr);
-      }
-    });
-    return leaveDates;
-  }
+  
   const monthlyRecords = useMemo(() => {
   return employeeRecords.filter((rec) => rec.date.startsWith(selectedMonth));
 }, [employeeRecords, selectedMonth]);
