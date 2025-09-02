@@ -1,5 +1,6 @@
 // CurrentEmployeeAttendanceProvider.jsx
-import { useState, useMemo } from "react";
+import { useState,useEffect,useMemo } from "react";
+import axios from "axios";
 import { CurrentEmployeeAttendanceContext } from "./CurrentEmployeeAttendanceContext";
 
 const CurrentEmployeeAttendanceProvider = ({ children }) => {
@@ -159,7 +160,9 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
   
 
   // useState so UI can update records later
-  const [attendanceRecords, setAttendanceRecords] = useState(manualAttendance);
+const [attendanceRecords, setAttendanceRecords] = useState(
+  Array.isArray(manualAttendance) ? manualAttendance : []
+);
 
   // Helper for UI to update a single record (marks manualApproval if actualPunch changed)
   const updateAttendanceRecord = (id, updates) => {
@@ -179,15 +182,17 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     );
   };
 
-  
+    // ====== LATE PERMISSIONS ======
 
-  // ====== LATE PERMISSIONS (same as before) ======
-  const [PermissionRequests,setPermissionRequests] = useState([
-    { id: 1, employeeId: "EMP101", request_date: "2025-08-01", from_time: "10:00", date: "2025-08-01", to_time: "12:00", reason: "Traffic jam", status: "Approved" },
-    { id: 2, employeeId: "EMP101", request_date: "2025-08-01", from_time: "12:00", date: "2025-08-05", to_time: "2:00",  reason: "Doctor appointment", status: "Pending" },
-    { id: 3, employeeId: "EMP101", request_date: "2025-08-01", from_time: "2:30",  date: "2025-07-20", to_time: "4:00",  reason: "Family emergency", status: "Rejected" },
-  ]);
+  const dummyPermissionRequests = [
+  { id: 1, employeeId: "EMP101", request_date: "2025-08-01", from_time: "10:00", date: "2025-08-01", to_time: "12:00", reason: "Traffic jam", status: "Approved" },
+  { id: 2, employeeId: "EMP101", request_date: "2025-08-01", from_time: "12:00", date: "2025-08-05", to_time: "2:00", reason: "Doctor appointment", status: "Pending" },
+  { id: 3, employeeId: "EMP101", request_date: "2025-08-01", from_time: "2:30", date: "2025-07-20", to_time: "4:00", reason: "Family emergency", status: "Rejected" },
+];
 
+const [PermissionRequests, setPermissionRequests] = useState(
+  Array.isArray(dummyPermissionRequests) ? dummyPermissionRequests : []
+);
   const applyPermission = ({ from_time, date, to_time, reason }) => {
     const newRequest = {
       id: 
@@ -202,6 +207,39 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
     };
     setPermissionRequests((prev) => [newRequest, ...prev]);
   };
+
+
+const fetchAttendanceData = async () => {
+  try {
+    const attendanceResponse = await axios.get("/api/attendance");
+    const permissionResponse = await axios.get("/api/permissions");
+
+    setAttendanceRecords(
+      Array.isArray(attendanceResponse.data) && attendanceResponse.data.length
+        ? attendanceResponse.data
+        : manualAttendance
+    );
+
+    setPermissionRequests(
+      Array.isArray(permissionResponse.data) && permissionResponse.data.length
+        ? permissionResponse.data
+        : dummyPermissionRequests
+    );
+
+  } catch (error) {
+    console.error("Backend not available, using dummy data", error);
+    setAttendanceRecords(manualAttendance);
+    setPermissionRequests(dummyPermissionRequests);
+  }
+};
+
+
+
+useEffect(() => {
+  fetchAttendanceData();
+}, []);
+
+
 
   return (
     <CurrentEmployeeAttendanceContext.Provider

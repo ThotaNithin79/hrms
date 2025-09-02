@@ -64,7 +64,7 @@ const CurrentEmployeeAttendanceProfile = () => {
 
   // Only for EMP101 (demo)
   const employeeId = "EMP101";
-  const employeeRecords = attendanceRecords.filter((rec) => rec.employeeId === employeeId);
+const employeeRecords = (attendanceRecords || []).filter((rec) => rec.employeeId === employeeId);
 
   // Monthly filter for attendance
   const monthOptions = getMonthOptions(employeeRecords);
@@ -138,11 +138,12 @@ const CurrentEmployeeAttendanceProfile = () => {
   const [PermissionStatus, setPermissionStatus] = useState("");
   const statusOptions = ["All", "Pending", "Approved", "Rejected"];
 
-  const filteredLateLogins = PermissionRequests.filter((req) => {
-    const matchesMonth = PermissionMonth ? req.date.startsWith(PermissionMonth) : true;
-    const matchesStatus = PermissionStatus && PermissionStatus !== "All" ? req.status === PermissionStatus : true;
-    return matchesMonth && matchesStatus;
-  });
+  const filteredLateLogins = (PermissionRequests || []).filter((req) => {
+  const matchesMonth = PermissionMonth ? req.date.startsWith(PermissionMonth) : true;
+  const matchesStatus = PermissionStatus && PermissionStatus !== "All" ? req.status === PermissionStatus : true;
+  return matchesMonth && matchesStatus;
+});
+
 
   const handlePermissionChange = (e) => {
     setPermissionForm({ ...PermissionForm, [e.target.name]: e.target.value });
