@@ -1,4 +1,3 @@
-
 import { useState, useContext, useEffect } from "react";
 import { EmployeeContext } from "../context/EmployeeContext";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,7 +12,8 @@ const ReactivateEmployee = () => {
     department: "",
     role: "",
     salary: "",
-    joiningDate: ""
+    joiningDate: "",
+    employmentType: ""
   });
   const [employee, setEmployee] = useState(null);
 
@@ -29,7 +29,8 @@ const ReactivateEmployee = () => {
         department: lastExp.department || "",
         role: lastExp.role || "",
         salary: lastExp.salary ? lastExp.salary.toString() : "",
-        joiningDate: ""
+        joiningDate: "",
+        employmentType: ""
       });
     }
   }, [id, employees]);
@@ -43,6 +44,7 @@ const ReactivateEmployee = () => {
     if (!formData.role.trim()) return "Role is required.";
     if (!formData.salary.trim() || isNaN(formData.salary)) return "Valid salary is required.";
     if (!formData.joiningDate) return "Joining Date is required.";
+    if (!formData.employmentType) return "Employment Type is required.";
     return "";
   };
 
@@ -73,7 +75,8 @@ const ReactivateEmployee = () => {
       joiningDate: formData.joiningDate,
       lastWorkingDate: "Present", // Ensure this is always 'Present'
       salary: parseFloat(formData.salary) || 0,
-      years: 0
+      years: 0,
+      employmentType: formData.employmentType
     };
     const updatedEmployee = {
       ...employee,
@@ -181,6 +184,25 @@ const ReactivateEmployee = () => {
                 className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 text-sm"
                 required
               />
+            </div>
+            <div className="relative">
+              <FaBriefcase className="absolute left-3 top-4 text-gray-400" />
+              <label htmlFor="employmentType" className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">
+                Employment Type <span className="text-red-600 ml-1 font-bold" title="Required">*</span>
+              </label>
+              <select
+                id="employmentType"
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 pt-5 pb-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 text-sm"
+                required
+              >
+                <option value="">Select Employment Type</option>
+                <option value="Full-Time">Full-Time</option>
+                <option value="Part-Time">Part-Time</option>
+                <option value="Contract">Contract</option>
+              </select>
             </div>
           </div>
           <div className="flex justify-end mt-2">
