@@ -23,6 +23,8 @@ const AddEmployee = () => {
     employeeId: "",
     name: "",
     email: "",
+    password: "",
+    employmentType: "Full-Time",
     phone: "",
     address: "",
     joiningDate: "",
@@ -49,10 +51,12 @@ const AddEmployee = () => {
   const mandatoryFields = [
     "name",
     "email",
+    "password",
     "currentDepartment",
     "currentRole",
     "joiningDate",
     "currentSalary",
+    "employmentType",
   ];
 
   const [error, setError] = useState("");
@@ -78,17 +82,20 @@ const AddEmployee = () => {
         },
       }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const validate = () => {
     if (!formData.name.trim()) return "Full Name is required.";
     if (!formData.email.trim()) return "Email is required.";
+    if (!formData.password.trim()) return "Password is required.";
+    if (formData.password.length < 8) return "Password must be at least 8 characters.";
     if (!formData.currentDepartment.trim()) return "Department is required.";
     if (!formData.currentRole.trim()) return "Role is required.";
     if (!formData.joiningDate) return "Joining Date is required.";
     if (!formData.currentSalary || isNaN(formData.currentSalary)) return "Salary is required.";
+    if (!formData.employmentType) return "Type of Employment is required.";
     if (formData.employeeId.trim()) {
       const exists = employees.some(
         (emp) => emp.employeeId === formData.employeeId.trim()
@@ -137,6 +144,7 @@ const AddEmployee = () => {
           joiningDate: formData.joiningDate,
           lastWorkingDate: "Present", // For current employment
           salary: parseFloat(formData.currentSalary) || 0,
+          employmentType: formData.employmentType,
         },
       ],
     };
@@ -192,6 +200,17 @@ const AddEmployee = () => {
               isMandatory={true}
             />
             <InputField
+              icon={<FaIdBadge />}
+              name="password"
+              label="Password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter password (min 8 characters)"
+              required
+              isMandatory={true}
+            />
+            <InputField
               icon={<FaEnvelope />}
               name="email"
               label="Email Address"
@@ -242,6 +261,23 @@ const AddEmployee = () => {
               required
               isMandatory={true}
             />
+            <div className="relative">
+              <FaBriefcase className="absolute left-3 top-4 text-gray-400" />
+              <label htmlFor="employmentType-select" className="absolute left-10 text-xs text-gray-500 font-medium top-1.5">Type of Employment <span className="text-red-600 ml-1 font-bold" title="Required">*</span></label>
+              <select
+                id="employmentType-select"
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 pt-5 pb-2 border border-red-400 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 appearance-none"
+                required
+              >
+                <option value="Full-Time">Full-time</option>
+                <option value="Part-Time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Intern">Intern</option>
+              </select>
+            </div>
             <InputField
               icon={<FaBriefcase />}
               name="currentRole"

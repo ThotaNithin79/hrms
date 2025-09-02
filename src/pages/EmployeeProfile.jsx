@@ -56,6 +56,14 @@ const EmployeeProfile = () => {
             <InfoCard label="Gender" value={safe(employee.personalDetails?.gender)} />
             <InfoCard label="Marital Status" value={safe(employee.personalDetails?.maritalStatus)} />
             <InfoCard label="Nationality" value={safe(employee.personalDetails?.nationality)} />
+            <InfoCard label="PAN Number" value={safe(employee.personalDetails?.panNumber)} />
+            <InfoCard label="Aadhaar Number" value={safe(employee.personalDetails?.aadharNumber)} />
+            <InfoCard label="PAN File" value={employee.personalDetails?.panFileUrl ? (
+              <a href={employee.personalDetails.panFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View PAN File</a>
+            ) : safe(employee.personalDetails?.panFileUrl)} />
+            <InfoCard label="Aadhaar File" value={employee.personalDetails?.aadharFileUrl ? (
+              <a href={employee.personalDetails.aadharFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Aadhaar File</a>
+            ) : safe(employee.personalDetails?.aadharFileUrl)} />
           </div>
         </div>
       );
@@ -80,12 +88,19 @@ const EmployeeProfile = () => {
             <div className="bg-white border border-blue-200 rounded-lg p-6 shadow-sm mb-4">
               <h3 className="text-lg font-bold text-blue-800 mb-2">Current Employment</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoCard label="Employee ID" value={safe(currentExp.employeeId)} />
                 <InfoCard label="Company" value={safe(currentExp.company)} />
                 <InfoCard label="Department" value={safe(currentExp.department)} />
                 <InfoCard label="Role/Position" value={safe(currentExp.role)} />
                 <InfoCard label="Salary" value={currentExp.salary ? `₹${Number(currentExp.salary).toLocaleString()}` : "N/A"} />
                 <InfoCard label="Joining Date" value={safe(currentExp.joiningDate)} />
                 <InfoCard label="Status" value={safe(currentExp.lastWorkingDate)} />
+                <InfoCard label="Years" value={safe(currentExp.years)} />
+                <InfoCard label="Employment Type" value={safe(currentExp.employmentType)} />
+                <InfoCard label="Reason for Leaving" value={safe(currentExp.reason)} />
+                <InfoCard label="Experience Letter" value={currentExp.experienceLetterUrl ? (
+                  <a href={currentExp.experienceLetterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Experience Letter</a>
+                ) : safe(currentExp.experienceLetterUrl)} />
               </div>
             </div>
           )}
@@ -98,6 +113,7 @@ const EmployeeProfile = () => {
                 .map((exp, idx) => (
                   <div key={idx} className="mb-4 pb-4 border-b last:border-b-0 last:mb-0 last:pb-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InfoCard label="Employee ID" value={safe(exp.employeeId)} />
                       <InfoCard label="Company" value={safe(exp.company)} />
                       <InfoCard label="Department" value={safe(exp.department)} />
                       <InfoCard label="Role/Position" value={safe(exp.role)} />
@@ -105,6 +121,11 @@ const EmployeeProfile = () => {
                       <InfoCard label="Joining Date" value={safe(exp.joiningDate)} />
                       <InfoCard label="End Date" value={safe(exp.lastWorkingDate)} />
                       <InfoCard label="Years" value={safe(exp.years)} />
+                      <InfoCard label="Employment Type" value={safe(exp.employmentType)} />
+                      <InfoCard label="Reason for Leaving" value={safe(exp.reason)} />
+                      <InfoCard label="Experience Letter" value={exp.experienceLetterUrl ? (
+                        <a href={exp.experienceLetterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View Experience Letter</a>
+                      ) : safe(exp.experienceLetterUrl)} />
                     </div>
                   </div>
                 ))
