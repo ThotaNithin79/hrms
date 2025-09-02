@@ -39,6 +39,9 @@ const CalendarCell = ({ day, record }) => {
   } else if (record?.status === "Leave") {
     bg = "bg-yellow-100";
     text = "text-yellow-700";
+  }else if (record?.status === "Halfday") {
+    bg = "bg-orange-100";
+    text = "text-orange-700";
   }
   return (
     <td className={`h-28 w-40 align-top ${bg} ${text} border rounded-lg text-base`}>
@@ -56,7 +59,7 @@ const CalendarCell = ({ day, record }) => {
 };
 
 const CurrentEmployeeAttendanceProfile = () => {
-  const { attendanceRecords, paidLeaves, leaveRemaining, lateLoginRequests, applyLateLogin } =
+  const { attendanceRecords,lateLoginRequests, applyLateLogin } =
     useContext(CurrentEmployeeAttendanceContext);
 
   const {
@@ -104,28 +107,19 @@ const CurrentEmployeeAttendanceProfile = () => {
 
   const presentCount = monthlyRecords.filter((r) => r.status === "Present").length;
   const absentCount = monthlyRecords.filter((r) => r.status === "Absent").length;
-  const leaveCount = approvedLeaveDaysSet.size;
+  const halfdayCount = monthlyRecords.filter((r) => r.status === "Halfday").length;
+  const leaveCount = monthlyRecords.filter((r) => r.status === "Leave").length;
 
-  // Leaves applied in selected month (not displayed; retained if you need)
-  const leavesApplied = leaveRequests.filter(
-    (req) =>
-      req.employeeId === employeeId &&
-      (req.from.startsWith(selectedMonth) || req.to.startsWith(selectedMonth))
-  );
-
-  // Work hour summary
-  const totalWorkHours = monthlyRecords.reduce((sum, r) => sum + (r.workHours || 0), 0);
-  const totalWorkedHours = monthlyRecords.reduce((sum, r) => sum + (r.workedHours || 0), 0);
-  const totalIdleTime = monthlyRecords.reduce((sum, r) => sum + ((r.workHours || 0) - (r.workedHours || 0)), 0);
+  
 
   // Chart data
   const chartData = {
-    labels: ["Present", "Absent", "Leave"],
+    labels: ["Present", "Absent", "Leave","Halfday"],
     datasets: [
       {
         label: "Monthly Attendance Summary",
-        data: [presentCount, absentCount, leaveCount],
-        backgroundColor: ["#22c55e", "#ef4444", "#facc15"],
+        data: [presentCount, absentCount, leaveCount,halfdayCount],
+        backgroundColor: ["#22c55e", "#ef4444", "#facc15","#fb923c"],
       },
     ],
   };
@@ -243,7 +237,7 @@ const CurrentEmployeeAttendanceProfile = () => {
       </div>
 
       {/* Summary boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-50 p-4 rounded shadow flex flex-col items-center">
           <span className="text-green-600 font-bold text-lg">Present</span>
           <span className="text-2xl font-bold">{presentCount}</span>
@@ -256,13 +250,9 @@ const CurrentEmployeeAttendanceProfile = () => {
           <span className="text-yellow-600 font-bold text-lg">On Leave</span>
           <span className="text-2xl font-bold">{leaveCount}</span>
         </div>
-        <div className="bg-blue-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-blue-600 font-bold text-lg">Leave Remaining</span>
-          <span className="text-2xl font-bold">{leaveRemaining}</span>
-        </div>
-        <div className="bg-pink-50 p-4 rounded shadow flex flex-col items-center">
-          <span className="text-pink-600 font-bold text-lg">Paid Leaves</span>
-          <span className="text-2xl font-bold">{paidLeaves}</span>
+        <div className="bg-yellow-50 p-4 rounded shadow flex flex-col items-center">
+          <span className="text-yellow-600 font-bold text-lg">Half-Day</span>
+          <span className="text-2xl font-bold">{halfdayCount}</span>
         </div>
       </div>
 
@@ -464,7 +454,10 @@ const CurrentEmployeeAttendanceProfile = () => {
                         ? "bg-yellow-100"
                         : record.status === "Absent"
                         ? "bg-red-100"
-                        : ""
+                        : record.status === "Halfday"
+                        ? "bg-orange-100"
+                        : "hover:bg-green-50"
+
                     }
                   >
                     <td className="border px-4 py-2">{record.date}</td>
@@ -473,9 +466,7 @@ const CurrentEmployeeAttendanceProfile = () => {
                     <td className="border px-4 py-2">{record.punchOut}</td>
                     <td className="border px-4 py-2">{record.workHours}</td>
                     <td className="border px-4 py-2">{record.workedHours}</td>
-                    <td className="border px-4 py-2">
-                      {(record.workHours - record.workedHours).toFixed(2)}
-                    </td>
+                    <td className="border px-4 py-2">{record.idleTime}</td>
                   </tr>
                 ))
               ) : (
