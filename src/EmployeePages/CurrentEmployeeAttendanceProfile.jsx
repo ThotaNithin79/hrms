@@ -143,7 +143,7 @@ const CurrentEmployeeAttendanceProfile = () => {
   // ===================== PERMISSION HOURS (Late Permissions UI) =====================
   // Local UI state (moved from Leave Management)
   const [showPermissionForm, setshowPermissionForm] = useState(false);
-  const [PermissionFrom, setPermissionFrom] = useState({ date: "", from: "", lateTill: "", reason: "" });
+  const [PermissionForm, setPermissionForm] = useState({ date: "", from_time: "", to_time: "", reason: "" });
   const [PermissionError, setPermissionError] = useState("");
   const [permissionSuccess, setpermissionSuccess] = useState("");
 
@@ -159,25 +159,25 @@ const CurrentEmployeeAttendanceProfile = () => {
   });
 
   const handlePermissionChange = (e) => {
-    setPermissionFrom({ ...PermissionFrom, [e.target.name]: e.target.value });
+    setPermissionForm({ ...PermissionForm, [e.target.name]: e.target.value });
     setPermissionError("");
     setpermissionSuccess("");
   };
 
   const handlePermissionSubmit = (e) => {
   e.preventDefault();
-  const { date, from, lateTill, reason } = PermissionFrom;
+  const { date, from_time, to_time, reason } = PermissionForm;
 
-  console.log("Form submitted:", { date, from, lateTill, reason });
+  console.log("Form submitted:", { date, from_time, to_time, reason });
 
-  if (!date || !from || !lateTill || !reason) {
+  if (!date || !from_time || !to_time || !reason) {
     setPermissionError("All fields are required.");
     setpermissionSuccess("");
     return;
   }
 
-  applyPermission({ date, from, lateTill, reason });
-  setPermissionFrom({ date: "", from: "", lateTill: "", reason: "" });
+  applyPermission({ date, from_time, to_time, reason });
+  setPermissionForm({ date: "", from_time: "", to_time: "", reason: "" });
   setPermissionError("");
   setpermissionSuccess("Late login request submitted successfully!");
   setTimeout(() => setpermissionSuccess(""), 3000);
@@ -273,7 +273,7 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <input
                   type="date"
                   name="date"
-                  value={PermissionFrom.date}
+                  value={PermissionForm.date}
                   onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
@@ -282,8 +282,8 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <label className="block mb-1 font-medium text-yellow-800">From (Time)</label>
                 <input
                   type="time"
-                  name="from"
-                  value={PermissionFrom.from}
+                  name="from_time"
+                  value={PermissionForm.from_time}
                   onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
@@ -292,8 +292,8 @@ const CurrentEmployeeAttendanceProfile = () => {
                 <label className="block mb-1 font-medium text-yellow-800">To (Time)</label>
                 <input
                   type="time"
-                  name="lateTill"
-                  value={PermissionFrom.lateTill}
+                  name="to_time"
+                  value={PermissionForm.to_time}
                   onChange={handlePermissionChange}
                   className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 />
@@ -304,7 +304,7 @@ const CurrentEmployeeAttendanceProfile = () => {
               <input
                 type="text"
                 name="reason"
-                value={PermissionFrom.reason}
+                value={PermissionForm.reason}
                 onChange={handlePermissionChange}
                 className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
                 placeholder="Enter reason for late login"
@@ -370,8 +370,8 @@ const CurrentEmployeeAttendanceProfile = () => {
               filteredLateLogins.map((req) => (
                 <tr key={req.id} className="hover:bg-yellow-50 transition">
                   <td className="w-32 px-4 py-2">{req.date}</td>
-                  <td className="w-32 px-4 py-2">{req.from}</td>
-                  <td className="w-32 px-4 py-2">{req.lateTill || "-"}</td>
+                  <td className="w-32 px-4 py-2">{req.from_time}</td>
+                  <td className="w-32 px-4 py-2">{req.to_time || "-"}</td>
                   <td className="w-48 px-4 py-2">{req.reason}</td>
                   <td className="w-32 px-4 py-2">
                     <span

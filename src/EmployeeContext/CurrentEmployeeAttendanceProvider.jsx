@@ -183,20 +183,20 @@ const CurrentEmployeeAttendanceProvider = ({ children }) => {
 
   // ====== LATE PERMISSIONS (same as before) ======
   const [PermissionRequests,setPermissionRequests] = useState([
-    { id: 1, employeeId: "EMP101", name: "John Doe", from: "10:00", date: "2025-08-01", lateTill: "12:00", reason: "Traffic jam", status: "Approved" },
-    { id: 2, employeeId: "EMP101", name: "John Doe", from: "12:00", date: "2025-08-05", lateTill: "2:00",  reason: "Doctor appointment", status: "Pending" },
-    { id: 3, employeeId: "EMP101", name: "John Doe", from: "2:30",  date: "2025-07-20", lateTill: "4:00",  reason: "Family emergency", status: "Rejected" },
+    { id: 1, employeeId: "EMP101", request_date: "2025-08-01", from_time: "10:00", date: "2025-08-01", to_time: "12:00", reason: "Traffic jam", status: "Approved" },
+    { id: 2, employeeId: "EMP101", request_date: "2025-08-01", from_time: "12:00", date: "2025-08-05", to_time: "2:00",  reason: "Doctor appointment", status: "Pending" },
+    { id: 3, employeeId: "EMP101", request_date: "2025-08-01", from_time: "2:30",  date: "2025-07-20", to_time: "4:00",  reason: "Family emergency", status: "Rejected" },
   ]);
 
-  const applyPermission = ({ from, date, lateTill, reason }) => {
+  const applyPermission = ({ from_time, date, to_time, reason }) => {
     const newRequest = {
       id: 
       PermissionRequests.length + 1 + Math.floor(Math.random() * 10000),
       employeeId: "EMP101",
       name: "John Doe",
-      from,
+      from_time,
       date,
-      lateTill,
+      to_time,
       reason,
       status: "Pending",
     };
