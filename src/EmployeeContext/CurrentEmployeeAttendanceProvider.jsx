@@ -1,141 +1,319 @@
-import { useState, useContext, useMemo } from "react";
+// CurrentEmployeeAttendanceProvider.jsx
+import { useState,useEffect,useMemo } from "react";
+import axios from "axios";
 import { CurrentEmployeeAttendanceContext } from "./CurrentEmployeeAttendanceContext";
-import { CurrentEmployeeLeaveRequestContext } from "./CurrentEmployeeLeaveRequestContext";
 
 const CurrentEmployeeAttendanceProvider = ({ children }) => {
-  // Generates demo attendance data for all employees for the current month
-  const generateMonthlyAttendanceData = () => {
-    const employees = [{ employeeId: "EMP101", name: "John Doe" }];
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const records = [];
-    let monthlyWorkHours = 0;
-    let monthlyIdleHours = 0;
+  // --- MANUAL ATTENDANCE DATA: September 2025 (30 days) ---
+  const manualAttendance = [
+    { id: 1, employeeId: "EMP101", name: "John Doe", date: "2025-09-01", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
 
-    for (const emp of employees) {
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        let status = "Present";
-        if (day % 7 === 0) status = "Leave";
-        if (day % 11 === 0) status = "Absent";
-        let workHours = status === "Present" ? 9 : 0;
-        let workedHours = status === "Present" ? 8.5 : 0;
-        let idleTime = status === "Present" ? 0.5 : 0;
-        if (status === "Leave" || status === "Absent") {
-          workHours = 0;
-          workedHours = 0;
-          idleTime = 0;
+    { id: 2, employeeId: "EMP101", name: "John Doe", date: "2025-09-02", status: "Absent",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 3, employeeId: "EMP101", name: "John Doe", date: "2025-09-03", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "10:30", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 7.5, idleTime: 1.5,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 4, employeeId: "EMP101", name: "John Doe", date: "2025-09-04", status: "Leave",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 5, employeeId: "EMP101", name: "John Doe", date: "2025-09-05", status: "Halfday",
+      punchIn: "09:00", punchOut: "13:00", actualPunchIn: "09:00", actualPunchOut: "13:00",
+      workHours: 4, workedHours: 4, idleTime: 0,
+      isHalfDay: 0x01, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 6, employeeId: "EMP101", name: "John Doe", date: "2025-09-06", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "20:30",
+      workHours: 9, workedHours: 11.5, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x01, manualApproval: 0x01 },
+
+    { id: 7, employeeId: "EMP101", name: "John Doe", date: "2025-09-07", status: "Absent",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 8, employeeId: "EMP101", name: "John Doe", date: "2025-09-08", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:45", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.25, idleTime: 0.75,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 9, employeeId: "EMP101", name: "John Doe", date: "2025-09-09", status: "Leave",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 10, employeeId: "EMP101", name: "John Doe", date: "2025-09-10", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 11, employeeId: "EMP101", name: "John Doe", date: "2025-09-11", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:15", actualPunchOut: "18:15",
+      workHours: 9, workedHours: 9, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 12, employeeId: "EMP101", name: "John Doe", date: "2025-09-12", status: "Halfday",
+      punchIn: "09:00", punchOut: "13:00", actualPunchIn: "09:00", actualPunchOut: "13:00",
+      workHours: 4, workedHours: 4, idleTime: 0,
+      isHalfDay: 0x01, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 13, employeeId: "EMP101", name: "John Doe", date: "2025-09-13", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "21:00",
+      workHours: 9, workedHours: 12, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x01, manualApproval: 0x01 },
+
+    { id: 14, employeeId: "EMP101", name: "John Doe", date: "2025-09-14", status: "Absent",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 15, employeeId: "EMP101", name: "John Doe", date: "2025-09-15", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 16, employeeId: "EMP101", name: "John Doe", date: "2025-09-16", status: "Leave",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 17, employeeId: "EMP101", name: "John Doe", date: "2025-09-17", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 18, employeeId: "EMP101", name: "John Doe", date: "2025-09-18", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:40", actualPunchOut: "18:10",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 19, employeeId: "EMP101", name: "John Doe", date: "2025-09-19", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 20, employeeId: "EMP101", name: "John Doe", date: "2025-09-20", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "19:30",
+      workHours: 9, workedHours: 10.5, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x01, manualApproval: 0x01 },
+
+    { id: 21, employeeId: "EMP101", name: "John Doe", date: "2025-09-21", status: "Halfday",
+      punchIn: "09:00", punchOut: "13:00", actualPunchIn: "09:00", actualPunchOut: "13:00",
+      workHours: 4, workedHours: 4, idleTime: 0,
+      isHalfDay: 0x01, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 22, employeeId: "EMP101", name: "John Doe", date: "2025-09-22", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "10:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8, idleTime: 1,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 23, employeeId: "EMP101", name: "John Doe", date: "2025-09-23", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 24, employeeId: "EMP101", name: "John Doe", date: "2025-09-24", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "21:15",
+      workHours: 9, workedHours: 12.25, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x01, manualApproval: 0x01 },
+
+    { id: 25, employeeId: "EMP101", name: "John Doe", date: "2025-09-25", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 26, employeeId: "EMP101", name: "John Doe", date: "2025-09-26", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:35", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.25, idleTime: 0.75,
+      isHalfDay: 0x00, isLateLogin: 0x01, isOtDay: 0x00, manualApproval: 0x01 },
+
+    { id: 27, employeeId: "EMP101", name: "John Doe", date: "2025-09-27", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 28, employeeId: "EMP101", name: "John Doe", date: "2025-09-28", status: "Absent",
+      punchIn: "", punchOut: "", actualPunchIn: "", actualPunchOut: "",
+      workHours: 0, workedHours: 0, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 29, employeeId: "EMP101", name: "John Doe", date: "2025-09-29", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "18:00",
+      workHours: 9, workedHours: 8.5, idleTime: 0.5,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x00, manualApproval: 0x00 },
+
+    { id: 30, employeeId: "EMP101", name: "John Doe", date: "2025-09-30", status: "Present",
+      punchIn: "09:00", punchOut: "18:00", actualPunchIn: "09:00", actualPunchOut: "20:45",
+      workHours: 9, workedHours: 11.75, idleTime: 0,
+      isHalfDay: 0x00, isLateLogin: 0x00, isOtDay: 0x01, manualApproval: 0x01 }
+  ];
+
+  
+
+  // useState so UI can update records later
+const [attendanceRecords, setAttendanceRecords] = useState(
+  Array.isArray(manualAttendance) ? manualAttendance : []
+);
+
+  // Helper for UI to update a single record (marks manualApproval if actualPunch changed)
+  const updateAttendanceRecord = (id, updates) => {
+    setAttendanceRecords(prev =>
+      prev.map(r => {
+        if (r.id !== id) return r;
+        const updated = { ...r, ...updates };
+        // if actualPunch changed compared to previous, mark manualApproval
+        if ((updates.actualPunchIn && updates.actualPunchIn !== r.actualPunchIn) ||
+            (updates.actualPunchOut && updates.actualPunchOut !== r.actualPunchOut)) {
+          updated.manualApproval = 0x01;
         }
-        monthlyWorkHours += workedHours;
-        monthlyIdleHours += idleTime;
-        records.push({
-          id: `${emp.employeeId}-${dateStr}`,
-          employeeId: emp.employeeId,
-          name: emp.name,
-          date: dateStr,
-          status,
-          punchIn: status === "Present" ? "09:00" : "",
-          punchOut: status === "Present" ? "18:00" : "",
-          workHours,
-          workedHours,
-          idleTime,
-        });
-      }
-    }
-    return { records, monthlyWorkHours, monthlyIdleHours };
+        // keep idleTime/workedHours consistent if caller provided new times:
+        if (updates.workedHours !== undefined) updated.idleTime = Math.max(0, (updated.workHours || 0) - updated.workedHours);
+        return updated;
+      })
+    );
   };
 
-  const { records, monthlyWorkHours, monthlyIdleHours } = generateMonthlyAttendanceData();
-  const [attendanceRecords] = useState(records);
+    // ====== LATE PERMISSIONS ======
 
-  // --- Leave Remaining Calculation (uses leaveRequests from leave context) ---
-  const employeeId = "EMP101";
-  const leaveRequests = useContext(CurrentEmployeeLeaveRequestContext)?.leaveRequests || [];
+  const dummyPermissionRequests = [
+  { id: 1, employeeId: "EMP101", request_date: "2025-08-01", from_time: "10:00", date: "2025-08-01", to_time: "12:00", reason: "Traffic jam", status: "Approved" },
+  { id: 2, employeeId: "EMP101", request_date: "2025-08-01", from_time: "12:00", date: "2025-08-05", to_time: "2:00", reason: "Doctor appointment", status: "Pending" },
+  { id: 3, employeeId: "EMP101", request_date: "2025-08-01", from_time: "2:30", date: "2025-07-20", to_time: "4:00", reason: "Family emergency", status: "Rejected" },
+];
 
-  function getAllMonthsUpToCurrentYear() {
-    const now = new Date();
-    const months = [];
-    for (let m = 0; m < now.getMonth() + 1; m++) {
-      months.push(`${now.getFullYear()}-${String(m + 1).padStart(2, "0")}`);
-    }
-    return months;
-  }
-
-  function getApprovedLeaveDaysForMonth(reqs, month, empId) {
-    let leaveDates = new Set();
-    reqs.forEach((req) => {
-      if (req.employeeId !== empId) return;
-      if (req.status !== "Approved") return;
-      const from = new Date(req.from);
-      const to = new Date(req.to);
-      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().slice(0, 10);
-        if (dateStr.startsWith(month)) {
-          leaveDates.add(dateStr);
-        }
-      }
-    });
-    return leaveDates;
-  }
-
-  const { leaveRemaining, paidLeaves } = useMemo(() => {
-    const months = getAllMonthsUpToCurrentYear();
-    let carryOver = 0;
-    let paidLeaves = 0;
-    for (let i = 0; i < months.length; i++) {
-      const month = months[i];
-      const available = 1 + carryOver;
-      const used = getApprovedLeaveDaysForMonth(leaveRequests, month, employeeId).size;
-      if (used > available) {
-        paidLeaves += used - available;
-        carryOver = 0;
-      } else {
-        carryOver = available - used;
-      }
-      if (i === months.length - 1) {
-        return { leaveRemaining: carryOver, paidLeaves };
-      }
-    }
-    return { leaveRemaining: carryOver, paidLeaves };
-  }, [leaveRequests, employeeId]);
-
-  // ====== LATE PERMISSIONS (moved here from LeaveRequestProvider) ======
-  // Dummy data preserved exactly as in your old provider
-  const [lateLoginRequests, setLateLoginRequests] = useState([
-    { id: 1, employeeId: "EMP101", name: "John Doe", from: "10:00", date: "2025-08-01", lateTill: "12:00", reason: "Traffic jam", status: "Approved" },
-    { id: 2, employeeId: "EMP101", name: "John Doe", from: "12:00", date: "2025-08-05", lateTill: "2:00",  reason: "Doctor appointment", status: "Pending" },
-    { id: 3, employeeId: "EMP101", name: "John Doe", from: "2:30",  date: "2025-07-20", lateTill: "4:00",  reason: "Family emergency", status: "Rejected" },
-  ]);
-
-  // keep the same signature you used originally (from, date, lateTill, reason)
-  const applyLateLogin = ({ from, date, lateTill, reason }) => {
-    const newRequest = {
-      id: lateLoginRequests.length + 1 + Math.floor(Math.random() * 10000),
-      employeeId: "EMP101",
-      name: "John Doe",
-      from,
-      date,
-      lateTill,
-      reason,
-      status: "Pending",
-    };
-    setLateLoginRequests((prev) => [newRequest, ...prev]);
+const [PermissionRequests, setPermissionRequests] = useState(
+  Array.isArray(dummyPermissionRequests) ? dummyPermissionRequests : []
+);
+  
+const applyPermission = async ({ from_time, date, to_time, reason }) => {
+  const newRequest = {
+    employeeId: "EMP101",
+    name: "John Doe",
+    from_time,
+    date,
+    to_time,
+    reason,
+    status: "Pending",
   };
-  // ================================================================
+
+  try {
+    // Send new permission request to backend
+    const response = await axios.post("/api/permissions", newRequest);
+
+    // Assume backend returns the created object with 'id'
+    const createdRequest = response.data;
+
+    // Update local state with response
+    setPermissionRequests((prev) => [createdRequest, ...prev]);
+  } catch (error) {
+    console.error("Failed to send permission request:", error);
+
+    // Fallback: use local state if backend fails
+    newRequest.id = PermissionRequests.length + 1 + Math.floor(Math.random() * 10000);
+    setPermissionRequests((prev) => [newRequest, ...prev]);
+  }
+};
+
+// --- DUMMY OVERTIME REQUESTS (September 2025) ---
+const dummyOvertimeRequests = [
+  // date = day for which OT was done / applied to; flags as 0x01 / 0x00
+  { id: 1, employeeId: "EMP101", date: "2025-09-03", is_paid_out: 0x00, is_used_as_leave: 0x00, status: "APPROVED", type: "INCENTIVE_OT" },
+  { id: 2, employeeId: "EMP101", date: "2025-09-06", is_paid_out: 0x01, is_used_as_leave: 0x00, status: "PENDING",  type: "PENDING_OT" },
+  { id: 3, employeeId: "EMP101", date: "2025-09-13", is_paid_out: 0x01, is_used_as_leave: 0x01, status: "REJECTED", type: "INCENTIVE_OT" },
+  { id: 4, employeeId: "EMP101", date: "2025-09-24", is_paid_out: 0x00, is_used_as_leave: 0x00, status: "APPROVED", type: "PENDING_OT" },
+];
+
+const [overtimeRequests, setOvertimeRequests] = useState(
+  Array.isArray(dummyOvertimeRequests) ? dummyOvertimeRequests : []
+);
+
+const applyOvertime = async ({ date, type, is_paid_out = false, is_used_as_leave = false }) => {
+  // convert booleans to 0x01 / 0x00 so storage matches your requested format
+  const payload = {
+    employeeId: "EMP101",
+    name: "John Doe",
+    date,
+    type,
+    is_paid_out: typeof is_paid_out === "boolean" ? (is_paid_out ? 0x01 : 0x00) : is_paid_out,
+    is_used_as_leave: typeof is_used_as_leave === "boolean" ? (is_used_as_leave ? 0x01 : 0x00) : is_used_as_leave,
+    status: "PENDING",
+  };
+
+  try {
+    const response = await axios.post("/api/overtime", payload);
+    const created = response.data;
+    setOvertimeRequests((prev) => [created, ...prev]);
+  } catch (error) {
+    console.error("Failed to send overtime request:", error);
+    // fallback local insertion (no backend)
+    payload.id = overtimeRequests.length + 1 + Math.floor(Math.random() * 10000);
+    setOvertimeRequests((prev) => [payload, ...prev]);
+  }
+};
+
+
+
+
+const fetchAttendanceData = async () => {
+  try {
+    const attendanceResponse = await axios.get("/api/attendance");
+    const permissionResponse = await axios.get("/api/permissions");
+    const overtimeResponse = await axios.get("/api/overtime");
+
+    setAttendanceRecords(
+      Array.isArray(attendanceResponse.data) && attendanceResponse.data.length
+        ? attendanceResponse.data
+        : manualAttendance
+    );
+
+    setPermissionRequests(
+      Array.isArray(permissionResponse.data) && permissionResponse.data.length
+        ? permissionResponse.data
+        : dummyPermissionRequests
+    );
+
+    setOvertimeRequests(
+      Array.isArray(overtimeResponse.data) && overtimeResponse.data.length
+        ? overtimeResponse.data
+        : dummyOvertimeRequests
+    );
+
+  } catch (error) {
+    console.error("Backend not available, using dummy data", error);
+    setAttendanceRecords(manualAttendance);
+    setPermissionRequests(dummyPermissionRequests);
+    setOvertimeRequests(dummyOvertimeRequests);
+  }
+};
+
+
+
+
+useEffect(() => {
+  fetchAttendanceData();
+}, []);
+
+
 
   return (
     <CurrentEmployeeAttendanceContext.Provider
       value={{
         attendanceRecords,
-        monthlyWorkHours,
-        monthlyIdleHours,
-        leaveRemaining,
-        paidLeaves,
-        // expose Late Permissions from here now
-        lateLoginRequests,
-        applyLateLogin,
+        setAttendanceRecords, // exposed in case you need direct set
+        updateAttendanceRecord, // helper to update a single record
+        PermissionRequests,
+        applyPermission,
+        overtimeRequests,       
+        applyOvertime,
       }}
     >
       {children}
