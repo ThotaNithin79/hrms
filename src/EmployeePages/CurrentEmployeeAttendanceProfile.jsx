@@ -574,11 +574,11 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
             {filteredLateLogins.length > 0 ? (
               filteredLateLogins.map((req) => (
                 <tr key={req.id} className="hover:bg-yellow-50 transition">
-                  <td className="w-32 px-4 py-2">{req.date}</td>
-                  <td className="w-32 px-4 py-2">{req.from_time}</td>
-                  <td className="w-32 px-4 py-2">{req.to_time || "-"}</td>
-                  <td className="w-48 px-4 py-2">{req.reason}</td>
-                  <td className="w-32 px-4 py-2">
+                  <td className="w-32 px-4 py-2 text-center">{req.date}</td>
+                  <td className="w-32 px-4 py-2 text-center">{req.from_time}</td>
+                  <td className="w-32 px-4 py-2 text-center">{req.to_time || "-"}</td>
+                  <td className="w-48 px-4 py-2 text-center">{req.reason}</td>
+                  <td className="w-32 px-4 py-2 text-center">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold ${
                         req.status === "Pending"
@@ -669,25 +669,26 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
 
         {/* Overtime table */}
         {/* Overtime table */}
+{/* Overtime table */}
 <table className="min-w-full bg-white rounded shadow border border-yellow-200">
   <thead className="bg-yellow-100">
     <tr>
-      <th className="px-4 py-2 text-yellow-900">Date</th>
-      <th className="px-4 py-2 text-yellow-900">Type</th>
-      <th className="px-4 py-2 text-yellow-900">Paid Out</th>
-      <th className="px-4 py-2 text-yellow-900">Used as Leave</th>
-      <th className="px-4 py-2 text-yellow-900">Status</th>
+      <th className="px-4 py-2 text-yellow-900 text-center">Date</th>
+      <th className="px-4 py-2 text-yellow-900 text-left">Type</th>
+      <th className="px-4 py-2 text-yellow-900 text-center">Paid Out</th>
+      <th className="px-4 py-2 text-yellow-900 text-center">Used as Leave</th>
+      <th className="px-4 py-2 text-yellow-900 text-left">Status</th>
     </tr>
   </thead>
   <tbody>
     {filteredOvertimes.length > 0 ? (
       filteredOvertimes.map((ot) => (
         <tr key={ot.id} className="hover:bg-yellow-50 transition">
-          <td className="px-4 py-2">{ot.date}</td>
-          <td className="px-4 py-2">{ot.type}</td>
-          <td className="px-4 py-2">{flagToYesNo(ot.is_paid_out)}</td>
-          <td className="px-4 py-2">{flagToYesNo(ot.is_used_as_leave)}</td>
-          <td className="px-4 py-2">
+          <td className="px-4 py-2 text-center">{ot.date}</td>
+          <td className="px-4 py-2 text-left">{ot.type}</td>
+          <td className="px-4 py-2 text-center">{flagToYesNo(ot.is_paid_out)}</td>
+          <td className="px-4 py-2 text-center">{flagToYesNo(ot.is_used_as_leave)}</td>
+          <td className="px-4 py-2 text-left">
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold ${
                 ot.status === "PENDING"
@@ -713,6 +714,7 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
     )}
   </tbody>
 </table>
+
 
       </div>
 

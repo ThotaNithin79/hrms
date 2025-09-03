@@ -243,8 +243,6 @@ const applyOvertime = async ({ date, type, is_paid_out = false, is_used_as_leave
     name: "John Doe",
     date,
     type,
-    is_paid_out: typeof is_paid_out === "boolean" ? (is_paid_out ? 0x01 : 0x00) : is_paid_out,
-    is_used_as_leave: typeof is_used_as_leave === "boolean" ? (is_used_as_leave ? 0x01 : 0x00) : is_used_as_leave,
     status: "PENDING",
   };
 
