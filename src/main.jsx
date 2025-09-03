@@ -21,29 +21,30 @@ import HolidayCalendarProvider from './context/HolidayCalendarProvider';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-    <LeaveRequestProvider>
-      <EmployeeProvider>
-        <AttendanceProvider>
-          <AdminProvider>
-            <AuthProvider>
-              <NotificationProvider>
-                <CurrentEmployeeAttendanceProvider>
-                  <CurrentEmployeeLeaveRequestProvider>
-                    <CurrentEmployeeProvider>
-                      <CurrentEmployeeNotificationProvider>
-                        <HolidayCalendarProvider>
-                          <App />
-                        </HolidayCalendarProvider>
-                      </CurrentEmployeeNotificationProvider>
-                    </CurrentEmployeeProvider>
-                  </CurrentEmployeeLeaveRequestProvider>
-                </CurrentEmployeeAttendanceProvider>
-              </NotificationProvider>
-            </AuthProvider>
-          </AdminProvider>
-        </AttendanceProvider>
-      </EmployeeProvider>
-    </LeaveRequestProvider>
+    <EmployeeProvider>
+  <LeaveRequestProvider>
+    <AttendanceProvider>
+      <AdminProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <CurrentEmployeeAttendanceProvider>
+              <CurrentEmployeeLeaveRequestProvider>
+                <CurrentEmployeeProvider>
+                  <CurrentEmployeeNotificationProvider>
+                    <HolidayCalendarProvider>
+                      <App />
+                    </HolidayCalendarProvider>
+                  </CurrentEmployeeNotificationProvider>
+                </CurrentEmployeeProvider>
+              </CurrentEmployeeLeaveRequestProvider>
+            </CurrentEmployeeAttendanceProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </AdminProvider>
+    </AttendanceProvider>
+  </LeaveRequestProvider>
+</EmployeeProvider>
+
     </BrowserRouter>
   </React.StrictMode>
 );

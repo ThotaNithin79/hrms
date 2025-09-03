@@ -30,7 +30,6 @@ const Navbar = () => {
   return (
     <nav className="h-16 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 flex items-center justify-between px-6 shadow-lg relative z-10">
       <div className="flex items-center gap-3">
-        <img src="/vite.svg" alt="HRMS Logo" className="h-8 w-8 mr-2" />
         <h1 className="text-2xl font-bold text-white tracking-wide drop-shadow">HRMS Admin</h1>
       </div>
 
