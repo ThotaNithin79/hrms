@@ -58,7 +58,7 @@ const CalendarCell = ({ day, record }) => {
 };
 
 const CurrentEmployeeAttendanceProfile = () => {
-  const { attendanceRecords,PermissionRequests, applyPermission } =
+  const { attendanceRecords,PermissionRequests, applyPermission ,overtimeRequests, applyOvertime} =
     useContext(CurrentEmployeeAttendanceContext);
 
 
@@ -126,6 +126,64 @@ const employeeRecords = (attendanceRecords || []).filter((rec) => rec.employeeId
     calendarRows.push(<tr key={day}>{row}</tr>);
   }
 
+
+
+  // ========== OVERTIME UI STATE ==========
+const [showOvertimeForm, setShowOvertimeForm] = useState(false);
+const [OvertimeForm, setOvertimeForm] = useState({
+  date: "",
+  type: "INCENTIVE_OT",
+  is_paid_out: false,
+  is_used_as_leave: false,
+});
+const [OvertimeError, setOvertimeError] = useState("");
+const [overtimeSuccess, setOvertimeSuccess] = useState("");
+
+const [OvertimeMonth, setOvertimeMonth] = useState("");
+const [OvertimeStatus, setOvertimeStatus] = useState("");
+const overtimeStatusOptions = ["All", "PENDING", "APPROVED", "REJECTED"];
+const overtimeTypeOptions = ["INCENTIVE_OT", "PENDING_OT"];
+
+const handleOvertimeChange = (e) => {
+  const { name, type, value, checked } = e.target;
+  setOvertimeForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  setOvertimeError("");
+  setOvertimeSuccess("");
+};
+
+const handleOvertimeSubmit = async (e) => {
+  e.preventDefault();
+  const { date, type, is_paid_out, is_used_as_leave } = OvertimeForm;
+  if (!date || !type) {
+    setOvertimeError("Date and type are required.");
+    setOvertimeSuccess("");
+    return;
+  }
+
+  try {
+    await applyOvertime({ date, type, is_paid_out, is_used_as_leave });
+    setOvertimeForm({ date: "", type: "INCENTIVE_OT", is_paid_out: false, is_used_as_leave: false });
+    setOvertimeError("");
+    setOvertimeSuccess("Overtime request submitted successfully!");
+    setTimeout(() => setOvertimeSuccess(""), 3000);
+  } catch (err) {
+    setOvertimeError("Failed to submit overtime request. Try again.");
+  }
+};
+
+// filtered list of overtimes for UI table
+const filteredOvertimes = (overtimeRequests || []).filter((req) => {
+  const matchesMonth = OvertimeMonth ? req.date.startsWith(OvertimeMonth) : true;
+  const matchesStatus = OvertimeStatus && OvertimeStatus !== "All" ? req.status === OvertimeStatus : true;
+  return matchesMonth && matchesStatus;
+});
+
+// helper to display 0x01/0x00 / booleans
+const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "Yes" : "No");
+
+
+
+
   // ===================== PERMISSION HOURS (Late Permissions UI) =====================
   // Local UI state (moved from Leave Management)
   const [showPermissionForm, setshowPermissionForm] = useState(false);
@@ -174,6 +232,117 @@ const employeeRecords = (attendanceRecords || []).filter((rec) => rec.employeeId
 
 
   // =========================================================================
+
+
+
+{/* ================= OVERTIME REQUESTS (below Permission Hours) ================= */}
+<div className="mt-8">
+  <div className="flex flex-wrap gap-6 items-center mb-4">
+    <h2 className="text-2xl font-bold text-yellow-800 flex-1">Overtime Requests</h2>
+    <button
+      className={`bg-indigo-600 hover:bg-indigo-800 text-white font-semibold px-5 py-2 rounded-lg shadow transition ${showOvertimeForm ? 'bg-indigo-800' : ''}`}
+      onClick={() => setShowOvertimeForm((v) => !v)}
+    >
+      {showOvertimeForm ? "Cancel OT" : "New Overtime"}
+    </button>
+  </div>
+
+  {showOvertimeForm && (
+    <form onSubmit={handleOvertimeSubmit} className="mb-6 bg-white rounded-lg shadow-md p-6 border border-gray-100 max-w-xl">
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label className="block mb-1 font-medium">Date (OT Date)</label>
+          <input type="date" name="date" value={OvertimeForm.date} onChange={handleOvertimeChange}
+                 className="w-full border rounded px-3 py-2" />
+        </div>
+
+        <div className="flex-1">
+          <label className="block mb-1 font-medium">Type</label>
+          <select name="type" value={OvertimeForm.type} onChange={handleOvertimeChange} className="w-full border rounded px-3 py-2">
+            {overtimeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-6 mt-4 items-center">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="is_paid_out" checked={OvertimeForm.is_paid_out} onChange={handleOvertimeChange} />
+          <span>Paid Out</span>
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="is_used_as_leave" checked={OvertimeForm.is_used_as_leave} onChange={handleOvertimeChange} />
+          <span>Compensate as Leave</span>
+        </label>
+      </div>
+
+      {OvertimeError && <div className="text-red-600 font-semibold mt-2">{OvertimeError}</div>}
+      {overtimeSuccess && <div className="text-green-600 font-semibold mt-2">{overtimeSuccess}</div>}
+
+      <div className="mt-4">
+        <button type="submit" className="bg-indigo-600 hover:bg-indigo-800 text-white px-5 py-2 rounded-lg shadow">Submit Overtime</button>
+      </div>
+    </form>
+  )}
+
+  {/* Overtime filters */}
+  <div className="flex flex-wrap gap-6 items-center mb-4">
+    <div>
+      <label className="mr-2 font-medium">Filter by Month:</label>
+      <select value={OvertimeMonth} onChange={(e) => setOvertimeMonth(e.target.value)} className="border rounded px-3 py-2">
+        <option value="">All</option>
+        {monthOptions.map(m => <option key={m} value={m}>{getMonthName(m)}</option>)}
+      </select>
+    </div>
+
+    <div>
+      <label className="mr-2 font-medium">Status:</label>
+      <select value={OvertimeStatus} onChange={(e) => setOvertimeStatus(e.target.value)} className="border rounded px-3 py-2">
+        {overtimeStatusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+    </div>
+  </div>
+
+  {/* Overtime table */}
+  <table className="min-w-full bg-white rounded shadow border border-gray-200">
+    <thead className="bg-gray-100">
+      <tr>
+        <th className="px-4 py-2 text-left">Date</th>
+        <th className="px-4 py-2 text-left">Type</th>
+        <th className="px-4 py-2 text-left">Paid Out</th>
+        <th className="px-4 py-2 text-left">Used as Leave</th>
+        <th className="px-4 py-2 text-left">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredOvertimes.length > 0 ? (
+        filteredOvertimes.map((ot) => (
+          <tr key={ot.id} className="hover:bg-gray-50">
+            <td className="px-4 py-2">{ot.date}</td>
+            <td className="px-4 py-2">{ot.type}</td>
+            <td className="px-4 py-2">{flagToYesNo(ot.is_paid_out)}</td>
+            <td className="px-4 py-2">{flagToYesNo(ot.is_used_as_leave)}</td>
+            <td className="px-4 py-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                ot.status === "PENDING" ? "bg-yellow-200 text-yellow-800" :
+                ot.status === "APPROVED" ? "bg-green-200 text-green-800" :
+                ot.status === "REJECTED" ? "bg-red-200 text-red-800" :
+                "bg-gray-200 text-gray-800"
+              }`}>{ot.status}</span>
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={5} className="px-4 py-2 text-center text-gray-400">No overtime requests found.</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+{/* ================= End OVERTIME REQUESTS ================= */}
+
+  
+
 
   return (
     <div className="p-6">

@@ -223,12 +223,51 @@ const applyPermission = async ({ from_time, date, to_time, reason }) => {
   }
 };
 
+// --- DUMMY OVERTIME REQUESTS (September 2025) ---
+const dummyOvertimeRequests = [
+  // date = day for which OT was done / applied to; flags as 0x01 / 0x00
+  { id: 1, employeeId: "EMP101", date: "2025-09-03", is_paid_out: 0x00, is_used_as_leave: 0x00, status: "APPROVED", type: "INCENTIVE_OT" },
+  { id: 2, employeeId: "EMP101", date: "2025-09-06", is_paid_out: 0x01, is_used_as_leave: 0x00, status: "PENDING",  type: "PENDING_OT" },
+  { id: 3, employeeId: "EMP101", date: "2025-09-13", is_paid_out: 0x01, is_used_as_leave: 0x01, status: "REJECTED", type: "INCENTIVE_OT" },
+  { id: 4, employeeId: "EMP101", date: "2025-09-24", is_paid_out: 0x00, is_used_as_leave: 0x00, status: "APPROVED", type: "PENDING_OT" },
+];
+
+const [overtimeRequests, setOvertimeRequests] = useState(
+  Array.isArray(dummyOvertimeRequests) ? dummyOvertimeRequests : []
+);
+
+const applyOvertime = async ({ date, type, is_paid_out = false, is_used_as_leave = false }) => {
+  // convert booleans to 0x01 / 0x00 so storage matches your requested format
+  const payload = {
+    employeeId: "EMP101",
+    name: "John Doe",
+    date,
+    type,
+    is_paid_out: typeof is_paid_out === "boolean" ? (is_paid_out ? 0x01 : 0x00) : is_paid_out,
+    is_used_as_leave: typeof is_used_as_leave === "boolean" ? (is_used_as_leave ? 0x01 : 0x00) : is_used_as_leave,
+    status: "PENDING",
+  };
+
+  try {
+    const response = await axios.post("/api/overtime", payload);
+    const created = response.data;
+    setOvertimeRequests((prev) => [created, ...prev]);
+  } catch (error) {
+    console.error("Failed to send overtime request:", error);
+    // fallback local insertion (no backend)
+    payload.id = overtimeRequests.length + 1 + Math.floor(Math.random() * 10000);
+    setOvertimeRequests((prev) => [payload, ...prev]);
+  }
+};
+
+
 
 
 const fetchAttendanceData = async () => {
   try {
     const attendanceResponse = await axios.get("/api/attendance");
     const permissionResponse = await axios.get("/api/permissions");
+    const overtimeResponse = await axios.get("/api/overtime");
 
     setAttendanceRecords(
       Array.isArray(attendanceResponse.data) && attendanceResponse.data.length
@@ -242,12 +281,20 @@ const fetchAttendanceData = async () => {
         : dummyPermissionRequests
     );
 
+    setOvertimeRequests(
+      Array.isArray(overtimeResponse.data) && overtimeResponse.data.length
+        ? overtimeResponse.data
+        : dummyOvertimeRequests
+    );
+
   } catch (error) {
     console.error("Backend not available, using dummy data", error);
     setAttendanceRecords(manualAttendance);
     setPermissionRequests(dummyPermissionRequests);
+    setOvertimeRequests(dummyOvertimeRequests);
   }
 };
+
 
 
 
@@ -265,6 +312,8 @@ useEffect(() => {
         updateAttendanceRecord, // helper to update a single record
         PermissionRequests,
         applyPermission,
+        overtimeRequests,       
+        applyOvertime,
       }}
     >
       {children}
