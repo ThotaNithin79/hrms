@@ -151,11 +151,9 @@ const employeeRecords = (attendanceRecords || []).filter((rec) => rec.employeeId
     setpermissionSuccess("");
   };
 
-  const handlePermissionSubmit = (e) => {
+  const handlePermissionSubmit = async (e) => {
   e.preventDefault();
   const { date, from_time, to_time, reason } = PermissionForm;
-
-  console.log("Form submitted:", { date, from_time, to_time, reason });
 
   if (!date || !from_time || !to_time || !reason) {
     setPermissionError("All fields are required.");
@@ -163,12 +161,17 @@ const employeeRecords = (attendanceRecords || []).filter((rec) => rec.employeeId
     return;
   }
 
-  applyPermission({ date, from_time, to_time, reason });
-  setPermissionForm({ date: "", from_time: "", to_time: "", reason: "" });
-  setPermissionError("");
-  setpermissionSuccess("Late login request submitted successfully!");
-  setTimeout(() => setpermissionSuccess(""), 3000);
+  try {
+    await applyPermission({ date, from_time, to_time, reason });
+    setPermissionForm({ date: "", from_time: "", to_time: "", reason: "" });
+    setPermissionError("");
+    setpermissionSuccess("Late login request submitted successfully!");
+    setTimeout(() => setpermissionSuccess(""), 3000);
+  } catch (err) {
+    setPermissionError("Failed to submit permission request. Try again.");
+  }
 };
+
 
   // =========================================================================
 

@@ -193,20 +193,36 @@ const [attendanceRecords, setAttendanceRecords] = useState(
 const [PermissionRequests, setPermissionRequests] = useState(
   Array.isArray(dummyPermissionRequests) ? dummyPermissionRequests : []
 );
-  const applyPermission = ({ from_time, date, to_time, reason }) => {
-    const newRequest = {
-      id: 
-      PermissionRequests.length + 1 + Math.floor(Math.random() * 10000),
-      employeeId: "EMP101",
-      name: "John Doe",
-      from_time,
-      date,
-      to_time,
-      reason,
-      status: "Pending",
-    };
-    setPermissionRequests((prev) => [newRequest, ...prev]);
+  
+const applyPermission = async ({ from_time, date, to_time, reason }) => {
+  const newRequest = {
+    employeeId: "EMP101",
+    name: "John Doe",
+    from_time,
+    date,
+    to_time,
+    reason,
+    status: "Pending",
   };
+
+  try {
+    // Send new permission request to backend
+    const response = await axios.post("/api/permissions", newRequest);
+
+    // Assume backend returns the created object with 'id'
+    const createdRequest = response.data;
+
+    // Update local state with response
+    setPermissionRequests((prev) => [createdRequest, ...prev]);
+  } catch (error) {
+    console.error("Failed to send permission request:", error);
+
+    // Fallback: use local state if backend fails
+    newRequest.id = PermissionRequests.length + 1 + Math.floor(Math.random() * 10000);
+    setPermissionRequests((prev) => [newRequest, ...prev]);
+  }
+};
+
 
 
 const fetchAttendanceData = async () => {
