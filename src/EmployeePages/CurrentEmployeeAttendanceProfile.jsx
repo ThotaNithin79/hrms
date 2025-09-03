@@ -235,111 +235,159 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
 
 
 
-{/* ================= OVERTIME REQUESTS (below Permission Hours) ================= */}
-<div className="mt-8">
-  <div className="flex flex-wrap gap-6 items-center mb-4">
-    <h2 className="text-2xl font-bold text-yellow-800 flex-1">Overtime Requests</h2>
-    <button
-      className={`bg-indigo-600 hover:bg-indigo-800 text-white font-semibold px-5 py-2 rounded-lg shadow transition ${showOvertimeForm ? 'bg-indigo-800' : ''}`}
-      onClick={() => setShowOvertimeForm((v) => !v)}
-    >
-      {showOvertimeForm ? "Cancel OT" : "New Overtime"}
-    </button>
-  </div>
-
-  {showOvertimeForm && (
-    <form onSubmit={handleOvertimeSubmit} className="mb-6 bg-white rounded-lg shadow-md p-6 border border-gray-100 max-w-xl">
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="block mb-1 font-medium">Date (OT Date)</label>
-          <input type="date" name="date" value={OvertimeForm.date} onChange={handleOvertimeChange}
-                 className="w-full border rounded px-3 py-2" />
+      {/* ================= Permission Hours Section (moved here) ================= */}
+      <div className="mb-10 mt-10">
+        <div className="flex flex-wrap gap-6 items-center mb-6">
+          <h2 className="text-3xl font-bold text-yellow-800 flex-1">Permission Hours</h2>
+          <button
+            className={`bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition ${showPermissionForm ? 'bg-blue-900' : ''}`}
+            onClick={() => setshowPermissionForm((v) => !v)}
+          >
+            {showPermissionForm ? "Cancel" : "Permission Hours"}
+          </button>
         </div>
 
-        <div className="flex-1">
-          <label className="block mb-1 font-medium">Type</label>
-          <select name="type" value={OvertimeForm.type} onChange={handleOvertimeChange} className="w-full border rounded px-3 py-2">
-            {overtimeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+        {showPermissionForm && (
+          <form
+            onSubmit={handlePermissionSubmit}
+            className="mb-8 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 border border-blue-100 max-w-xl"
+          >
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">Date of Late Login</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={PermissionForm.date}
+                  onChange={handlePermissionChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">From (Time)</label>
+                <input
+                  type="time"
+                  name="from_time"
+                  value={PermissionForm.from_time}
+                  onChange={handlePermissionChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block mb-1 font-medium text-yellow-800">To (Time)</label>
+                <input
+                  type="time"
+                  name="to_time"
+                  value={PermissionForm.to_time}
+                  onChange={handlePermissionChange}
+                  className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-yellow-800">Reason</label>
+              <input
+                type="text"
+                name="reason"
+                value={PermissionForm.reason}
+                onChange={handlePermissionChange}
+                className="w-full border border-yellow-300 rounded px-3 py-2 focus:outline-yellow-500"
+                placeholder="Enter reason for late login"
+              />
+            </div>
+            {PermissionError && <div className="text-red-600 font-semibold">{PermissionError}</div>}
+            {permissionSuccess && <div className="text-green-600 font-semibold">{permissionSuccess}</div>}
+            <button
+              type="submit"
+              className="bg-blue-700 hover:bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow transition mt-2"
+            >
+              Submit Permission Hours
+            </button>
+          </form>
+        )}
+
+        {/* Filters for late permissions */}
+        <div className="flex flex-wrap gap-6 items-center mb-4">
+          <div>
+            <label className="mr-2 font-medium text-yellow-800">Filter by Month:</label>
+            <select
+              value={PermissionMonth}
+              onChange={(e) => setPermissionMonth(e.target.value)}
+              className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
+            >
+              <option value="">All</option>
+              {monthOptions.map((month) => (
+                <option key={month} value={month}>
+                  {getMonthName(month)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mr-2 font-medium text-yellow-800">Status:</label>
+            <select
+              value={PermissionStatus}
+              onChange={(e) => setPermissionStatus(e.target.value)}
+              className="border border-yellow-300 rounded px-3 py-2 bg-white focus:outline-yellow-500"
+            >
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {/* Late permissions table */}
+        <table className="min-w-full bg-white rounded shadow border border-yellow-200">
+          <thead className="bg-yellow-100">
+            <tr>
+              <th className="w-32 px-4 py-2 text-yellow-900">Date</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">From</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">To</th>
+              <th className="w-48 px-4 py-2 text-yellow-900">Reason</th>
+              <th className="w-32 px-4 py-2 text-yellow-900">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredLateLogins.length > 0 ? (
+              filteredLateLogins.map((req) => (
+                <tr key={req.id} className="hover:bg-yellow-50 transition">
+                  <td className="w-32 px-4 py-2">{req.date}</td>
+                  <td className="w-32 px-4 py-2">{req.from_time}</td>
+                  <td className="w-32 px-4 py-2">{req.to_time || "-"}</td>
+                  <td className="w-48 px-4 py-2">{req.reason}</td>
+                  <td className="w-32 px-4 py-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        req.status === "Pending"
+                          ? "bg-yellow-200 text-yellow-800"
+                          : req.status === "Approved"
+                          ? "bg-green-200 text-green-800"
+                          : req.status === "Rejected"
+                          ? "bg-red-200 text-red-800"
+                          : "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {req.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="px-4 py-2 text-center text-gray-400">
+                  No late login requests found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+      {/* ================= End Permission Hours ================= */}    
 
-      <div className="flex gap-6 mt-4 items-center">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="is_paid_out" checked={OvertimeForm.is_paid_out} onChange={handleOvertimeChange} />
-          <span>Paid Out</span>
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="is_used_as_leave" checked={OvertimeForm.is_used_as_leave} onChange={handleOvertimeChange} />
-          <span>Compensate as Leave</span>
-        </label>
-      </div>
-
-      {OvertimeError && <div className="text-red-600 font-semibold mt-2">{OvertimeError}</div>}
-      {overtimeSuccess && <div className="text-green-600 font-semibold mt-2">{overtimeSuccess}</div>}
-
-      <div className="mt-4">
-        <button type="submit" className="bg-indigo-600 hover:bg-indigo-800 text-white px-5 py-2 rounded-lg shadow">Submit Overtime</button>
-      </div>
-    </form>
-  )}
-
-  {/* Overtime filters */}
-  <div className="flex flex-wrap gap-6 items-center mb-4">
-    <div>
-      <label className="mr-2 font-medium">Filter by Month:</label>
-      <select value={OvertimeMonth} onChange={(e) => setOvertimeMonth(e.target.value)} className="border rounded px-3 py-2">
-        <option value="">All</option>
-        {monthOptions.map(m => <option key={m} value={m}>{getMonthName(m)}</option>)}
-      </select>
-    </div>
-
-    <div>
-      <label className="mr-2 font-medium">Status:</label>
-      <select value={OvertimeStatus} onChange={(e) => setOvertimeStatus(e.target.value)} className="border rounded px-3 py-2">
-        {overtimeStatusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-    </div>
-  </div>
-
-  {/* Overtime table */}
-  <table className="min-w-full bg-white rounded shadow border border-gray-200">
-    <thead className="bg-gray-100">
-      <tr>
-        <th className="px-4 py-2 text-left">Date</th>
-        <th className="px-4 py-2 text-left">Type</th>
-        <th className="px-4 py-2 text-left">Paid Out</th>
-        <th className="px-4 py-2 text-left">Used as Leave</th>
-        <th className="px-4 py-2 text-left">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filteredOvertimes.length > 0 ? (
-        filteredOvertimes.map((ot) => (
-          <tr key={ot.id} className="hover:bg-gray-50">
-            <td className="px-4 py-2">{ot.date}</td>
-            <td className="px-4 py-2">{ot.type}</td>
-            <td className="px-4 py-2">{flagToYesNo(ot.is_paid_out)}</td>
-            <td className="px-4 py-2">{flagToYesNo(ot.is_used_as_leave)}</td>
-            <td className="px-4 py-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                ot.status === "PENDING" ? "bg-yellow-200 text-yellow-800" :
-                ot.status === "APPROVED" ? "bg-green-200 text-green-800" :
-                ot.status === "REJECTED" ? "bg-red-200 text-red-800" :
-                "bg-gray-200 text-gray-800"
-              }`}>{ot.status}</span>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={5} className="px-4 py-2 text-center text-gray-400">No overtime requests found.</td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
-{/* ================= End OVERTIME REQUESTS ================= */}
+      
 
   
 
@@ -406,8 +454,6 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
           <span className="text-2xl font-bold">{halfdayCount}</span>
         </div>
       </div>
-
-      
 
       {/* ================= Permission Hours Section (moved here) ================= */}
       <div className="mb-10 mt-10">
@@ -560,6 +606,120 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
         </table>
       </div>
       {/* ================= End Permission Hours ================= */}    
+
+
+
+      {/* ================= OVERTIME REQUESTS (now below Permission Hours) ================= */}
+      <div className="mt-8">
+        <div className="flex flex-wrap gap-6 items-center mb-4">
+          <h2 className="text-2xl font-bold text-yellow-800 flex-1">Overtime Requests</h2>
+          <button
+            className={`bg-indigo-600 hover:bg-indigo-800 text-white font-semibold px-5 py-2 rounded-lg shadow transition ${showOvertimeForm ? 'bg-indigo-800' : ''}`}
+            onClick={() => setShowOvertimeForm((v) => !v)}
+          >
+            {showOvertimeForm ? "Cancel OT" : "New Overtime"}
+          </button>
+        </div>
+
+        {showOvertimeForm && (
+          <form onSubmit={handleOvertimeSubmit} className="mb-6 bg-white rounded-lg shadow-md p-6 border border-gray-100 max-w-xl">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block mb-1 font-medium">Date (OT Date)</label>
+                <input type="date" name="date" value={OvertimeForm.date} onChange={handleOvertimeChange}
+                       className="w-full border rounded px-3 py-2" />
+              </div>
+
+              <div className="flex-1">
+                <label className="block mb-1 font-medium">Type</label>
+                <select name="type" value={OvertimeForm.type} onChange={handleOvertimeChange} className="w-full border rounded px-3 py-2">
+                  {overtimeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            
+
+            {OvertimeError && <div className="text-red-600 font-semibold mt-2">{OvertimeError}</div>}
+            {overtimeSuccess && <div className="text-green-600 font-semibold mt-2">{overtimeSuccess}</div>}
+
+            <div className="mt-4">
+              <button type="submit" className="bg-indigo-600 hover:bg-indigo-800 text-white px-5 py-2 rounded-lg shadow">Submit Overtime</button>
+            </div>
+          </form>
+        )}
+
+        {/* Overtime filters */}
+        <div className="flex flex-wrap gap-6 items-center mb-4">
+          <div>
+            <label className="mr-2 font-medium">Filter by Month:</label>
+            <select value={OvertimeMonth} onChange={(e) => setOvertimeMonth(e.target.value)} className="border rounded px-3 py-2">
+              <option value="">All</option>
+              {monthOptions.map(m => <option key={m} value={m}>{getMonthName(m)}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="mr-2 font-medium">Status:</label>
+            <select value={OvertimeStatus} onChange={(e) => setOvertimeStatus(e.target.value)} className="border rounded px-3 py-2">
+              {overtimeStatusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Overtime table */}
+        {/* Overtime table */}
+<table className="min-w-full bg-white rounded shadow border border-yellow-200">
+  <thead className="bg-yellow-100">
+    <tr>
+      <th className="px-4 py-2 text-yellow-900">Date</th>
+      <th className="px-4 py-2 text-yellow-900">Type</th>
+      <th className="px-4 py-2 text-yellow-900">Paid Out</th>
+      <th className="px-4 py-2 text-yellow-900">Used as Leave</th>
+      <th className="px-4 py-2 text-yellow-900">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {filteredOvertimes.length > 0 ? (
+      filteredOvertimes.map((ot) => (
+        <tr key={ot.id} className="hover:bg-yellow-50 transition">
+          <td className="px-4 py-2">{ot.date}</td>
+          <td className="px-4 py-2">{ot.type}</td>
+          <td className="px-4 py-2">{flagToYesNo(ot.is_paid_out)}</td>
+          <td className="px-4 py-2">{flagToYesNo(ot.is_used_as_leave)}</td>
+          <td className="px-4 py-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                ot.status === "PENDING"
+                  ? "bg-yellow-200 text-yellow-800"
+                  : ot.status === "APPROVED"
+                  ? "bg-green-200 text-green-800"
+                  : ot.status === "REJECTED"
+                  ? "bg-red-200 text-red-800"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              {ot.status}
+            </span>
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan={5} className="px-4 py-2 text-center text-gray-400">
+          No overtime requests found.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
+
+      </div>
+
+      <div className="mt-8 mb-10">
+  
+</div>
+      {/* ================= End OVERTIME REQUESTS ================= */}
 
 
       {/* Calendar view */}
