@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { CurrentEmployeeContext } from "./CurrentEmployeeContext";
 
+
+
+const idle_time = 1.25;
+
+
 export const CurrentEmployeeProvider = ({ children }) => {
   // Store current employee as an object, add profilePhoto (null by default)
   const [currentEmployee, setCurrentEmployee] = useState({
@@ -9,60 +14,121 @@ export const CurrentEmployeeProvider = ({ children }) => {
       fatherName: "Richard Doe",
       dob: "1990-01-15",
       gender: "Male",
-      maritalStatus: "Married",
+      marital_status: "Married",
       nationality: "Indian",
-      aadhaarNumber: "1234-5678-9012",
-      panNumber: "ABCDE1234F",
-      profilePhoto: null, // base64 or url string
+      aadhaar_number: "123456789012",
+      pan_number: "ABCDE1234F",
+      profile_photo: null, // base64 or url string
       aadhaar: null, // base64 or url string
       pan: null, // base64 or url string
-      isActive: true,
       resume: null,
-    },
-    contact: {
-      email: "john@example.com",
-      phone: "9876543210",
-      address: "Hyderabad",
-      city: "Hyderabad",
-      emergency_contact_name: "ramya",
-      emergency_contact_phone: "9999999999",
-      emergency_contact_relation: "sister",
-    },
-    job: {
       employeeId: "EMP101",
-      department_id:"1", 
-      department: "HR",
-      designation: "HR Manager",
-      joiningDate: "2023-05-10",
     },
-    bank: {
-      accountNumber: "1234567890",
-      bankName: "State Bank of India",
-      ifsc: "SBIN0001234",
-      branch: "Hyderabad Main",
-    },
-    experience: [
-      {
-        company: "ABC Corp",
-        role: "HR Executive",
-        years: 2,
-        joiningDate: "2019-01-15",
-        lastWorkingDate: "2021-01-14",
-        salary: 45000,
-        reason: "", 
-      },
-      {
-        company: "XYZ Ltd",
-        role: "HR Manager",
-        years: 3,
-        joiningDate: "2021-02-01",
-        lastWorkingDate: "2023-05-09",
-        salary: 65000,
-        reason: "", 
-      },
-    ],
     
   });
+
+  const [employeeStats, setEmployeeStats] = useState({
+    ot_incentive_days: 5,
+    ot_pending_days: 2,
+    emergency_contact_name: "Ramya",
+    emergency_contact_relation: "Sister",
+    emergency_contact_phone: "9999999999",
+    worked_days: 18,
+    total_worked_days: 20, // fixed typo
+    address: "Hyderabad",
+    email: "sahithyaakurathi@gmail.com",
+    phone: "9988776655",
+  });
+
+
+const [leaveStats, setLeaveStats] = useState({
+    full_day_leaves_approved: 4,
+    half_day_leaves_approved: 2,
+    paid_leave_count: 3,
+    pending_leave_count: 1,
+    sandwich_leave_count: 0,
+    unpaid_leave_count: 1,
+  });
+
+
+const [officeTimings, setOfficeTimings] = useState({
+    office_start: "09:30",
+    office_end: "18:30",
+    full_day_threshold: 9,
+  });
+
+
+  const [monthlyStats, setMonthlyStats] = useState({
+    monthlyWorkHours: 160,   // example: 20 days * 8 hrs
+    monthlyLeaves: 2,        // example: 2 leaves
+    monthlyIdleHours: 12,    // example: total idle hours this month
+  });
+
+
+const [job, setJob] = useState({
+    dept_id: "1",
+    department: "HR",
+    designation: "HR Manager",
+    doj: "2023-05-10",
+  });
+
+  const [bank, setBank] = useState({
+  account_number: "1234567890",
+  bank_name: "State Bank of India",
+  ifsc_code: "SBIN0001234",
+  branch: "Hyderabad Main",
+});
+
+const [experienceStats, setexperienceStats] = useState({
+    company: "ABC Corp",
+        role: "HR Executive",
+        years: 2,
+        joining_date: "2019-01-15",
+        salary: 45000,
+        reason: "",
+        department: "HR",
+        last_working_date: "2021-01-14",
+        experience_letter: null, // base64 or url string
+        pastemployementtype: "Full-time",
+  });
+
+
+const editBank = (updatedBank) => {
+  setBank((prev) => ({
+    ...prev,
+    ...updatedBank,
+  }));
+};
+
+
+const editExperience = (updatedExperience) => {
+  setExperienceStats((prev) => ({
+    ...prev,
+    ...updatedExperience,
+  }));
+};
+
+
+const initialNotices = [
+  {
+    id: 1,
+    title: "Project Alpha Launch Date",
+    message:
+      "The launch date for Project Alpha has been moved to September 15th. All teams must finalize their deliverables by EOD September 10th.",
+    author: "Admin",
+    date: "2025-08-11",
+  },
+  {
+    id: 2,
+    title: "Employee Wellness Program",
+    message:
+      "A new wellness program is being introduced starting October. Details will be shared in a company-wide email next week.",
+    author: "Admin",
+    date: "2025-08-08",
+  },
+];
+
+
 
   // Edit function for current employee (supports profilePhoto, aadhaar, pan update)
   const editCurrentEmployee = (updatedData) => {
@@ -78,10 +144,6 @@ export const CurrentEmployeeProvider = ({ children }) => {
         ...prev.contact,
         ...(updatedData.contact || {}),
       },
-      job: {
-        ...prev.job,
-        ...(updatedData.job || {}),
-      },
       bank: {
         ...prev.bank,
         ...(updatedData.bank || {}),
@@ -90,9 +152,25 @@ export const CurrentEmployeeProvider = ({ children }) => {
     }));
   };
 
+
+  const editEmployeeStats = (updatedStats) => {
+    setEmployeeStats((prev) => ({
+      ...prev,
+      ...updatedStats,
+    }));
+  };
+
+
+  const editJob = (updatedJob) => {
+  setJob((prev) => ({
+    ...prev,
+    ...updatedJob,
+  }));
+};
+
   return (
     <CurrentEmployeeContext.Provider
-      value={{ currentEmployee, editCurrentEmployee }}
+      value={{ currentEmployee, editCurrentEmployee, idle_time, employeeStats, setEmployeeStats , editEmployeeStats, leaveStats, setLeaveStats , officeTimings, setOfficeTimings, monthlyStats, setMonthlyStats, job, setJob, editJob , bank, setBank, editBank, experienceStats, setexperienceStats, editExperience, initialNotices }}
     >
       {children}
     </CurrentEmployeeContext.Provider>
