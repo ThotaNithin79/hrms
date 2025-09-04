@@ -30,7 +30,7 @@ const CurrentEmployeeProfile = () => {
     editEmployeeStats,
     editJob,
     editBank,
-    setexperienceStats,
+    setExperienceStats,
   } = useContext(CurrentEmployeeContext);
 
   // Compose experience as array for editing
@@ -190,7 +190,7 @@ const CurrentEmployeeProfile = () => {
     });
     editJob(jobState);
     editBank(bankState);
-    setexperienceStats(experience);
+    setExperienceStats(experience);
 
     setEditing(false);
   };

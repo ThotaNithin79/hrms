@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect  } from "react";
 import { CurrentEmployeeContext } from "./CurrentEmployeeContext";
 
 
@@ -79,7 +79,7 @@ const [job, setJob] = useState({
   branch: "Hyderabad Main",
 });
 
-const [experienceStats, setexperienceStats] = useState({
+const [experienceStats, setExperienceStats] = useState({
     company: "ABC Corp",
         role: "HR Executive",
         years: 2,
@@ -131,26 +131,23 @@ const initialNotices = [
 
 
   // Edit function for current employee (supports profilePhoto, aadhaar, pan update)
-  const editCurrentEmployee = (updatedData) => {
-    setCurrentEmployee((prev) => ({
-      ...prev,
-      ...updatedData,
-      // If updating nested fields, merge them
-      personal: {
-        ...prev.personal,
-        ...(updatedData.personal || {}),
-      },
-      contact: {
-        ...prev.contact,
-        ...(updatedData.contact || {}),
-      },
-      bank: {
-        ...prev.bank,
-        ...(updatedData.bank || {}),
-      },
-      experience: updatedData.experience || prev.experience,
-    }));
-  };
+  const editCurrentEmployee = async (updatedData) => {
+  setCurrentEmployee((prev) => ({
+    ...prev,
+    personal: { ...prev.personal, ...(updatedData.personal || {}) },
+  }));
+
+  try {
+    await fetch("/api/employee/EMP101", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData),
+    });
+  } catch (err) {
+    console.warn("Backend update failed, kept only local state", err);
+  }
+};
+
 
 
   const editEmployeeStats = (updatedStats) => {
@@ -168,9 +165,55 @@ const initialNotices = [
   }));
 };
 
+
+const punchIn = async () => {
+  try {
+    await fetch("/api/attendance/punch-in", { method: "POST" });
+  } catch {
+    console.warn("Backend not available → storing dummy punch in");
+    // optional: update local state with fallback punch-in record
+  }
+};
+
+const punchOut = async () => {
+  try {
+    await fetch("/api/attendance/punch-out", { method: "POST" });
+  } catch {
+    console.warn("Backend not available → storing dummy punch out");
+    // optional: update local state with fallback punch-out record
+  }
+};
+
+
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/employee/EMP101");
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+
+      // Map API response to provider states
+      setCurrentEmployee(data.currentEmployee);
+      setEmployeeStats(data.employeeStats);
+      setLeaveStats(data.leaveStats);
+      setOfficeTimings(data.officeTimings);
+      setMonthlyStats(data.monthlyStats);
+      setJob(data.job);
+      setBank(data.bank);
+      setExperienceStats(data.experienceStats);
+    } catch (err) {
+      console.warn("Backend not available, using dummy data", err);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
   return (
     <CurrentEmployeeContext.Provider
-      value={{ currentEmployee, editCurrentEmployee, idle_time, employeeStats, setEmployeeStats , editEmployeeStats, leaveStats, setLeaveStats , officeTimings, setOfficeTimings, monthlyStats, setMonthlyStats, job, setJob, editJob , bank, setBank, editBank, experienceStats, setexperienceStats, editExperience, initialNotices }}
+      value={{ currentEmployee, editCurrentEmployee, idle_time, employeeStats, setEmployeeStats , editEmployeeStats, leaveStats, setLeaveStats , officeTimings, setOfficeTimings, monthlyStats, setMonthlyStats, job, setJob, editJob , bank, setBank, editBank, experienceStats, setExperienceStats, editExperience, initialNotices }}
     >
       {children}
     </CurrentEmployeeContext.Provider>
