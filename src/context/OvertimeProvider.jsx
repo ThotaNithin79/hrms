@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { OvertimeContext } from './OvertimeContext';
-import { useContext } from 'react';
-import { EmployeeContext } from './EmployeeContext';
+// Removed unused imports for 'useContext' and 'EmployeeContext'
 
 // --- Mock JSON Data based on your 'overtime' table schema ---
 // In a real app, this would come from an API call.
@@ -97,7 +96,8 @@ export const OvertimeProvider = ({ children }) => {
   }, []);
 
   // --- Value provided to consuming components ---
-  const contextValue = {
+  // FIX: Wrapped the context value in useMemo to prevent unnecessary re-renders in consumer components.
+  const contextValue = useMemo(() => ({
     requests: filteredRequests,
     approveRequest,
     rejectRequest,
@@ -105,7 +105,7 @@ export const OvertimeProvider = ({ children }) => {
     setSelectedMonth,
     selectedYear,
     setSelectedYear,
-  };
+  }), [filteredRequests, approveRequest, rejectRequest, selectedMonth, selectedYear]);
 
   return (
     <OvertimeContext.Provider value={contextValue}>
