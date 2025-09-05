@@ -64,6 +64,18 @@ const EmployeeDashboard = () => {
 
   
 
+
+
+  const playPunchInSound = () => {
+  const audio = new Audio("/sounds/punched-in.mp3");
+  audio.play();
+};
+
+const playPunchOutSound = () => {
+  const audio = new Audio("/sounds/punch-out.mp3");
+  audio.play();
+};
+
   // Punch In Handler
   const handlePunchIn = () => {
     if (!punchedIn) {
@@ -71,6 +83,7 @@ const EmployeeDashboard = () => {
       const timeStr = now.toTimeString().slice(0, 5);
       setPunchInTime(timeStr);
       setPunchedIn(true);
+      playPunchInSound();
     }
   };
 
@@ -80,6 +93,7 @@ const EmployeeDashboard = () => {
       const now = new Date();
       const timeStr = now.toTimeString().slice(0, 5);
       setPunchOutTime(timeStr);
+      playPunchOutSound();
     }
   };
 
@@ -112,6 +126,11 @@ const {
   paid_leave_count = 0,
   unpaid_leave_count = 0,
 } = leaveStats || {};
+
+
+
+
+
 
 
 
