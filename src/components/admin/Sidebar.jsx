@@ -14,8 +14,6 @@ import {
   FaBusinessTime
 } from "react-icons/fa";
 
-// --- Updated Navigation Structure ---
-// We've changed the array to support nested sub-links.
 const navLinks = [
   {
     to: "/admin/dashboard",
@@ -28,10 +26,9 @@ const navLinks = [
     icon: <FaUsers />,
   },
   {
-    // This is now a dropdown menu
     label: "Attendance",
     icon: <FaCalendarCheck />,
-    basePath: "/attendance", // A base path to check for active state
+    basePath: "/attendance",
     subLinks: [
       {
         to: "/attendance",
@@ -77,14 +74,12 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [openSubMenus, setOpenSubMenus] = useState({});
 
-  // Effect to close sub-menus when the main sidebar is collapsed
   useEffect(() => {
     if (collapsed) {
       setOpenSubMenus({});
     }
   }, [collapsed]);
   
-  // Toggles the state of a submenu (e.g., 'Attendance')
   const handleSubMenuToggle = (label) => {
     setOpenSubMenus((prev) => ({
       ...prev,
@@ -106,7 +101,6 @@ const Sidebar = () => {
       </div>
       <ul className="space-y-2 flex-1">
         {navLinks.map((link) => {
-          // --- Logic for Dropdown Menus ---
           if (link.subLinks) {
             const isParentActive = location.pathname.startsWith(link.basePath);
             const isSubMenuOpen = openSubMenus[link.label] && !collapsed;
@@ -131,7 +125,6 @@ const Sidebar = () => {
                     />
                   )}
                 </button>
-                {/* --- Sub-menu items --- */}
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSubMenuOpen ? 'max-h-40' : 'max-h-0'}`}>
                   <ul className="mt-2 space-y-1 pl-8">
                     {link.subLinks.map((subLink) => (
@@ -156,7 +149,6 @@ const Sidebar = () => {
             );
           }
           
-          // --- Logic for Regular Links ---
           return (
             <li key={link.to}>
               <NavLink
