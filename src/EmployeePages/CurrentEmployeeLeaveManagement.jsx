@@ -8,6 +8,13 @@ const formatMonth = (monthStr) => {
   })} ${year}`;
 };
 
+
+const playRequestSound = () => {
+  const audio = new Audio("/sounds/request-button.mp3");
+  audio.play();
+};
+
+
 const CurrentEmployeeLeaveManagement = () => {
   const {
     monthOptions = [],
@@ -63,6 +70,8 @@ const CurrentEmployeeLeaveManagement = () => {
         leaveDayType: from === to && halfDaySession ? "Half Day" : "Full Day",
         halfDaySession: from === to ? halfDaySession || null : null,
       });
+
+      playRequestSound();
 
       // ✅ Only reset AFTER applyLeave updates table
       setSuccess("Leave request submitted successfully!");

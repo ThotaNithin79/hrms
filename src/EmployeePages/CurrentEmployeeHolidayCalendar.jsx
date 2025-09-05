@@ -47,7 +47,42 @@ const CurrentEmployeeHolidayCalendar = () => {
   );
 
   // Always sort the list in ascending order by date before rendering
-  const list = (filter === "upcoming" ? upcomingHolidays : previousHolidays).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  const list = (filter === "upcoming" ? upcomingHolidays : previousHolidays)
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Helper: group holiday objects by date, merging names/descriptions
+  const groupByDate = (arr) => {
+    const map = new Map();
+    arr.forEach((h) => {
+      const key = h.date; // YYYY-MM-DD string is a safe key
+      const existing = map.get(key);
+      if (existing) {
+        existing.names.push(h.name);
+        if (h.description) existing.descriptions.push(h.description);
+      } else {
+        map.set(key, {
+          date: h.date,
+          names: [h.name],
+          descriptions: h.description ? [h.description] : [],
+        });
+      }
+    });
+
+    // Convert map to array and join names/descriptions
+    return Array.from(map.values())
+      .map((item) => ({
+        date: item.date,
+        name: item.names.join(", "),
+        description: item.descriptions.length ? item.descriptions.join(" | ") : "",
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  // Memoize grouped list and grouped counts
+  const groupedList = useMemo(() => groupByDate(list), [list]);
+  const upcomingGroupedCount = useMemo(() => groupByDate(upcomingHolidays).length, [upcomingHolidays]);
+  const previousGroupedCount = useMemo(() => groupByDate(previousHolidays).length, [previousHolidays]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2 md:px-6">
@@ -88,11 +123,11 @@ const CurrentEmployeeHolidayCalendar = () => {
               <h3 className="text-xl font-semibold text-blue-800 mb-4 text-center">
                 {filter === "upcoming" ? "Upcoming Holidays" : "Previous Holidays"}
               </h3>
-              {list.length === 0 ? (
+              {groupedList.length === 0 ? (
                 <div className="text-center text-gray-500">No holidays to show.</div>
               ) : (
                 <ul className="divide-y divide-blue-100 rounded-lg overflow-hidden shadow-md bg-blue-50">
-                  {list.map((h) => (
+                  {groupedList.map((h) => (
                     <li
                       key={h.date}
                       className="flex flex-col md:flex-row md:items-center gap-2 px-4 py-3 hover:bg-blue-100 transition"
@@ -135,7 +170,7 @@ const CurrentEmployeeHolidayCalendar = () => {
                     <span>Upcoming Holidays</span>
                   </span>
                   <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                    {upcomingHolidays.length}
+                    {upcomingGroupedCount}
                   </span>
                 </label>
 
@@ -152,7 +187,7 @@ const CurrentEmployeeHolidayCalendar = () => {
                     <span>Previous Holidays</span>
                   </span>
                   <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                    {previousHolidays.length}
+                    {previousGroupedCount}
                   </span>
                 </label>
               </div>
