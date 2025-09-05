@@ -36,7 +36,7 @@ const AdminLeaveSummary = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
 
-  // **FIX:** Logic to set the default selected month.
+  // Logic to set the default selected month.
   // It calculates the current month in 'YYYY-MM' format.
   const currentMonthISO = new Date().toISOString().slice(0, 7);
   // It then checks if this month exists in the available data. If yes, it's the default.
