@@ -27,9 +27,11 @@ import AdminHolidayCalendarPage from "./pages/AdminHolidayCalendarPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 
-// New Overtime Feature
+// New Attendance Features
 import OvertimeManagement from "./pages/OvertimeManagement";
+import PermissionHoursManagement from "./pages/PermissionHoursManagement";
 import { OvertimeProvider } from "./context/OvertimeProvider";
+import { PermissionHoursProvider } from "./context/PermissionHoursProvider";
 
 // Providers
 import { NoticeProvider } from "./context/NoticeProvider";
@@ -76,6 +78,14 @@ function App() {
             <OvertimeProvider>
               <OvertimeManagement />
             </OvertimeProvider>
+          }
+        />
+        <Route
+          path="/attendance/permissions"
+          element={
+            <PermissionHoursProvider>
+              <PermissionHoursManagement />
+            </PermissionHoursProvider>
           }
         />
         <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
