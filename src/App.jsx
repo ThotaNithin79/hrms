@@ -26,6 +26,7 @@ import AdminNotices from "./pages/AdminNotices.jsx";
 import AdminHolidayCalendarPage from "./pages/AdminHolidayCalendarPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 
+
 // New Overtime Feature
 import OvertimeManagement from "./pages/OvertimeManagement";
 import { OvertimeProvider } from "./context/OvertimeProvider";
@@ -41,6 +42,7 @@ import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement
 import CurrentEmployeeHolidayCalendar from "./EmployeePages/CurrentEmployeeHolidayCalendar";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
+import EmployeeSetting from "./EmployeePages/EmployeeSettings";
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -116,6 +118,7 @@ function App() {
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
         <Route path="/employee/change-password" element={<ChangePasswordPage />} />
+        <Route path="/employee/settings" element={<EmployeeSetting />} />
       </Route>
     </Routes>
   );
