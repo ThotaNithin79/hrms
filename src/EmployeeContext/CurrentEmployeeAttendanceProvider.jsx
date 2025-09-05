@@ -285,6 +285,8 @@ const fetchAttendanceData = async () => {
         : dummyOvertimeRequests
     );
 
+
+    
   } catch (error) {
     console.error("Backend not available, using dummy data", error);
     setAttendanceRecords(manualAttendance);

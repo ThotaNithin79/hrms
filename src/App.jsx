@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 // Layouts
 import LayoutAdmin from "./components/admin/LayoutAdmin";
-import LayoutEmployee from "./components/employee/LayoutEmployee"; // 👈 You’ll create this next
+import LayoutEmployee from "./components/employee/LayoutEmployee";
 
 // Pages
 import Login from "./pages/Login";
@@ -18,13 +18,20 @@ import AdminLeaveSummary from "./pages/AdminLeaveSummary";
 import AdminProfile from "./pages/AdminProfile";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import EmployeeLeaveSummary from "./pages/EmployeeLeaveSummary";
-import AdminNotifications from "./pages/AdminNotifications"; // create this page
+import AdminNotifications from "./pages/AdminNotifications";
 import EmployeesOnLeaveToday from "./pages/EmployeesOnLeaveToday";
-import ForgotPassword from "./pages/ForgotPassword"; // New forgot password page
+import ForgotPassword from "./pages/ForgotPassword";
 import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
-import AdminNotices from "./pages/AdminNotices.jsx"; // Add this import
-import { NoticeProvider } from "./context/NoticeProvider"; // Add NoticeProvider import
+import AdminNotices from "./pages/AdminNotices.jsx";
 import AdminHolidayCalendarPage from "./pages/AdminHolidayCalendarPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
+
+// New Overtime Feature
+import OvertimeManagement from "./pages/OvertimeManagement";
+import { OvertimeProvider } from "./context/OvertimeProvider";
+
+// Providers
+import { NoticeProvider } from "./context/NoticeProvider";
 import HolidayCalendarProvider from "./context/HolidayCalendarProvider";
 
 // Employee pages
@@ -34,10 +41,9 @@ import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement
 import CurrentEmployeeHolidayCalendar from "./EmployeePages/CurrentEmployeeHolidayCalendar";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
-import ChangePasswordPage from "./pages/ChangePasswordPage"; // Import the change password component
 
 // Route protection
-import ProtectedRoute from "./components/ProtectedRoute"; // 👈 You created this
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -62,6 +68,14 @@ function App() {
         <Route path="/employees/edit/:id" element={<EditEmployee />} />
         <Route path="/employee/:id/profile" element={<EmployeeProfile />} />
         <Route path="/attendance" element={<Attendance />} />
+        <Route
+          path="/attendance/overtime"
+          element={
+            <OvertimeProvider>
+              <OvertimeManagement />
+            </OvertimeProvider>
+          }
+        />
         <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />
@@ -71,13 +85,12 @@ function App() {
           <NoticeProvider>
             <AdminNotices />
           </NoticeProvider>
-        } /> {/* Notices feature route */}
-        <Route path="/admin/change-password" element={<ChangePasswordPage />} /> {/* Change password route for admin */}
+        } />
+        <Route path="/admin/change-password" element={<ChangePasswordPage />} />
         <Route
           path="/admin/holiday-calendar"
-          element={ <AdminHolidayCalendarPage />
-          }
-        /> {/* Holiday calendar route */}
+          element={ <AdminHolidayCalendarPage /> }
+        />
       </Route>
 
       {/* Employee protected routes */}
@@ -92,7 +105,7 @@ function App() {
       >
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
-        <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} /> 
+        <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} />
         <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
         <Route path="/employee/holiday-calendar" element={
           <HolidayCalendarProvider>
@@ -102,7 +115,7 @@ function App() {
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
         <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
         <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
-        <Route path="/employee/change-password" element={<ChangePasswordPage />} /> {/* Change password route */}
+        <Route path="/employee/change-password" element={<ChangePasswordPage />} />
       </Route>
     </Routes>
   );

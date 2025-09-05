@@ -1,6 +1,5 @@
 import React, { useContext, useState } from "react";
 import { CurrentEmployeeContext } from "../EmployeeContext/CurrentEmployeeContext";
-import { CurrentEmployeeLeaveRequestContext } from "../EmployeeContext/CurrentEmployeeLeaveRequestContext";
 import { NoticeContext } from "../context/NoticeContext";
 import { Bar, Pie } from "react-chartjs-2";
 import {
@@ -17,22 +16,10 @@ import { FaRegClock, FaUserCircle, FaBell, FaCalendarAlt, FaChartPie } from "rea
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
-const attendanceRecords = []; // empty or dummy array for now
-let monthlyWorkHours = 0;
-let monthlyIdleHours = 0;
-
-
-
-
-
-const SCHEDULE_IN = "09:30";
-const SCHEDULE_OUT = "18:30";
-const WORK_HOURS = 9;
 
 function getTodayStr() {
   return new Date().toISOString().slice(0, 10);
 }
-
 function formatTime(time) {
   if (!time) return "--";
   const [h, m] = time.split(":");
@@ -42,47 +29,40 @@ function formatTime(time) {
   return `${hour12}:${m} ${ampm}`;
 }
 
-function calculateIdleTime(punchIn, punchOut) {
-  let idle = 0;
-  if (punchIn) {
-    const [h1, m1] = punchIn.split(":").map(Number);
-    const [h2, m2] = SCHEDULE_IN.split(":").map(Number);
-    const punchInMinutes = h1 * 60 + m1;
-    const scheduleInMinutes = h2 * 60 + m2;
-    if (punchInMinutes > scheduleInMinutes) {
-      idle += (punchInMinutes - scheduleInMinutes) / 60;
-    }
-  }
-  if (punchOut) {
-    const [h1, m1] = punchOut.split(":").map(Number);
-    const [h2, m2] = SCHEDULE_OUT.split(":").map(Number);
-    const punchOutMinutes = h1 * 60 + m1;
-    const scheduleOutMinutes = h2 * 60 + m2;
-    if (punchOutMinutes < scheduleOutMinutes) {
-      idle += (scheduleOutMinutes - punchOutMinutes) / 60;
-    }
-  }
-  return idle;
-}
+
+
+
 
 const EmployeeDashboard = () => {
-  const { currentEmployee } = useContext(CurrentEmployeeContext);
-  const { leaveRequests } = useContext(CurrentEmployeeLeaveRequestContext);
+  const {
+  currentEmployee,
+  idle_time,
+  officeTimings,
+  monthlyStats,
+  employeeStats, 
+  leaveStats, 
+  editCurrentEmployee,
+  editEmployeeStats,
+  job: jobContext, 
+  editJob,
+  bank: bankContext,
+  editBank,
+  experienceStats,
+  editExperience,
+  initialNotices,
+   
+} = useContext(CurrentEmployeeContext);
   const { notices } = useContext(NoticeContext);
 
   // Attendance Tracker State
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchInTime, setPunchInTime] = useState("");
   const [punchOutTime, setPunchOutTime] = useState("");
-  const [trackerIdle, setTrackerIdle] = useState(0);
 
   const todayStr = getTodayStr();
-  const empId = currentEmployee.job.employeeId;
+  const empId = currentEmployee.personal.employeeId;
 
-  // Get today's attendance record (if any)
-  const todayAttendance = attendanceRecords.find(
-    (rec) => rec.employeeId === empId && rec.date === todayStr
-  );
+  
 
   // Punch In Handler
   const handlePunchIn = () => {
@@ -100,26 +80,53 @@ const EmployeeDashboard = () => {
       const now = new Date();
       const timeStr = now.toTimeString().slice(0, 5);
       setPunchOutTime(timeStr);
-      setTrackerIdle(calculateIdleTime(punchInTime, timeStr));
     }
   };
 
   // Employee Basic Details
-  const { personal, contact, job } = currentEmployee;
+  const { personal = {} } = currentEmployee || {};
+  const job = jobContext || {};
+  const bank = bankContext || {};
+  const experience = experienceStats ? [experienceStats] : [];
+
+    const { email = "", phone = "" } = employeeStats || {};
+
+
+const {
+  monthlyWorkHours = 0,
+  monthlyLeaves = 0,
+  monthlyIdleHours = 0,
+} = monthlyStats || {};
+
+const {
+  office_start = "09:30",
+  office_end = "18:30",
+  full_day_threshold = 9,
+} = officeTimings || {};
+
+
+const {
+  full_day_leaves_approved = 0,
+  half_day_leaves_approved = 0,
+  sandwich_leave_count = 0,
+  paid_leave_count = 0,
+  unpaid_leave_count = 0,
+} = leaveStats || {};
+
+
 
   // --- Edit Profile State ---
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: personal.name,
-    email: contact.email,
-    phone: contact.phone,
-    employeeId: job.employeeId,
-    department: job.department,
-    designation: job.designation,
-    aadhaar: null,
-    pan: null,
-    experiences: personal.experiences || [],
-    isActive: job.isActive || false,
+    name: personal.name || "",
+  email: email || "",
+  phone: phone || "",
+  employeeId: personal.employeeId || "",
+  department: job.department || "",
+  designation: job.designation || "",
+  aadhaar: null,
+  pan: null,
+  experiences: experience || [],
   });
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [newExperience, setNewExperience] = useState({ company: '', role: '', years: '' });
@@ -143,107 +150,87 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const handleEditSave = () => {
-  const { name, email, phone, employeeId, department, designation, aadhaar, pan, experiences, isActive } = editForm;
+const handleEditSave = () => {
+  const { name, email: trimmedEmail, phone: trimmedPhone, employeeId, department, designation, aadhaar, pan, experiences, isActive } = editForm;
 
-  // Trim values
-  const trimmedName = name.trim();
-  const trimmedEmail = email.trim();
-  const trimmedPhone = phone.trim();
-  const trimmedEmployeeId = employeeId.trim();
-  const trimmedDepartment = department.trim();
-  const trimmedDesignation = designation.trim();
+  const trimmedName = (name || "").trim();
+  const trimmedEmployeeId = (employeeId || "").trim();
+  const trimmedDepartment = (department || "").trim();
+  const trimmedDesignation = (designation || "").trim();
 
-  // Validate empty fields
   if (!trimmedName || !trimmedEmail || !trimmedPhone || !trimmedEmployeeId || !trimmedDepartment || !trimmedDesignation) {
     setEditError("All fields are mandatory.");
     return;
   }
-
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(trimmedEmail)) {
     setEditError("Please enter a valid email address.");
     return;
   }
-
-  // Validate phone number (10 digits)
   const phoneRegex = /^[0-9]{10}$/;
   if (!phoneRegex.test(trimmedPhone)) {
     setEditError("Phone number must be 10 digits.");
     return;
   }
 
-  // Save changes to context (add Aadhaar, PAN, experiences, isActive)
+  // 1) Update top-level currentEmployee fields (name, job, aadhaar/pan, experience array)
   editCurrentEmployee({
-    personal: { name: trimmedName, experiences },
-    contact: { email: trimmedEmail, phone: trimmedPhone },
+    personal: { name: trimmedName },
     job: { employeeId: trimmedEmployeeId, department: trimmedDepartment, designation: trimmedDesignation, isActive },
-    aadhaar,
-    pan,
+    aadhaar: editForm.aadhaar || null,
+    pan: editForm.pan || null,
+    experience: experiences || [],
   });
+
+  // 2) Update email/phone stored in employeeStats
+  editEmployeeStats({ email: trimmedEmail, phone: trimmedPhone });
 
   setEditMode(false);
   setEditError("");
 };
 
 
-  // Noticeboard (show 3 most recent)
-  const recentNotices = notices.slice(0, 3);
+
+
 
   // Leaves (This Month) - fetch from provider, not dummy
-  const leaveMonth = todayStr.slice(0, 7);
-  const leavesThisMonth = leaveRequests.filter(
-    (req) => req.employeeId === empId && req.from.startsWith(leaveMonth)
-  );
-  // Count by status for bar chart
-  const leaveStatusCounts = {
-    Approved: leavesThisMonth.filter((l) => l.status === "Approved").length,
-    Pending: leavesThisMonth.filter((l) => l.status === "Pending").length,
-    Rejected: leavesThisMonth.filter((l) => l.status === "Rejected").length,
-  };
+  //const leaveMonth = todayStr.slice(0, 7);
+  //const leavesThisMonth = leaveRequests.filter(
+    //(req) => req.employeeId === empId && req.from.startsWith(leaveMonth)
+  //);
+
+  
   const leaveBarData = {
-    labels: ["Approved", "Pending", "Rejected"],
-    datasets: [
-      {
-        label: "Leaves",
-        data: [
-          leaveStatusCounts.Approved,
-          leaveStatusCounts.Pending,
-          leaveStatusCounts.Rejected,
-        ],
-        backgroundColor: ["#22c55e", "#facc15", "#ef4444"],
-        borderRadius: 6,
-        barPercentage: 0.5,
-      },
-    ],
-  };
+  labels: ["Full Day Leaves", "Half Day Leaves", "Sandwich Leaves"],
+  datasets: [
+    {
+      label: "Leaves",
+      data: [
+        full_day_leaves_approved,
+        half_day_leaves_approved,
+        sandwich_leave_count,
+      ],
+      backgroundColor: ["#22c55e", "#facc15", "#3b82f6"], // green, yellow, blue
+      borderRadius: 6,
+      barPercentage: 0.5,
+    },
+  ],
+};
 
-  // Work Hours & Idle Time (This Month) - fetch from provider, add today's tracker if any
-  const thisMonthAttendance = attendanceRecords.filter(
-    (rec) =>
-      rec.employeeId === empId && rec.date.startsWith(leaveMonth)
-  );
-  // Use context monthlyWorkHours/monthlyIdleHours, add today's tracker if punched in/out
-  let totalWorkedHours = monthlyWorkHours;
-  let totalIdleTime = monthlyIdleHours;
-  if (punchedIn && punchOutTime) {
-    // Add today's tracker values if not already in attendanceRecords
-    const alreadyCounted = todayAttendance && todayAttendance.workedHours > 0;
-    if (!alreadyCounted) {
-      totalWorkedHours += WORK_HOURS - trackerIdle;
-      totalIdleTime += trackerIdle;
-    }
-  }
+// Paid/Unpaid summary (you can show this as text below chart)
+const paidUnpaidSummary = `Paid: ${paid_leave_count}, Unpaid: ${unpaid_leave_count}`;
 
-  const safeWorkedHours = Number(totalWorkedHours || 0).toFixed(2);
-const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
+
+  
+  
+
+
 
   const workPieData = {
     labels: ["Worked Hours", "Idle Time"],
     datasets: [
       {
-        data: [totalWorkedHours, totalIdleTime],
+        data: [monthlyWorkHours, monthlyIdleHours],
         backgroundColor: ["#3b82f6", "#f87171"],
         borderWidth: 2,
       },
@@ -257,8 +244,13 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
       <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-blue-100 to-blue-50 rounded-2xl shadow-lg p-6 mb-8 gap-6">
         <div className="flex-shrink-0">
           <img
-            src={currentEmployee.profilePhoto ? currentEmployee.profilePhoto : `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`}
             alt="Employee"
+            src={
+  currentEmployee.personal.profile_photo
+    ? currentEmployee.personal.profile_photo
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(personal.name)}&background=0D8ABC&color=fff&size=128`
+}
+
             className="w-28 h-28 rounded-full border-4 border-white shadow object-cover"
           />
         </div>
@@ -270,7 +262,7 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-gray-700">
                 <div>
-                  <span className="font-semibold">Employee ID:</span> {job.employeeId}
+                  <span className="font-semibold">Employee ID:</span> {personal.employeeId}
                 </div>
                 <div>
                   <span className="font-semibold">Designation:</span> {job.designation}
@@ -279,10 +271,10 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
                   <span className="font-semibold">Department:</span> {job.department}
                 </div>
                 <div>
-                  <span className="font-semibold">Email:</span> {contact.email || "--"}
+                  <span className="font-semibold">Email:</span> {email || "--"}
                 </div>
                 <div>
-                  <span className="font-semibold">Phone:</span> {contact.phone || "--"}
+                  <span className="font-semibold">Phone:</span> {phone || "--"}
                 </div>
               </div>
             </>
@@ -355,17 +347,18 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
                   <button type="button" className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onClick={() => setShowAddExperience(true)}>Add</button>
                 </div>
                 {/* List existing experiences */}
-                {editForm.experiences && editForm.experiences.length > 0 && (
-                  <div className="space-y-2 mb-2">
-                    {editForm.experiences.map((exp, idx) => (
-                      <div key={idx} className="border rounded p-2 flex flex-col md:flex-row md:items-center md:gap-4 bg-white">
-                        <span className="font-semibold">Company:</span> <span>{exp.company}</span>
-                        <span className="font-semibold ml-2">Role:</span> <span>{exp.role}</span>
-                        <span className="font-semibold ml-2">Years:</span> <span>{exp.years}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {editForm.experiences?.length > 0 && (
+  <div className="space-y-2 mb-2">
+    {editForm.experiences?.map((exp, idx) => (
+      <div key={idx} className="border rounded p-2 flex flex-col md:flex-row md:items-center md:gap-4 bg-white">
+        <span className="font-semibold">Company:</span> <span>{exp.company}</span>
+        <span className="font-semibold ml-2">Role:</span> <span>{exp.role}</span>
+        <span className="font-semibold ml-2">Years:</span> <span>{exp.years}</span>
+      </div>
+    ))}
+  </div>
+)}
+
                 {/* Add new experience form */}
                 {showAddExperience && (
                   <div className="border rounded p-3 bg-white mt-2">
@@ -431,14 +424,17 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
                 <td className="border px-4 py-2">{todayStr}</td>
                 <td className="border px-4 py-2">{formatTime(punchInTime)}</td>
                 <td className="border px-4 py-2">{formatTime(punchOutTime)}</td>
-                <td className="border px-4 py-2">{WORK_HOURS} hrs</td>
+                <td className="border px-4 py-2">{full_day_threshold} hrs</td>
                 <td className="border px-4 py-2">
-                  {punchOutTime ? (
-                    <span className={trackerIdle > 0 ? "text-red-600 font-semibold" : "text-green-600"}>
-                      {trackerIdle.toFixed(2)} hrs
-                    </span>
-                  ) : "--"}
-                </td>
+  {punchOutTime ? (
+    <span className="text-yellow-600 font-semibold">
+      {idle_time} hrs
+    </span>
+  ) : (
+    "--"
+  )}
+</td>
+
                 <td className="border px-4 py-2">
                   {!punchedIn
                     ? <span className="text-gray-500">Not Punched In</span>
@@ -472,7 +468,7 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
         </div>
         <p className="text-xs text-gray-500 mt-2">
           <FaRegClock className="inline mr-1" />
-          Working hours: <span className="font-semibold">09:30 - 18:30</span>. Idle time is calculated for late punch in or early punch out.
+          Working hours: <span className="font-semibold">{office_start} - {office_end}</span>. Idle time is calculated for late punch in or early punch out.
         </p>
       </div>
 
@@ -482,21 +478,21 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
           <FaCalendarAlt className="text-blue-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Leaves (This Month)</div>
-            <div className="font-bold text-lg text-blue-900">{leavesThisMonth.length}</div>
+            <div className="font-bold text-lg text-blue-900">{monthlyLeaves}</div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
           <FaRegClock className="text-green-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Worked Hours (This Month)</div>
-            <div className="font-bold text-lg text-green-900">{safeWorkedHours}</div>
+            <div className="font-bold text-lg text-green-900">{monthlyWorkHours}</div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
           <FaChartPie className="text-yellow-500 text-2xl" />
           <div>
             <div className="text-sm text-gray-500">Idle Time (This Month)</div>
-            <div className="font-bold text-lg text-yellow-900">{safeIdleTime}</div>
+            <div className="font-bold text-lg text-yellow-900">{monthlyIdleHours}</div>
           </div>
         </div>
       </div>
@@ -512,22 +508,26 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
             <h2 className="text-lg font-bold tracking-tight">Leave Summary</h2>
           </div>
           <div className="w-full max-w-xs">
-            <Bar
-              data={leaveBarData}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: { display: false },
-                  title: { display: false },
-                  tooltip: { enabled: true },
-                },
-                scales: {
-                  y: { beginAtZero: true, precision: 0 },
-                },
-              }}
-              height={180}
-            />
-          </div>
+  <Bar
+    data={leaveBarData}
+    options={{
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: { display: false },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        y: { beginAtZero: true, precision: 0 },
+      },
+    }}
+    height={180}
+  />
+  <p className="text-center mt-2 text-sm text-gray-600">
+    {paidUnpaidSummary}
+  </p>
+</div>
+
         </div>
         {/* Work Hours Summary Pie Chart */}
         <div className="bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center">
@@ -550,11 +550,32 @@ const safeIdleTime = Number(totalIdleTime || 0).toFixed(2);
             />
           </div>
           <div className="flex justify-between w-full mt-2 text-xs text-gray-600">
-            <span>Worked: <span className="font-semibold">{safeWorkedHours}</span></span>
-            <span>Idle: <span className="font-semibold">{safeIdleTime}</span></span>
+            <span>Worked: <span className="font-semibold">{monthlyWorkHours}</span></span>
+            <span>Idle: <span className="font-semibold">{monthlyIdleHours}</span></span>
           </div>
         </div>
       </div>
+      {/* Notice Board */}
+<div className="bg-white rounded-2xl shadow-lg p-4 mb-8">
+  <div className="flex items-center mb-4 gap-2">
+    <FaBell className="text-red-500 text-lg" />
+    <h2 className="text-lg font-bold tracking-tight">Notice Board</h2>
+  </div>
+  {notices && notices.length > 0 ? (
+    <ul className="space-y-2 max-h-64 overflow-y-auto">
+      {notices.map((notice, idx) => (
+        <li key={idx} className="border-b pb-2 last:border-b-0">
+          <p className="text-gray-700 font-semibold">{notice.title}</p>
+          <p className="text-gray-500 text-sm">{notice.description}</p>
+          <p className="text-gray-400 text-xs">{new Date(notice.date).toLocaleDateString()}</p>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p className="text-gray-500">No notices available.</p>
+  )}
+</div>
+
     </div>
   );
 };
