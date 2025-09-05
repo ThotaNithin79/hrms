@@ -57,6 +57,14 @@ const CalendarCell = ({ day, record }) => {
   );
 };
 
+
+const playRequestSound = () => {
+  const audio = new Audio("/sounds/request-button.mp3");
+  audio.play();
+};
+
+
+
 const CurrentEmployeeAttendanceProfile = () => {
   const { attendanceRecords,PermissionRequests, applyPermission ,overtimeRequests, applyOvertime} =
     useContext(CurrentEmployeeAttendanceContext);
@@ -164,6 +172,8 @@ const handleOvertimeSubmit = async (e) => {
     await applyOvertime({ date, type, is_paid_out, is_used_as_leave });
     setOvertimeForm({ date: "", type: "INCENTIVE_OT", is_paid_out: false, is_used_as_leave: false });
     setOvertimeError("");
+
+    playRequestSound();
     setOvertimeSuccess("Overtime request submitted successfully!");
     setTimeout(() => setOvertimeSuccess(""), 3000);
   } catch (err) {
@@ -223,7 +233,9 @@ const flagToYesNo = (v) => (v === 0x01 || v === 1 || v === true || v === "1" ? "
     await applyPermission({ date, from_time, to_time, reason });
     setPermissionForm({ date: "", from_time: "", to_time: "", reason: "" });
     setPermissionError("");
-    setpermissionSuccess("Late login request submitted successfully!");
+
+    playRequestSound();
+    setpermissionSuccess("Permission hours submitted successfully!");
     setTimeout(() => setpermissionSuccess(""), 3000);
   } catch (err) {
     setPermissionError("Failed to submit permission request. Try again.");
