@@ -45,6 +45,9 @@ import CurrentEmployeeHolidayCalendar from "./EmployeePages/CurrentEmployeeHolid
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
 import EmployeeSetting from "./EmployeePages/EmployeeSettings";
+// App.jsx
+import EmployeeSettingsProvider from "./EmployeeContext/EmployeeSettingsProvider";
+
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -106,30 +109,37 @@ function App() {
       </Route>
 
       {/* Employee protected routes */}
-      <Route
-        element={
-          <ProtectedRoute role="employee">
-            <NoticeProvider>
-              <LayoutEmployee />
-            </NoticeProvider>
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
-        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
-        <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} />
-        <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
-        <Route path="/employee/holiday-calendar" element={
-          <HolidayCalendarProvider>
-            <CurrentEmployeeHolidayCalendar />
-          </HolidayCalendarProvider>
-        } />
-        <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
-        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
-        <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
-        <Route path="/employee/change-password" element={<ChangePasswordPage />} />
-        <Route path="/employee/settings" element={<EmployeeSetting />} />
-      </Route>
+      {/* Employee protected routes */}
+<Route
+  element={
+    <ProtectedRoute role="employee">
+      <NoticeProvider>
+        <EmployeeSettingsProvider>
+          <LayoutEmployee />
+        </EmployeeSettingsProvider>
+      </NoticeProvider>
+    </ProtectedRoute>
+  }
+>
+  <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+  <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
+  <Route path="/employee/attendance" element={<CurrentEmployeeAttendanceProfile />} />
+  <Route path="/employee/leave-management" element={<CurrentEmployeeLeave />} />
+  <Route
+    path="/employee/holiday-calendar"
+    element={
+      <HolidayCalendarProvider>
+        <CurrentEmployeeHolidayCalendar />
+      </HolidayCalendarProvider>
+    }
+  />
+  <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
+  <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
+  <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
+  <Route path="/employee/change-password" element={<ChangePasswordPage />} />
+  <Route path="/employee/settings" element={<EmployeeSetting />} />
+</Route>
+
     </Routes>
   );
 }
