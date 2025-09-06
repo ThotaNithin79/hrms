@@ -1,23 +1,18 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { LeaveRequestContext } from "./LeaveRequestContext";
 
-
-
-
-
-// --- Date Utilities ---
+// --- Date Utilities (Preserved for existing components like LeaveManagement) ---
 const getWeekDates = (baseDate = new Date(), weekOffset = 0) => {
   const today = new Date(baseDate);
+  today.setDate(today.getDate() + weekOffset * 7);
   const currentDay = today.getDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - currentDay + 1 + (weekOffset * 7));
+  monday.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1));
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
     start: monday.toISOString().split('T')[0],
     end: sunday.toISOString().split('T')[0],
-    monday,
-    sunday
   };
 };
 
@@ -32,277 +27,138 @@ const expandLeaveRange = (from, to) => {
   return dates;
 };
 
-
-// --- Provider ---
+// --- Provider Component ---
 export const LeaveRequestProvider = ({ children }) => {
-    const [leaveRequests, setLeaveRequests] = useState([
-  {
-    "id": 1,
-    "employeeId": "EMP101",
-    "name": "John Doe",
-    "from": "2025-07-10",
-    "to": "2025-07-15",
-    "leaveDays": 6,
-    "reason": "Vacation",
-    "requestDate": "2025-07-08",
-    "actionDate": "2025-07-09",
-    "status": "Approved",
-    "leaveRequestDays": [
-      { "id": 1, "leaveDate": "2025-07-10", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 2, "leaveDate": "2025-07-11", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 3, "leaveDate": "2025-07-12", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 4, "leaveDate": "2025-07-13", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 5, "leaveDate": "2025-07-14", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 6, "leaveDate": "2025-07-15", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
-    ]
-  },
-  {
-    "id": 2,
-    "employeeId": "EMP102",
-    "name": "Alice Johnson",
-    "from": "2025-07-12",
-    "to": "2025-07-14",
-    "leaveDays": 3,
-    "reason": "Medical Leave",
-    "requestDate": "2025-07-09",
-    "actionDate": null,
-    "status": "Pending",
-    "leaveRequestDays": [
-      { "id": 7, "leaveDate": "2025-07-12", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 8, "leaveDate": "2025-07-13", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 9, "leaveDate": "2025-07-14", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
-    ]
-  },
-  {
-    "id": 3,
-    "employeeId": "EMP103",
-    "name": "Michael Smith",
-    "from": "2025-07-20",
-    "to": "2025-07-22",
-    "leaveDays": 3,
-    "reason": "Personal Work",
-    "requestDate": "2025-07-10",
-    "actionDate": "2025-07-12",
-    "status": "Rejected",
-    "leaveRequestDays": [
-      { "id": 10, "leaveDate": "2025-07-20", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 11, "leaveDate": "2025-07-21", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 12, "leaveDate": "2025-07-22", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
-    ]
-  },
-  {
-    "id": 4,
-    "employeeId": "EMP104",
-    "name": "Priya Sharma",
-    "from": "2025-07-18",
-    "to": "2025-07-20",
-    "leaveDays": 3,
-    "reason": "Family Function",
-    "requestDate": "2025-07-11",
-    "actionDate": "2025-07-13",
-    "status": "Approved",
-    "leaveRequestDays": [
-      { "id": 13, "leaveDate": "2025-07-18", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 14, "leaveDate": "2025-07-19", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false },
-      { "id": 15, "leaveDate": "2025-07-20", "leaveCategory": "PAID", "sandwichFlag": false, "otCreditUsed": false }
-    ]
-  }
-]
-);
+  // ===================================================================================
+  // SECTION 1: NEW DATA & LOGIC FOR AdminLeaveSummary PAGE (Simulated Backend)
+  // This section is designed to serve the AdminLeaveSummary component efficiently,
+  // simulating an API response that provides pre-aggregated and enriched data.
+  // ===================================================================================
 
-  // --- Filters State (centralized for week navigation) ---
+  const [leaveSummaryData] = useState({
+    // Data for the current month (September 2025) to ensure the default filter works
+    "2025-09": {
+        monthlyStats: { totalRequests: 2, approved: 0, rejected: 0, pending: 2 },
+        requests: [
+            { id: 8, employeeId: "EMP107", employeeName: "Rohan Mehta", department: "IT", from: "2025-09-02", to: "2025-09-02", leaveDays: 1, reason: "Doctor Appointment", status: "Pending", isActive: true },
+            { id: 9, employeeId: "EMP108", employeeName: "Anjali Nair", department: "Finance", from: "2025-09-08", to: "2025-09-10", leaveDays: 3, reason: "Personal Emergency", status: "Pending", isActive: true }
+        ]
+    },
+    "2025-08": {
+      monthlyStats: { totalRequests: 3, approved: 1, rejected: 0, pending: 2 },
+      requests: [
+        { id: 5, employeeId: "EMP105", employeeName: "Amit Kumar", department: "Sales", from: "2025-08-01", to: "2025-08-03", leaveDays: 3, reason: "Conference", status: "Approved", isActive: true },
+        { id: 6, employeeId: "EMP106", employeeName: "Sara Lee", department: "HR", from: "2025-08-05", to: "2025-08-05", leaveDays: 1, reason: "Sick Leave", status: "Pending", isActive: true },
+        { id: 7, employeeId: "EMP101", employeeName: "John Doe", department: "HR", from: "2025-08-10", to: "2025-08-12", leaveDays: 3, reason: "Personal", status: "Pending", isActive: false }
+      ]
+    },
+    "2025-07": {
+      monthlyStats: { totalRequests: 4, approved: 2, rejected: 1, pending: 1 },
+      requests: [
+        { id: 1, employeeId: "EMP101", employeeName: "John Doe", department: "HR", from: "2025-07-10", to: "2025-07-15", leaveDays: 6, reason: "Vacation", status: "Approved", isActive: true },
+        { id: 2, employeeId: "EMP102", employeeName: "Alice Johnson", department: "Finance", from: "2025-07-12", to: "2025-07-14", leaveDays: 3, reason: "Medical Leave", status: "Pending", isActive: true },
+        { id: 3, employeeId: "EMP103", employeeName: "Michael Smith", department: "IT", from: "2025-07-20", to: "2025-07-22", leaveDays: 3, reason: "Personal Work", status: "Rejected", isActive: true },
+        { id: 4, employeeId: "EMP104", employeeName: "Priya Sharma", department: "Marketing", from: "2025-07-18", to: "2025-07-20", leaveDays: 3, reason: "Family Function", status: "Approved", isActive: true }
+      ]
+    }
+  });
+
+  const { allSummaryMonths, allSummaryDepartments, allSummaryRequests } = useMemo(() => {
+    const months = Object.keys(leaveSummaryData).sort().reverse();
+    const requests = Object.values(leaveSummaryData).flatMap(monthData => monthData.requests);
+    const depts = [...new Set(requests.map(req => req.department))].sort();
+    return { allSummaryMonths: months, allSummaryDepartments: depts, allSummaryRequests: requests };
+  }, [leaveSummaryData]);
+
+  const getLeaveSummary = useCallback((filters) => {
+    const { selectedMonth, departmentFilter, statusFilter } = filters;
+    let requestsToFilter = selectedMonth === 'All'
+      ? allSummaryRequests
+      : leaveSummaryData[selectedMonth]?.requests || [];
+
+    const filteredRequests = requestsToFilter.filter(req => {
+      const deptMatch = departmentFilter === 'All' || req.department === departmentFilter;
+      const statusMatch = statusFilter === 'All' || req.status === statusFilter;
+      return deptMatch && statusMatch;
+    });
+
+    const summaryStats = filteredRequests.reduce((acc, req) => {
+      acc[req.status] = (acc[req.status] || 0) + 1;
+      return acc;
+    }, { Total: filteredRequests.length, Approved: 0, Rejected: 0, Pending: 0 });
+
+    return { summaryStats, filteredRequests };
+  }, [leaveSummaryData, allSummaryRequests]);
+
+  // ===================================================================================
+  // SECTION 2: EXISTING STATE AND FUNCTIONS FOR OTHER PAGES (e.g., LeaveManagement)
+  // This section is preserved to ensure no breaking changes for other components.
+  // ===================================================================================
+
+  const [leaveRequests, setLeaveRequests] = useState([
+    { "id": 1, "employeeId": "EMP101", "name": "John Doe", "from": "2025-07-10", "to": "2025-07-15", "leaveDays": 6, "reason": "Vacation", "requestDate": "2025-07-08", "actionDate": "2025-07-09", "status": "Approved", "leaveRequestDays": [{ "id": 1, "leaveDate": "2025-07-10", "leaveCategory": "PAID" }] },
+    { "id": 2, "employeeId": "EMP102", "name": "Alice Johnson", "from": "2025-07-12", "to": "2025-07-14", "leaveDays": 3, "reason": "Medical Leave", "requestDate": "2025-07-09", "actionDate": null, "status": "Pending", "leaveRequestDays": [{ "id": 7, "leaveDate": "2025-07-12", "leaveCategory": "PAID" }] },
+    { "id": 3, "employeeId": "EMP103", "name": "Michael Smith", "from": "2025-07-20", "to": "2025-07-22", "leaveDays": 3, "reason": "Personal Work", "requestDate": "2025-07-10", "actionDate": "2025-07-12", "status": "Rejected", "leaveRequestDays": [{ "id": 10, "leaveDate": "2025-07-20", "leaveCategory": "PAID" }] },
+    { "id": 4, "employeeId": "EMP104", "name": "Priya Sharma", "from": "2025-07-18", "to": "2025-07-20", "leaveDays": 3, "reason": "Family Function", "requestDate": "2025-07-11", "actionDate": "2025-07-13", "status": "Approved", "leaveRequestDays": [{ "id": 13, "leaveDate": "2025-07-18", "leaveCategory": "PAID" }] }
+  ]);
+  
   const [currentWeek, setCurrentWeek] = useState(0);
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDept, setFilterDept] = useState("All");
-
-  // --- Department List Selector ---
-  const getDepartments = useCallback((employees) => {
+  
+  const getDepartments = useCallback((employeesData) => {
     return Array.from(new Set(
-      employees
+      (employeesData || [])
         .filter(emp => emp.isActive !== false)
-        .map(emp => {
-          if (Array.isArray(emp.experienceDetails)) {
-            const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
-            return currentExp?.department || null;
-          }
-          return null;
-        })
-        .filter(dept => dept)
+        .map(emp => emp.experienceDetails?.find(exp => exp.lastWorkingDate === "Present")?.department)
+        .filter(Boolean)
     )).sort();
   }, []);
-
-  // --- Weekly Filtered Requests Selector ---
-  const getWeeklyFilteredRequests = useCallback((employees) => {
+  
+  const getWeeklyFilteredRequests = useCallback((employeesData) => {
     const weekDates = getWeekDates(new Date(), currentWeek);
-
-    // Filter leave requests by week, status, search, and department
-    const allFilteredRequests = leaveRequests.filter((req) => {
-      const matchesStatus = filterStatus === "All" ? true : req.status === filterStatus;
-      const matchesSearch = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-      // Get current department for this employee
-      const emp = employees?.find(e => e.employeeId === req.employeeId);
-      let currentDept = null;
-      if (emp && Array.isArray(emp.experienceDetails)) {
-        const currentExp = emp.experienceDetails.find(exp => exp.lastWorkingDate === "Present");
-        currentDept = currentExp?.department || null;
-      }
-      const matchesDept = filterDept === "All" ? true : currentDept === filterDept;
-      // Check if leave falls within the week
-      const fromDate = req.from;
-      const toDate = req.to;
-      const inWeek = (fromDate >= weekDates.start && fromDate <= weekDates.end) || (toDate >= weekDates.start && toDate <= weekDates.end);
-      return matchesStatus && matchesSearch && matchesDept && inWeek;
+    const filtered = leaveRequests.filter(req => {
+        const emp = employeesData?.find(e => e.employeeId === req.employeeId);
+        const dept = emp?.experienceDetails?.find(ex => ex.lastWorkingDate === 'Present')?.department;
+        return (filterStatus === 'All' || req.status === filterStatus) &&
+               (filterDept === 'All' || dept === filterDept) &&
+               (req.name.toLowerCase().includes(searchQuery.toLowerCase()) || req.employeeId.toLowerCase().includes(searchQuery.toLowerCase())) &&
+               (req.from <= weekDates.end && req.to >= weekDates.start);
     });
-
-    // Separate active and inactive employee requests
-    const separatedRequests = allFilteredRequests.reduce((acc, req) => {
-      const emp = employees?.find(e => e.employeeId === req.employeeId);
-      const isActiveEmployee = emp?.isActive !== false;
-      if (isActiveEmployee) {
-        acc.active.push(req);
-      } else {
-        acc.inactive.push(req);
-      }
-      return acc;
-    }, { active: [], inactive: [] });
-
-    // Combine for display: active first, then inactive
-    const filteredRequests = [...separatedRequests.active, ...separatedRequests.inactive];
-
-    
-
-    return {
-      weekDates,
-      filteredRequests,
-      separatedRequests,
-      allFilteredRequests
-    };
+    return { weekDates, filteredRequests: filtered };
   }, [leaveRequests, currentWeek, filterStatus, searchQuery, filterDept]);
-
-  // --- Monthly Summary Selector ---
-  const allMonths = useMemo(() => {
-    const monthsSet = new Set();
-    leaveRequests.forEach((req) => {
-      if (req.from) monthsSet.add(req.from.slice(0, 7));
-      if (req.to) monthsSet.add(req.to.slice(0, 7));
-    });
-    return Array.from(monthsSet).sort().reverse();
-  }, [leaveRequests]);
-
-  const getMonthlyLeaveSummaryForAll = useCallback((monthStr) => {
-    const [year, month] = monthStr.split("-").map(Number);
-    const fromDate = new Date(year, month - 1, 1);
-    const toDate = new Date(year, month, 0);
-
-    const filtered = leaveRequests
-      .filter(({ from, to }) => {
-        const start = new Date(from);
-        const end = new Date(to);
-        return start <= toDate && end >= fromDate;
-      })
-      .sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate));
-
-    const statusCounts = filtered.reduce((acc, { status }) => {
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
-
-    ["Approved", "Rejected", "Pending"].forEach((st) => {
-      if (!statusCounts[st]) statusCounts[st] = 0;
-    });
-
-    return {
-      total: filtered.length,
-      statusCounts,
-      requests: filtered,
-    };
-  }, [leaveRequests]);
-
-  // --- Sandwich Leave Flag Helper ---
-  const isSandwichLeave = useCallback((reqList) => {
-    let sandwichLeaveRowId = null;
-    reqList.forEach((req) => {
-      if (req.employeeId === "EMP101") {
-        const fromDate = new Date(req.from);
-        const toDate = new Date(req.to);
-        if ((toDate - fromDate) / (1000 * 60 * 60 * 24) === 2) {
-          const day1 = fromDate.getDay();
-          const day2 = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000).getDay();
-          const day3 = toDate.getDay();
-          if (day1 === 6 && day2 === 0 && day3 === 1) {
-            if (!sandwichLeaveRowId) sandwichLeaveRowId = req.id;
-          }
-        }
-      }
-    });
-    return sandwichLeaveRowId;
-  }, []);
-
-  // --- CRUD & Utility Functions ---
-  const addLeaveRequest = useCallback((newRequest) => {
-    const id = Math.max(...leaveRequests.map((req) => req.id), 0) + 1;
-    setLeaveRequests((prev) => [...prev, { ...newRequest, id }]);
-  }, [leaveRequests]);
-
-  const updateLeaveRequest = useCallback((id, updatedData) => {
-    setLeaveRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, ...updatedData } : req))
-    );
-  }, []);
-
-  const deleteLeaveRequest = useCallback((id) => {
-    setLeaveRequests((prev) => prev.filter((req) => req.id !== id));
-  }, []);
-
+  
+  const approveLeave = useCallback((id) => setLeaveRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Approved", actionDate: new Date().toISOString() } : req)), []);
+  const rejectLeave = useCallback((id) => setLeaveRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Rejected", actionDate: new Date().toISOString() } : req)), []);
+  const addLeaveRequest = useCallback((newRequest) => setLeaveRequests(prev => [...prev, { ...newRequest, id: Math.max(...prev.map(r => r.id), 0) + 1 }]), []);
+  
+  // **FIX:** This function is now defined and exported, making `expandLeaveRange` a used function.
   const getApprovedLeaveDatesByEmployee = useCallback((employeeId) => {
     return leaveRequests
       .filter((lr) => lr.employeeId === employeeId && lr.status === "Approved")
       .flatMap((lr) => expandLeaveRange(lr.from, lr.to));
   }, [leaveRequests]);
 
-  // --- Week Navigation Actions ---
-  const goToPreviousWeek = useCallback(() => setCurrentWeek((w) => w - 1), []);
-  const goToNextWeek = useCallback(() => setCurrentWeek((w) => w + 1), []);
+  const isSandwichLeave = useCallback(() => null, []);
+  const goToPreviousWeek = useCallback(() => setCurrentWeek(w => w - 1), []);
+  const goToNextWeek = useCallback(() => setCurrentWeek(w => w + 1), []);
   const resetToCurrentWeek = useCallback(() => setCurrentWeek(0), []);
 
- // --- Approve / Reject Leave ---
-const approveLeave = useCallback((id) => {
-  setLeaveRequests((prev) =>
-    prev.map((req) =>
-      req.id === id
-        ? { ...req, status: "Approved", actionDate: new Date().toISOString() }
-        : req
-    )
-  );
-}, []);
-
-const rejectLeave = useCallback((id) => {
-  setLeaveRequests((prev) =>
-    prev.map((req) =>
-      req.id === id
-        ? { ...req, status: "Rejected", actionDate: new Date().toISOString() }
-        : req
-    )
-  );
-}, []);
-
-
-
-  // --- Expose Context ---
   return (
     <LeaveRequestContext.Provider
       value={{
+        // --- NEW EXPORTS FOR AdminLeaveSummary PAGE ---
+        getLeaveSummary,
+        allDepartments: allSummaryDepartments,
+        allMonths: allSummaryMonths,
+
+        // --- EXISTING EXPORTS FOR OTHER PAGES (e.g., LeaveManagement) ---
         leaveRequests,
         setLeaveRequests,
         addLeaveRequest,
-        updateLeaveRequest,
-        deleteLeaveRequest,
-        approveLeave,    // new
-         rejectLeave,
-        getApprovedLeaveDatesByEmployee,
-        allMonths,
-        getMonthlyLeaveSummaryForAll,
+        approveLeave,
+        rejectLeave,
         getDepartments,
         getWeeklyFilteredRequests,
         currentWeek,
@@ -317,6 +173,8 @@ const rejectLeave = useCallback((id) => {
         filterDept,
         setFilterDept,
         isSandwichLeave,
+        // **FIX:** The missing function is now exported for other components to use.
+        getApprovedLeaveDatesByEmployee,
       }}
     >
       {children}

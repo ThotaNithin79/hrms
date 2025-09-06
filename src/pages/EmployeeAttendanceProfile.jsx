@@ -1,10 +1,6 @@
 import React, { useContext, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AttendanceContext } from "../context/AttendanceContext";
-import { LeaveRequestContext } from "../context/LeaveRequestContext";
-import { HolidayCalendarContext } from "../context/HolidayCalendarContext";
-import { EmployeeContext } from "../context/EmployeeContext";
-import { getSandwichLeaveDates } from "../lib/utils";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -19,171 +15,73 @@ import {
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// --- Helper UI Components ---
+const StatCard = ({ title, value, colorClass }) => (
+  <div className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center text-center">
+    <p className={`text-3xl font-bold ${colorClass}`}>{value}</p>
+    <p className="text-xs font-medium text-gray-600 mt-1">{title}</p>
+  </div>
+);
+
+// --- Main Component ---
 const EmployeeAttendanceProfile = () => {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const { employeeId: routeEmployeeId } = useParams();
-  const employeeId = String(routeEmployeeId);
+  const { employeeId } = useParams();
   const navigate = useNavigate();
 
-  // --- Get data and helper functions from Contexts ---
-  const { attendanceRecords = [], getEmployeeMonthlyStats } = useContext(AttendanceContext) || {};
-  const { leaveRequests = [], getApprovedLeaveDatesByEmployee } = useContext(LeaveRequestContext) || {};
-  const { getHolidayDates, getHolidayByDate } = useContext(HolidayCalendarContext) || {};
-  const { getEmployeeById } = useContext(EmployeeContext) || {};
+  // 1. GET DATA & FUNCTIONS FROM THE REFACTORED ATTENDANCE CONTEXT
+  const { getEmployeeAttendanceProfile, getAvailableMonthsForEmployee } = useContext(AttendanceContext);
 
-  // --- Component State ---
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7)); // 'YYYY-MM'
-  const [attendanceView, setAttendanceView] = useState('table'); // 'table' or 'calendar'
+  // 2. MANAGE UI-ONLY STATE
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [showSandwichModal, setShowSandwichModal] = useState(false);
 
-  // --- Data Processing & Derivation (Memoized for performance) ---
+  // 3. FETCH & PROCESS DATA IN ONE GO (FROM THE SIMULATED BACKEND)
+  const profileData = useMemo(() => {
+    return getEmployeeAttendanceProfile(employeeId, selectedMonth);
+  }, [employeeId, selectedMonth, getEmployeeAttendanceProfile]);
 
-  // Get the employee's name
-  const employeeName = useMemo(() => {
-    const employee = getEmployeeById ? getEmployeeById(employeeId) : null;
-    return employee?.name || "Employee";
-  }, [getEmployeeById, employeeId]);
-
-  // Get all available months for the dropdown from the raw daily records
-  const availableMonths = useMemo(() => Array.from(
-    new Set(
-      attendanceRecords
-        .filter((rec) => String(rec.employeeId) === employeeId)
-        .map((rec) => rec.date.slice(0, 7))
-    )
-  ).sort((a, b) => b.localeCompare(a)), [attendanceRecords, employeeId]);
-
-  // ** REFACTORED: Get pre-calculated monthly statistics directly from the provider **
-  const monthlyStats = useMemo(() => {
-    if (getEmployeeMonthlyStats) {
-      return getEmployeeMonthlyStats(employeeId, selectedMonth);
-    }
-    return null;
-  }, [getEmployeeMonthlyStats, employeeId, selectedMonth]);
-
-  // Get the detailed daily records for the selected month (for table/calendar view)
-  const records = useMemo(() => {
-    return attendanceRecords
-      .filter((rec) => String(rec.employeeId) === employeeId && rec.date.startsWith(selectedMonth))
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [attendanceRecords, employeeId, selectedMonth]);
-
-  // --- Populate UI variables directly from the fetched monthly stats ---
-  const fullDayPresent = monthlyStats?.present_days || 0;
-  const halfDayPresent = monthlyStats?.half_days || 0;
-  const absentDays = monthlyStats?.absent_days || 0;
-  const leaveDays = (monthlyStats?.paid_leave_count || 0) + (monthlyStats?.unpaid_leave_count || 0);
+  const availableMonths = useMemo(() => {
+    return getAvailableMonthsForEmployee(employeeId);
+  }, [employeeId, getAvailableMonthsForEmployee]);
   
-  // Holiday days are not in the stats table, so we calculate them from the daily records for the selected month.
-  const holidayDays = useMemo(() => records.filter(r => r.status === "Holiday").length, [records]);
-
-  // Calculate work hour totals from the detailed daily records for the selected month.
-  const { totalWorkHours, totalWorkedHours, totalIdleTime } = useMemo(() => {
-    return records.reduce((acc, r) => {
-      // Only include past or today's records in the sum
-      if (r.date <= todayStr) {
-        acc.totalWorkHours += r.workHours || 0;
-        acc.totalWorkedHours += r.workedHours || 0;
-        acc.totalIdleTime += r.idleTime || 0;
-      }
-      return acc;
-    }, { totalWorkHours: 0, totalWorkedHours: 0, totalIdleTime: 0 });
-  }, [records, todayStr]);
-
-  // Calculate leave summary stats from the LeaveRequestContext.
-  const { leavesApplied, leavesApproved, leavesRejected, leavesPending } = useMemo(() => {
-     const employeeLeaves = leaveRequests.filter((l) =>
-      String(l.employeeId) === employeeId && l.from && l.from.startsWith(selectedMonth)
-    );
-    return {
-      leavesApplied: employeeLeaves.length,
-      leavesApproved: employeeLeaves.filter((l) => l.status === "Approved").length,
-      leavesRejected: employeeLeaves.filter((l) => l.status === "Rejected").length,
-      leavesPending: employeeLeaves.filter((l) => l.status === "Pending").length,
-    }
-  }, [leaveRequests, employeeId, selectedMonth]);
-
-  // Calculate sandwich leave data.
-  const sandwichLeaveData = useMemo(() => {
-    if (!getApprovedLeaveDatesByEmployee || !getHolidayDates) {
-      return { monthlyDates: [], count: 0 };
-    }
-    const allSandwichLeaveDates = getSandwichLeaveDates(
-      getApprovedLeaveDatesByEmployee(employeeId),
-      getHolidayDates()
-    );
-    const monthlySandwichLeaveDates = allSandwichLeaveDates.filter(date =>
-      date.startsWith(selectedMonth) && date <= todayStr
-    );
-    return {
-      monthlyDates: monthlySandwichLeaveDates,
-      count: monthlySandwichLeaveDates.length
-    };
-  }, [employeeId, selectedMonth, getApprovedLeaveDatesByEmployee, getHolidayDates, todayStr]);
-
-  const { monthlyDates: sandwichLeaveDates, count: sandwichLeaveCount } = sandwichLeaveData;
-  
-  // --- Chart Configuration ---
+  // 4. DERIVE CHART DATA FROM THE FETCHED DATA
   const attendanceChartData = {
-    labels: ["Full Day Present", "Half Day Present", "Absent", "On Leave", "Holiday"],
+    labels: ["Full Day", "Half Day", "Absent", "On Leave", "Holiday"],
     datasets: [{
       label: "Days",
-      data: [fullDayPresent, halfDayPresent, absentDays, leaveDays, holidayDays],
-      backgroundColor: ["#34d399", "#fbbf24", "#f87171", "#fbbf24", "#a78bfa"],
-      borderRadius: 8,
+      data: [
+        profileData?.monthlySummary?.present_days || 0,
+        profileData?.monthlySummary?.half_days || 0,
+        profileData?.monthlySummary?.absent_days || 0,
+        profileData?.monthlySummary?.on_leave_days || 0,
+        profileData?.monthlySummary?.holiday_days || 0,
+      ],
+      backgroundColor: ["#34d399", "#facc15", "#f87171", "#fbbf24", "#a78bfa"],
+      borderRadius: 5,
     }],
   };
   
   const attendanceChartOptions = {
     responsive: true,
-    plugins: {
-      legend: { display: false },
-      title: {
-        display: true,
-        text: "Monthly Attendance Summary",
-        font: { size: 18 },
-        color: "#2563eb",
-      },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => `${ctx.label}: ${ctx.parsed.y} days`,
-        },
-      },
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: "#2563eb", font: { weight: "bold" } } },
-      y: { beginAtZero: true, grid: { color: "#e0e7ff" }, ticks: { stepSize: 1, color: "#2563eb" } },
-    },
+    plugins: { legend: { display: false }, title: { display: true, text: "Monthly Attendance Summary", font: { size: 16 } } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
   };
-
+  
   // --- RENDER ---
-  return (
-    <div className="min-h-screen w-full bg-gray-50 flex flex-col items-center justify-center py-0">
-      <div className="w-full h-full">
-        <div className="bg-white rounded-none shadow-none border-none p-0 w-full h-full">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="mb-8 px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition shadow flex items-center gap-2"
-          >
-            <span className="text-xl">&#8592;</span> Go Back
-          </button>
-
-          <div className="flex flex-col items-center mb-10">
-            <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-bold text-blue-700 mb-2 border border-gray-300">
-              {employeeName && employeeName[0]}
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-1 tracking-tight">{employeeName}</h2>
-            <p className="text-gray-500 font-mono">ID: {employeeId}</p>
-          </div>
-
-          <div className="mb-8 flex items-center gap-4">
-            <label htmlFor="month-select" className="font-semibold text-gray-700">Select Month:</label>
-            <select
-              id="month-select"
+  // Handle case where no data is found for the selected employee/month
+  if (!profileData) {
+    return (
+      <div className="p-8">
+        <button type="button" onClick={() => navigate(-1)} className="mb-4 px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">
+          &larr; Go Back
+        </button>
+        <div className="text-center py-20">
+          <h2 className="text-xl font-semibold">No Attendance Data Found</h2>
+          <p className="text-gray-500">There are no records for this employee in the selected month.</p>
+           <select
               value={selectedMonth}
               onChange={e => setSelectedMonth(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-700 font-semibold focus:outline-none focus:ring focus:ring-blue-200"
+              className="mt-4 px-3 py-2 rounded-lg border bg-gray-50"
             >
               {availableMonths.map(month => (
                 <option key={month} value={month}>
@@ -191,278 +89,142 @@ const EmployeeAttendanceProfile = () => {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="mb-8 flex flex-col md:flex-row gap-8 items-start justify-center">
-            <div className="bg-gray-50 rounded-xl shadow p-4 w-full md:w-1/2 flex flex-col items-center">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Monthly Attendance Summary</h3>
-              {monthlyStats ? (
-                <Bar data={attendanceChartData} options={attendanceChartOptions} height={120} />
-              ) : (
-                <div className="h-[120px] flex items-center justify-center text-gray-500">No attendance data for this month.</div>
-              )}
-            </div>
-            <div className="flex-1" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <span className="text-2xl mb-1 text-green-600">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">Present (Full Day)</h3>
-              <span className="text-2xl font-bold text-green-700">{fullDayPresent}</span>
-              <span className="text-xs text-gray-500 mt-1">Punched In</span>
-            </div>
-            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <span className="text-2xl mb-1 text-yellow-500">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">Present (Half Day)</h3>
-              <span className="text-2xl font-bold text-yellow-700">{halfDayPresent}</span>
-              <span className="text-xs text-gray-500 mt-1">Late/Policy</span>
-            </div>
-            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <span className="text-2xl mb-1 text-red-600">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">Absent</h3>
-              <span className="text-2xl font-bold text-red-700">{absentDays}</span>
-              <span className="text-xs text-gray-500 mt-1">Without Leave</span>
-            </div>
-            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <span className="text-2xl mb-1 text-yellow-500">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">On Leave</h3>
-              <span className="text-2xl font-bold text-yellow-700">{leaveDays}</span>
-              <span className="text-xs text-gray-500 mt-1">Approved Leave</span>
-            </div>
-            <div className="bg-white border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <span className="text-2xl mb-1 text-purple-500">●</span>
-              <h3 className="font-semibold mb-1 text-gray-700">Holiday</h3>
-              <span className="text-2xl font-bold text-purple-700">{holidayDays}</span>
-              <span className="text-xs text-gray-500 mt-1">Public/Sunday</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center">
-              <h3 className="font-semibold mb-1 text-gray-700">Leaves Applied</h3>
-              <span className="text-xl font-bold text-blue-700">{leavesApplied}</span>
-              <div className="flex gap-2 mt-2">
-                <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">Approved: {leavesApproved}</span>
-                <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Rejected: {leavesRejected}</span>
-                <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Pending: {leavesPending}</span>
-              </div>
-              <div className="mt-3 w-full flex flex-col items-center">
-                <button
-                  className="text-xs font-semibold text-gray-700 bg-blue-100 px-2 py-1 rounded hover:bg-blue-200 transition cursor-pointer"
-                  onClick={() => setShowSandwichModal(true)}
-                  disabled={sandwichLeaveCount === 0}
-                  style={{ opacity: sandwichLeaveCount === 0 ? 0.6 : 1 }}
-                  title={sandwichLeaveCount === 0 ? 'No sandwich leaves' : 'View sandwich leave dates'}
-                >
-                  Sandwich Leaves: <span className="text-blue-700 font-bold">{sandwichLeaveCount}</span>
-                </button>
-                <span className="text-[11px] text-gray-500 mt-1">(Holiday between leave days)</span>
-              </div>
-            </div>
-            <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl shadow flex flex-col items-center col-span-2">
-              <h3 className="font-semibold mb-1 text-gray-700">Work Hours Summary</h3>
-              <div className="flex gap-8">
-                <div className="flex flex-col items-center">
-                  <p className="text-gray-600">Total Work Hours</p>
-                  <span className="font-bold text-blue-700 text-lg">{totalWorkHours.toFixed(2)}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <p className="text-gray-600">Total Worked Hours</p>
-                  <span className="font-bold text-blue-700 text-lg">{totalWorkedHours.toFixed(2)}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <p className="text-gray-600">Total Idle Time</p>
-                  <span className="font-bold text-blue-700 text-lg">{totalIdleTime.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <h3 className="font-semibold mb-4 text-gray-700 text-lg flex items-center justify-between">
-            Daily Attendance Details
-            <button
-              className="ml-4 px-3 py-1 rounded bg-blue-100 text-blue-700 font-semibold text-xs shadow hover:bg-blue-200 transition"
-              onClick={() => setAttendanceView(prev => prev === 'table' ? 'calendar' : 'table')}
-              title={attendanceView === 'table' ? 'Switch to Calendar View' : 'Switch to Table View'}
-            >
-              {attendanceView === 'table' ? 'Calendar View' : 'Table View'}
-            </button>
-          </h3>
-          
-          {attendanceView === 'table' ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-xl shadow border border-gray-200">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Punch In</th>
-                    <th className="p-3">Punch Out</th>
-                    <th className="p-3">Work Hours</th>
-                    <th className="p-3">Worked Hours</th>
-                    <th className="p-3">Idle Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((rec, idx) => {
-                    const isFuture = rec.date > todayStr;
-                    let statusLabel = rec.status;
-                    if (rec.status === "Present") {
-                      statusLabel = rec.isHalfDay ? "Half Day Present" : "Present";
-                    }
-                    return (
-                      <tr key={`${rec.id}-${rec.date}`} className={`border-t transition-colors duration-150 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} ${isFuture ? 'opacity-60 bg-gray-100 cursor-not-allowed' : 'hover:bg-blue-50'}`}>
-                        <td className="p-3 font-mono text-gray-700">{rec.date}</td>
-                        <td className="p-3">
-                          {!isFuture ? (
-                            <>
-                              {statusLabel === "Present" && <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">Present</span>}
-                              {statusLabel === "Half Day Present" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Half Day Present</span>}
-                              {statusLabel === "Absent" && <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">Absent</span>}
-                              {statusLabel === "Leave" && <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">Leave</span>}
-                              {statusLabel === "Holiday" && <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Holiday</span>}
-                            </>
-                          ) : (
-                            <span className="ml-2 text-xs text-gray-400">Future</span>
-                          )}
-                        </td>
-                        <td className="p-3">{!isFuture ? rec.punchIn || "—" : "—"}</td>
-                        <td className="p-3">{!isFuture ? rec.punchOut || "—" : "—"}</td>
-                        <td className="p-3">{!isFuture && typeof rec.workHours === "number" ? rec.workHours.toFixed(2) : "—"}</td>
-                        <td className="p-3">{!isFuture && typeof rec.workedHours === "number" ? rec.workedHours.toFixed(2) : "—"}</td>
-                        <td className="p-3">{!isFuture && typeof rec.idleTime === "number" ? rec.idleTime.toFixed(2) : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="w-full bg-white rounded-xl shadow border border-gray-200 p-4">
-              <div className="grid grid-cols-7 gap-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                  <div key={day} className="text-xs font-bold text-blue-700 text-center py-1">{day}</div>
-                ))}
-                {(() => {
-                  const daysInMonth = new Date(selectedMonth.slice(0, 4), selectedMonth.slice(5, 7), 0).getDate();
-                  const firstDayOfWeek = new Date(`${selectedMonth}-01`).getDay();
-                  const cells = [];
-                  for (let i = 0; i < firstDayOfWeek; i++) {
-                    cells.push(<div key={`empty-${i}`} className="bg-transparent"></div>);
-                  }
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${selectedMonth}-${String(day).padStart(2, '0')}`;
-                    const rec = records.find(r => r.date === dateStr);
-                    const isFuture = dateStr > todayStr;
-                    
-                    let cellProps = {
-                        key: dateStr,
-                        title: "Future date",
-                        className: "flex flex-col items-center justify-center border rounded-lg py-2 px-1 min-h-[60px] font-semibold bg-gray-100 border-gray-300 opacity-60 border-dashed"
-                    };
-                    let dayText = <span className="font-mono text-xs text-gray-700">{day}</span>;
-                    let statusText = <span className="text-[10px] font-semibold mt-1 text-gray-400">Future</span>;
-
-                    if (!isFuture && rec) {
-                        let statusColor = '';
-                        let statusLabel = '';
-                        let borderColor = 'border-gray-200';
-                        if (rec.status === 'Present') {
-                            statusColor = rec.isHalfDay ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700';
-                            statusLabel = rec.isHalfDay ? 'Half-Day' : 'Present';
-                            borderColor = rec.isHalfDay ? 'border-yellow-400' : 'border-green-400';
-                        } else if (rec.status === 'Absent') {
-                            statusColor = 'bg-red-50 text-red-700';
-                            statusLabel = 'Absent';
-                            borderColor = 'border-red-400';
-                        } else if (rec.status === 'Leave') {
-                            statusColor = 'bg-yellow-50 text-yellow-700';
-                            statusLabel = 'Leave';
-                            borderColor = 'border-yellow-400';
-                        } else if (rec.status === 'Holiday') {
-                            statusColor = 'bg-purple-50 text-purple-700';
-                            statusLabel = 'Holiday';
-                            borderColor = 'border-purple-400';
-                        }
-                        cellProps = {
-                            key: dateStr,
-                            title: `${dateStr}: ${statusLabel}`,
-                            className: `flex flex-col items-center justify-center border-2 rounded-lg py-2 px-1 min-h-[60px] font-semibold ${statusColor} ${borderColor}`
-                        };
-                        statusText = <span className="text-[10px] font-semibold mt-1">{statusLabel}</span>;
-                    } else if (!isFuture) {
-                         cellProps = {
-                            key: dateStr,
-                            title: `${dateStr}: No Record`,
-                            className: `flex flex-col items-center justify-center border rounded-lg py-2 px-1 min-h-[60px] font-semibold bg-gray-50 border-gray-200`
-                        };
-                        statusText = null;
-                    }
-
-                    cells.push(
-                        <div {...cellProps}>
-                            {dayText}
-                            {statusText}
-                        </div>
-                    );
-                  }
-                  return cells;
-                })()}
-              </div>
-            </div>
-          )}
-          
-          {showSandwichModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative animate-fade-in">
-                <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold focus:outline-none"
-                  onClick={() => setShowSandwichModal(false)}
-                  title="Close"
-                  aria-label="Close"
-                >&times;</button>
-                <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center gap-2">
-                  <span className="inline-block bg-blue-100 text-blue-700 rounded-full px-3 py-1 text-base font-semibold">{sandwichLeaveCount}</span>
-                  Sandwich Leave Details - {new Date(`${selectedMonth}-02`).toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </h3>
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Sandwich Leave:</strong> When a holiday falls between two approved leave days, the holiday is counted as a sandwich leave day.
-                  </p>
-                </div>
-                {sandwichLeaveDates.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <p className="text-gray-600 text-center">No sandwich leave found for this month.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <ul className="space-y-3">
-                      {sandwichLeaveDates.map((date, idx) => {
-                        const holidayInfo = getHolidayByDate ? getHolidayByDate(date) : null;
-                        return (
-                          <li key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center justify-between">
-                              <div className="flex flex-col gap-1">
-                                <span className="font-semibold text-blue-700">
-                                  {holidayInfo ? holidayInfo.name : 'Holiday'} on {new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                </span>
-                              </div>
-                              <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-semibold">
-                                Sandwich Leave
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+    );
+  }
+
+  // Destructure the data for easier use in the JSX
+  const { 
+    profile, 
+    monthlySummary, 
+    workHoursSummary, 
+    leaveSummary, 
+    sandwichLeave, 
+    dailyRecords 
+  } = profileData;
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50">
+      <button type="button" onClick={() => navigate(-1)} className="mb-6 px-4 py-2 rounded-lg bg-white shadow-sm border hover:bg-gray-100 flex items-center gap-2">
+        &larr; Go Back
+      </button>
+
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">{profile.employeeName}</h1>
+          <p className="text-gray-500 font-mono">ID: {profile.employeeId}</p>
+        </div>
+
+        <div className="mb-6 flex justify-center">
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="px-4 py-2 rounded-lg border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {availableMonths.map(month => (
+                <option key={month} value={month}>
+                  {new Date(`${month}-02`).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </option>
+              ))}
+            </select>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <StatCard title="Present (Full Day)" value={monthlySummary.present_days} colorClass="text-green-600" />
+            <StatCard title="Present (Half Day)" value={monthlySummary.half_days} colorClass="text-yellow-500" />
+            <StatCard title="Absent" value={monthlySummary.absent_days} colorClass="text-red-600" />
+            <StatCard title="On Leave" value={monthlySummary.on_leave_days} colorClass="text-yellow-500" />
+            <StatCard title="Holiday" value={monthlySummary.holiday_days} colorClass="text-purple-600" />
+        </div>
+
+        {/* Chart and Hours Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md"><Bar data={attendanceChartData} options={attendanceChartOptions} /></div>
+            <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col justify-center">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">Monthly Work Summary</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p className="text-gray-500 text-sm">Total Work Hours</p>
+                        <p className="text-2xl font-bold text-blue-600">{workHoursSummary.totalWorkHours.toFixed(2)}</p>
+                    </div>
+                    <div>
+                        <p className="text-gray-500 text-sm">Total Worked Hours</p>
+                        <p className="text-2xl font-bold text-blue-600">{workHoursSummary.totalWorkedHours.toFixed(2)}</p>
+                    </div>
+                     <div>
+                        <p className="text-gray-500 text-sm">Total Idle Time</p>
+                        <p className="text-2xl font-bold text-blue-600">{workHoursSummary.totalIdleTime.toFixed(2)}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Leave and Sandwich Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+             <div className="md:col-span-1 bg-white p-6 rounded-lg shadow-md text-center">
+                 <h3 className="text-lg font-semibold text-gray-700 mb-2">Leave Requests</h3>
+                 <p className="text-3xl font-bold text-blue-600 mb-3">{leaveSummary.applied}</p>
+                 <div className="flex justify-center gap-2 text-xs">
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">Approved: {leaveSummary.approved}</span>
+                    <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full">Rejected: {leaveSummary.rejected}</span>
+                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Pending: {leaveSummary.pending}</span>
+                 </div>
+             </div>
+              <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-md text-center">
+                 <h3 className="text-lg font-semibold text-gray-700 mb-2">Sandwich Leaves</h3>
+                 <p className="text-3xl font-bold text-blue-600 mb-3">{sandwichLeave.count}</p>
+                 <button onClick={() => setShowSandwichModal(true)} disabled={sandwichLeave.count === 0} className="text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                     View Details
+                 </button>
+             </div>
+        </div>
+
+        {/* Daily Records Table */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Daily Attendance Log</h3>
+            <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-100"><tr className="text-left"><th className="p-3">Date</th><th className="p-3">Status</th><th className="p-3">Punch In</th><th className="p-3">Punch Out</th><th className="p-3">Work Hours</th><th className="p-3">Worked Hours</th><th className="p-3">Idle Time</th></tr></thead>
+                    <tbody>
+                        {dailyRecords.map((rec) => (
+                        <tr key={rec.id} className="border-t hover:bg-gray-50">
+                            <td className="p-3 font-mono">{rec.date}</td>
+                            <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${rec.status === 'Present' && !rec.isHalfDay ? 'bg-green-100 text-green-800' : rec.status === 'Present' && rec.isHalfDay ? 'bg-yellow-100 text-yellow-800' : rec.status === 'Absent' ? 'bg-red-100 text-red-800' : rec.status === 'Holiday' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>{rec.isHalfDay ? 'Half Day' : rec.status}</span></td>
+                            <td className="p-3">{rec.punchIn || "—"}</td>
+                            <td className="p-3">{rec.punchOut || "—"}</td>
+                            <td className="p-3">{rec.workHours.toFixed(2)}</td>
+                            <td className="p-3">{rec.workedHours.toFixed(2)}</td>
+                            <td className="p-3">{rec.idleTime.toFixed(2)}</td>
+                        </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+      
+      {/* Sandwich Modal */}
+      {showSandwichModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setShowSandwichModal(false)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+             <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-800">Sandwich Leave Details</h3>
+                <button onClick={() => setShowSandwichModal(false)} className="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            {sandwichLeave.dates.length > 0 ? (
+                sandwichLeave.dates.map(item => (
+                    <div key={item.date} className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-2">
+                        <p className="font-semibold text-blue-700">{item.name}</p>
+                        <p className="text-sm text-gray-600">{new Date(`${item.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                ))
+            ) : <p className="text-gray-600">No sandwich leave days were recorded for this month.</p>}
+             <button onClick={() => setShowSandwichModal(false)} className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

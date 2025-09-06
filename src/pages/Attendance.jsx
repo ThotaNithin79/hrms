@@ -30,21 +30,28 @@ const Attendance = () => {
   const weekDates = getCurrentWeekDates(currentWeek);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Improvement: Create a Map for efficient employee status lookups.
-  // This is much faster than using Array.find() inside a loop.
-  const employeeStatusMap = useMemo(() => 
-    new Map(employees.map(emp => [String(emp.employeeId), emp.isActive])),
+  // Create a Map for efficient lookups of employee name and status.
+  const employeeInfoMap = useMemo(() => 
+    new Map(employees.map(emp => [
+      String(emp.employeeId), 
+      { isActive: emp.isActive, name: emp.name || "Unknown Employee" }
+    ])),
     [employees]
   );
 
   const filteredAndSortedRecords = useMemo(() => {
-    const recordsWithEmployeeStatus = attendanceRecords.map(record => {
-      // Use the efficient Map for lookup. Default to inactive (false) if not found.
-      const isActive = employeeStatusMap.get(String(record.employeeId)) ?? false;
-      return { ...record, isInactive: !isActive };
+    // 1. Enrich raw attendance records with employee name and status first.
+    const enrichedRecords = attendanceRecords.map(record => {
+      const employeeInfo = employeeInfoMap.get(String(record.employeeId));
+      return {
+        ...record,
+        name: employeeInfo ? employeeInfo.name : 'Unknown Employee', // Prevents 'toLowerCase' of undefined error
+        isInactive: employeeInfo ? !employeeInfo.isActive : true,
+      };
     });
 
-    const filtered = recordsWithEmployeeStatus.filter((record) => {
+    // 2. Filter the enriched records
+    const filtered = enrichedRecords.filter((record) => {
       const matchesName = record.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "All" || record.status === statusFilter;
       const matchesWeek = record.date >= weekDates.start && record.date <= weekDates.end;
@@ -52,20 +59,21 @@ const Attendance = () => {
       return matchesName && matchesStatus && matchesWeek && isPastOrToday;
     });
 
+    // 3. Sort the filtered records
     return filtered.sort((a, b) => {
       if (a.isInactive !== b.isInactive) {
-        return a.isInactive ? 1 : -1; // Inactive records go to the bottom
+        return a.isInactive ? 1 : -1; // Inactive records always go to the bottom
       }
       return sortOrder === "asc"
         ? a.date.localeCompare(b.date)
         : b.date.localeCompare(a.date);
     });
-  }, [attendanceRecords, searchTerm, statusFilter, sortOrder, weekDates.start, weekDates.end, todayStr, employeeStatusMap]);
+  }, [attendanceRecords, searchTerm, statusFilter, sortOrder, weekDates.start, weekDates.end, todayStr, employeeInfoMap]);
 
 
   const formatWeekRange = (start, end) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDate = new Date(`${start}T00:00:00`);
+    const endDate = new Date(`${end}T00:00:00`);
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     if (startDate.getFullYear() === endDate.getFullYear()) {
       const startOptions = { month: 'short', day: 'numeric' };
@@ -92,161 +100,141 @@ const Attendance = () => {
   const statusBadge = (record) => {
     let color = "bg-gray-200 text-gray-700";
     let text = record.status;
-
-    switch (record.status) {
-      case "Present":
-        if (record.isHalfDay) {
-          color = "bg-yellow-100 text-yellow-700";
-          text = "Half Day Present";
-        } else {
-          color = "bg-green-100 text-green-700";
-        }
-        break;
-      case "Absent":
+    if (record.status === "Present") {
+        color = record.isHalfDay ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700";
+        text = record.isHalfDay ? "Half Day Present" : "Present";
+    } else if (record.status === "Absent") {
         color = "bg-red-100 text-red-700";
-        break;
-      case "Leave":
+    } else if (record.status === "Leave") {
         color = "bg-yellow-100 text-yellow-700";
-        break;
-      case "Holiday":
+    } else if (record.status === "Holiday") {
         color = "bg-purple-100 text-purple-700";
-        break;
-      default:
-        break;
     }
-    return <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>{text}</span>;
+    return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${color}`}>{text}</span>;
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Attendance Records</h2>
-      <div className="overflow-x-auto">
-        {/* UI Code is unchanged */}
-        <div className="mb-4 flex flex-col md:flex-row gap-4 items-center">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Weekly Attendance Records</h2>
+      <div className="bg-white p-4 rounded-xl shadow-lg">
+        <div className="mb-4 flex flex-col md:flex-row flex-wrap gap-4 items-center">
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setCurrentWeek(currentWeek - 1)}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition shadow"
             >
-              ← Previous Week
+              &larr;
             </button>
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-semibold text-gray-700 text-center w-48">
               {formatWeekRange(weekDates.start, weekDates.end)}
             </span>
             <button
               onClick={() => setCurrentWeek(currentWeek + 1)}
               disabled={currentWeek >= 0}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Next Week →
+              &rarr;
             </button>
             {currentWeek !== 0 && (
               <button
                 onClick={() => setCurrentWeek(0)}
-                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition shadow"
               >
-                Current Week
+                Current
               </button>
             )}
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Export CSV
-          </button>
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="border px-4 py-2 rounded"
-          >
-            <option value="desc">Newest First</option>
-            <option value="asc">Oldest First</option>
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border px-4 py-2 rounded"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Present">Present</option>
-            <option value="Absent">Absent</option>
-            <option value="Leave">Leave</option>
-            <option value="Holiday">Holiday</option>
-          </select>
-          <div className="flex gap-2 w-full max-w-xs">
+          <div className="flex-grow flex flex-col md:flex-row flex-wrap gap-4">
             <input
               type="text"
-              placeholder="Search by employee name"
+              placeholder="Search by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border px-4 py-2 rounded w-full"
+              className="border border-gray-300 px-4 py-2 rounded-lg w-full md:w-48"
             />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700 font-semibold"
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 px-4 py-2 rounded-lg"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="Leave">Leave</option>
+              <option value="Holiday">Holiday</option>
+            </select>
+             <select
+              value={sortOrder}
+              // **FIX:** The onChange handler is now correctly implemented, resolving the error.
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="border border-gray-300 px-4 py-2 rounded-lg"
+            >
+              <option value="desc">Newest First</option>
+              <option value="asc">Oldest First</option>
+            </select>
+             <button
+                onClick={handleExportCSV}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold"
               >
-                Cancel
+                Export CSV
               </button>
-            )}
           </div>
         </div>
 
-        <table className="min-w-full bg-white rounded-xl shadow">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-4">Employee ID</th>
-              <th className="p-4">Name</th>
-              <th className="p-4">Date</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAndSortedRecords.length > 0 ? (
-              filteredAndSortedRecords.map((record) => (
-                  <tr
-                    key={record.id}
-                    className={`border-t transition duration-150 ${
-                      record.isInactive
-                        ? "bg-gray-200 text-gray-500 opacity-80"
-                        : "bg-white hover:bg-blue-50"
-                    }`}
-                  >
-                    <td className="p-4">{record.employeeId}</td>
-                    <td className="p-4">
-                      {record.name}
-                      {record.isInactive && (
-                        <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded font-semibold">
-                          Inactive
-                        </span>
-                      )}
+        <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+            <thead className="bg-gray-100">
+                <tr className="text-left text-sm font-semibold text-gray-600">
+                <th className="p-3">Employee ID</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">Date</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {filteredAndSortedRecords.length > 0 ? (
+                filteredAndSortedRecords.map((record) => (
+                    <tr
+                        key={record.id}
+                        className={`border-t transition duration-150 ${
+                        record.isInactive
+                            ? "bg-gray-200 text-gray-500"
+                            : "bg-white hover:bg-blue-50"
+                        }`}
+                    >
+                        <td className="p-3 font-mono">{record.employeeId}</td>
+                        <td className="p-3">
+                        {record.name}
+                        {record.isInactive && (
+                            <span className="ml-2 px-2 py-1 bg-red-200 text-red-800 text-xs rounded-full font-semibold">
+                            Inactive
+                            </span>
+                        )}
+                        </td>
+                        <td className="p-3 font-mono">{record.date}</td>
+                        <td className="p-3">{statusBadge(record)}</td>
+                        <td className="p-3">
+                        <button
+                            onClick={() => navigate(`/attendance/profile/${record.employeeId}`)}
+                            className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold hover:bg-purple-200"
+                            title="View Profile"
+                        >
+                            View Profile
+                        </button>
+                        </td>
+                    </tr>
+                    ))
+                ) : (
+                <tr>
+                    <td colSpan="5" className="p-8 text-center text-gray-500">
+                    No matching attendance records found.
                     </td>
-                    <td className="p-4">{record.date}</td>
-                    <td className="p-4">{statusBadge(record)}</td>
-                    <td className="p-4 flex gap-2">
-                      <button
-                        onClick={() => navigate(`/attendance/profile/${record.employeeId}`)}
-                        className="bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 flex items-center gap-1"
-                        title="View Profile"
-                      >
-                        Summary
-                      </button>
-                    </td>
-                  </tr>
-                )
-              )
-            ) : (
-              <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">
-                  No matching attendance records found for the selected criteria.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </tr>
+                )}
+            </tbody>
+            </table>
+        </div>
       </div>
     </div>
   );
