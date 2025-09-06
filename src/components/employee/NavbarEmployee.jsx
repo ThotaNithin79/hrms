@@ -135,6 +135,15 @@ const NavbarEmployee = () => {
               </div>
               <div
                 onClick={() => {
+                  navigate("/employee/settings");
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer"
+              >
+                <FaUser className="text-blue-600" /> Employee Settings
+              </div>
+              <div
+                onClick={() => {
                   logout();
                   navigate("/");
                   setShowMenu(false);
