@@ -25,6 +25,7 @@ import EmployeeAttendanceProfile from "./pages/EmployeeAttendanceProfile";
 import AdminNotices from "./pages/AdminNotices.jsx";
 import AdminHolidayCalendarPage from "./pages/AdminHolidayCalendarPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import SettingsPage from "./pages/SettingsPage"; // <-- NEW: Import the new Settings page
 
 // New Attendance Features
 import OvertimeManagement from "./pages/OvertimeManagement";
@@ -89,6 +90,10 @@ function App() {
         <Route path="/attendance/profile/:employeeId" element={<EmployeeAttendanceProfile />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/admin/leave-summary" element={<AdminLeaveSummary />} />
+        
+        {/* --- NEW SETTINGS ROUTE IS ADDED HERE --- */}
+        <Route path="/admin/settings" element={<SettingsPage />} />
+        
         <Route path="/admin/notifications" element={<AdminNotifications />} />
         <Route path="/admin/on-leave-today" element={<EmployeesOnLeaveToday />} />
         <Route path="/admin/notices" element={
@@ -123,7 +128,8 @@ function App() {
           </HolidayCalendarProvider>
         } />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
-        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} />
+        {/* Note: You have a duplicate "/employee/profile" route here, which you might want to review */}
+        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} /> 
         <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
         <Route path="/employee/change-password" element={<ChangePasswordPage />} />
       </Route>

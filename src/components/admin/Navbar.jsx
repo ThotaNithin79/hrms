@@ -2,21 +2,20 @@ import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { NotificationContext } from "../../context/NotificationContext";
-import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser, FaKey } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser, FaKey, FaCog } from "react-icons/fa"; // Import FaCog
 
 const Navbar = () => {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
-  const { unreadCount } = useContext(NotificationContext); // 👈 use context to get unread notifications count
+  const { unreadCount } = useContext(NotificationContext);
 
   const handleLogout = () => {
     logout();
-    navigate("/"); // Redirect to login
+    navigate("/");
   };
 
-  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -34,7 +33,6 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Notifications */}
         <div
           className="relative cursor-pointer group"
           onClick={() => navigate("/admin/notifications")}
@@ -47,7 +45,6 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Profile section with toggle dropdown */}
         <div
           ref={menuRef}
           className="relative flex items-center gap-2 cursor-pointer select-none"
@@ -57,30 +54,30 @@ const Navbar = () => {
           <span className="text-white font-semibold hidden md:inline">Admin</span>
           <FaChevronDown className={`text-white ml-1 transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />
 
-          {/* Dropdown menu */}
           {showMenu && (
-            <div className="absolute top-12 right-0 bg-white border rounded-lg shadow-lg w-44 z-50 text-base animate-fade-in">
+            <div className="absolute top-12 right-0 bg-white border rounded-lg shadow-lg w-48 z-50 text-base animate-fade-in">
               <div
-                onClick={() => {
-                  navigate("/admin/profile");
-                  setShowMenu(false);
-                }}
-                className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
+                onClick={() => { navigate("/admin/profile"); setShowMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
               >
                 <FaUser className="text-blue-600" /> View Profile
               </div>
               <div
-                onClick={() => {
-                  navigate("/admin/change-password");
-                  setShowMenu(false);
-                }}
-                className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
+                onClick={() => { navigate("/admin/change-password"); setShowMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
               >
                 <FaKey className="text-blue-600" /> Change Password
               </div>
+              {/* --- NEW SETTINGS LINK --- */}
+              <div
+                onClick={() => { navigate("/admin/settings"); setShowMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all border-t"
+              >
+                <FaCog className="text-blue-600" /> Application Settings
+              </div>
               <div
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-3 text-red-500 hover:bg-blue-50 cursor-pointer transition-all"
+                className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-blue-50 cursor-pointer transition-all border-t"
               >
                 <FaSignOutAlt /> Logout
               </div>
