@@ -1,7 +1,7 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser, FaKey } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaChevronDown, FaSignOutAlt, FaUser, FaKey, FaCog } from "react-icons/fa";
 import { CurrentEmployeeNotificationContext } from "../../EmployeeContext/CurrentEmployeeNotificationContext";
 import { CurrentEmployeeContext } from "../../EmployeeContext/CurrentEmployeeContext";
 
@@ -132,6 +132,15 @@ const NavbarEmployee = () => {
                 className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
               >
                 <FaKey className="text-blue-600" /> Change Password
+              </div>
+              <div
+                onClick={() => {
+                  navigate("/employee/settings");
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-gray-700 cursor-pointer transition-all"
+              >
+                <FaCog className="text-blue-600" /> Settings
               </div>
               <div
                 onClick={() => {

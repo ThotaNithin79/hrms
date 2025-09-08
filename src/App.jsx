@@ -36,6 +36,7 @@ import { PermissionHoursProvider } from "./context/PermissionHoursProvider";
 // Providers
 import { NoticeProvider } from "./context/NoticeProvider";
 import HolidayCalendarProvider from "./context/HolidayCalendarProvider";
+import { CurrentEmployeeSettingsProvider } from "./EmployeeContext/CurrentEmployeeSettingsProvider";
 
 // Employee pages
 import EmployeeDashboard from "./EmployeePages/EmployeeDashboard";
@@ -44,6 +45,7 @@ import CurrentEmployeeLeave from "./EmployeePages/CurrentEmployeeLeaveManagement
 import CurrentEmployeeHolidayCalendar from "./EmployeePages/CurrentEmployeeHolidayCalendar";
 import CurrentEmployeeProfile from "./EmployeePages/CurrentEmployeeProfile";
 import CurrentEmployeeNoticeBoard from "./EmployeePages/CurrentEmployeeNoticeBoard";
+import EmployeeSettings from "./EmployeePages/EmployeeSettings";
 
 // Route protection
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -113,7 +115,9 @@ function App() {
         element={
           <ProtectedRoute role="employee">
             <NoticeProvider>
-              <LayoutEmployee />
+              <CurrentEmployeeSettingsProvider>
+                <LayoutEmployee />
+              </CurrentEmployeeSettingsProvider>
             </NoticeProvider>
           </ProtectedRoute>
         }
@@ -128,8 +132,7 @@ function App() {
           </HolidayCalendarProvider>
         } />
         <Route path="/employee/notices" element={<CurrentEmployeeNoticeBoard />} />
-        {/* Note: You have a duplicate "/employee/profile" route here, which you might want to review */}
-        <Route path="/employee/profile" element={<CurrentEmployeeProfile />} /> 
+        <Route path="/employee/settings" element={<EmployeeSettings />} />
         <Route path="/employee/leave-summary" element={<EmployeeLeaveSummary />} />
         <Route path="/employee/change-password" element={<ChangePasswordPage />} />
       </Route>
